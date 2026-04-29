@@ -1,0 +1,24 @@
+# LFS Core Packages
+https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.6.14.tar.xz
+https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz
+https://ftp.gnu.org/gnu/binutils/binutils-2.41.tar.xz
+https://ftp.gnu.org/gnu/glibc/glibc-2.38.tar.xz
+https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz
+https://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz
+https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tar.xz
+
+# BLFS Core
+https://download.gnome.org/sources/glib/2.78/glib-2.78.3.tar.xz
+https://gitlab.freedesktop.org/xorg/util/macros/-/archive/util-macros-1.20.0/macros-util-macros-1.20.0.tar.bz2
+https://download.gnome.org/sources/gtk+/3.24/gtk+-3.24.39.tar.xz
+
+# Desktop Environment
+https://archive.xfce.org/xfce/4.18/fat/tarballs/xfce4-4.18.tar.bz2
+https://github.com/linuxmint/lightdm/releases/download/1.32.0/lightdm-1.32.0.tar.gz
+
+# Applications
+https://ftp.mozilla.org/pub/firefox/releases/122.0/source/firefox-122.0.source.tar.xz
+https://download.documentfoundation.org/libreoffice/stable/7.6.4/src/libreoffice-7.6.4.1.tar.xz
+https://get.videolan.org/vlc/3.0.20/vlc-3.0.20.tar.xz
+https://download.gimp.org/pub/gimp/v2.10/gimp-2.10.36.tar.bz2
+https://github.com/obsproject/obs-studio/archive/30.0.2.tar.gz
