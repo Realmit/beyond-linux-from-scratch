@@ -1128,6 +1128,1186 @@ wsl -d Ubuntu-22.04 bash -c "
 echo "WSL2 setup complete. Run 'wsl' to start building."
 ```
 
+## FICHIER: `ADVANCED.md`
+
+```markdown
+# Advanced Usage Guide
+
+This document covers advanced configurations, customizations, and optimization techniques for LFS/BLFS Builder.
+
+## Table of Contents
+
+1. [Custom Build Profiles](#custom-build-profiles)
+2. [Cross-Compilation](#cross-compilation)
+3. [Distributed Builds](#distributed-builds)
+4. [Custom Package Repository](#custom-package-repository)
+5. [Kernel Optimization](#kernel-optimization)
+6. [Init System Deep Dive](#init-system-deep-dive)
+7. [Security Hardening Levels](#security-hardening-levels)
+8. [Performance Tuning](#performance-tuning)
+9. [Container Integration](#container-integration)
+10. [CI/CD Pipeline](#cicd-pipeline)
+11. [Embedded Systems](#embedded-systems)
+12. [Recovery and Debugging](#recovery-and-debugging)
+
+---
+
+## Custom Build Profiles
+
+### Creating a Profile from Scratch
+
+Create a complete custom profile in `profiles/custom/`:
+
+```bash
+mkdir -p profiles/custom
+cp profiles/xfce/customization.sh profiles/custom/
+```
+
+#### Profile Structure
+
+```python
+# Add to ProfileManager.PROFILES in builder.py
+'custom': {
+    'description': 'My custom distribution',
+    'size_gb': 15,
+    'build_time_hours': 8,
+    'packages': [
+        'base',           # Required
+        'network',        # Networking stack
+        'ssh',           # SSH daemon
+        'xorg',          # X11 server
+        'custom-gui',    # Your custom GUI
+        'dev-tools',     # Development tools
+        'security'       # Security suite
+    ],
+    'desktop': 'custom',
+    'java_dev': True,
+    'package_manager': True,
+    'security_hardening': True,
+    'privacy_tools': True
+}
+```
+
+#### Customization Script Template
+
+```bash
+#!/bin/bash
+# profiles/custom/customization.sh
+
+set -e
+
+log_info() { echo -e "\033[0;32m[INFO]\033[0m $1"; }
+log_success() { echo -e "\033[0;34m[SUCCESS]\033[0m $1"; }
+
+# Custom environment variables
+export CUSTOM_HOME="/opt/custom"
+export CUSTOM_CONFIG="/etc/custom"
+
+# Pre-installation hooks
+pre_install() {
+    log_info "Running pre-installation tasks"
+    mkdir -p "$CUSTOM_HOME" "$CUSTOM_CONFIG"
+}
+
+# Main installation
+install_custom_packages() {
+    log_info "Installing custom packages"
+    
+    cd /sources
+    
+    # Your custom applications
+    for pkg in custom-app-*.tar.gz; do
+        tar -xzf "$pkg"
+        cd "${pkg%.tar.gz}"
+        ./configure --prefix=/usr
+        make -j$(nproc)
+        make install
+        cd ..
+    done
+}
+
+# Post-installation configuration
+configure_custom() {
+    log_info "Configuring custom environment"
+    
+    # Custom systemd service
+    cat > /etc/systemd/system/custom.service << EOF
+[Unit]
+Description=Custom Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=$CUSTOM_HOME/bin/custom-daemon
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    systemctl enable custom
+}
+
+# Main execution
+main() {
+    pre_install
+    install_custom_packages
+    configure_custom
+    log_success "Custom profile installed"
+}
+
+main
+```
+
+### Profile Inheritance
+
+Create profiles that inherit from base profiles:
+
+```python
+# profiles/server/customization.sh inherits from minimal
+source ../minimal/customization.sh
+
+# Override specific functions
+install_extra_packages() {
+    log_info "Installing server packages"
+    # Extra server packages
+}
+```
+
+---
+
+## Cross-Compilation
+
+### Building for ARM (Raspberry Pi, ARM64)
+
+```bash
+# Set target architecture
+export LFS_TGT="aarch64-lfs-linux-gnu"
+export CFLAGS="-march=armv8-a+crc -mtune=cortex-a72"
+
+# Build with custom toolchain
+python3 builder.py --profile minimal \
+    --config config/build-cross.conf \
+    --output ./lfs-arm64
+```
+
+#### Cross-Compilation Configuration
+
+```json
+// config/build-cross.conf
+{
+  "architecture": "aarch64",
+  "target_triplet": "aarch64-lfs-linux-gnu",
+  "cross_compile": true,
+  "cross_prefix": "/usr/bin/aarch64-linux-gnu-",
+  "sysroot": "/sysroots/aarch64-lfs",
+  "qemu_user": "qemu-aarch64-static",
+  
+  "kernel": {
+    "version": "6.6.14",
+    "config": "config/kernel-config-arm64",
+    "dtbs": true
+  },
+  
+  "bootloader": {
+    "type": "uboot",
+    "config": "config/u-boot.config"
+  }
+}
+```
+
+### Multi-arch Build Matrix
+
+```bash
+#!/bin/bash
+# tools/build-matrix.sh
+
+ARCHITECTURES=("x86_64" "aarch64" "armv7l" "riscv64")
+PROFILES=("minimal" "xfce" "secure")
+
+for arch in "${ARCHITECTURES[@]}"; do
+    for profile in "${PROFILES[@]}"; do
+        echo "Building $profile for $arch"
+        
+        export LFS_TGT="${arch}-lfs-linux-gnu"
+        
+        python3 builder.py \
+            --profile "$profile" \
+            --output "./lfs-${arch}-${profile}" \
+            --config "config/build-${arch}.conf"
+    done
+done
+```
+
+---
+
+## Distributed Builds
+
+### Icecream Distributed Compilation
+
+```bash
+# Install icecream on all build nodes
+apt install icecc icecream-monitor
+
+# Master node
+export ICECC_CXX="g++"
+export ICECC_CC="gcc"
+export PATH="/usr/lib/icecream/bin:$PATH"
+
+# Add build slaves
+icecc-add-server build-node-1
+icecc-add-server build-node-2
+
+# Build with distribution
+export MAKEFLAGS="-j40"  # 10 cores × 4 nodes
+python3 builder.py --profile full
+```
+
+### DistCC Setup
+
+```bash
+# On build master
+cat > /etc/distcc/hosts << EOF
+localhost 4
+build-node-1 8
+build-node-2 8
+build-node-3 8
+EOF
+
+export DISTCC_HOSTS="localhost/4 build-node-1/8 build-node-2/8"
+
+# On build slaves
+distccd --daemon --allow 192.168.1.0/24
+```
+
+### Parallel Package Building
+
+```bash
+# Build multiple packages simultaneously
+cat > /usr/local/bin/parallel-build << 'EOF'
+#!/bin/bash
+
+PACKAGES=($(ls /sources/*.tar.gz | cut -d/ -f3))
+MAX_JOBS=8
+
+build_package() {
+    local pkg=$1
+    cd /sources
+    tar -xf "$pkg"
+    cd "${pkg%.tar.gz}"
+    ./configure --prefix=/usr
+    make -j2
+    make install
+}
+
+export -f build_package
+printf "%s\n" "${PACKAGES[@]}" | xargs -P $MAX_JOBS -I {} bash -c 'build_package "{}"'
+EOF
+```
+
+---
+
+## Custom Package Repository
+
+### Creating a Local Repository
+
+```bash
+#!/bin/bash
+# tools/create-repo.sh
+
+REPO_DIR="/var/www/html/lfs-repo"
+mkdir -p "$REPO_DIR"/{packages,metadata}
+
+# Create package database
+cat > "$REPO_DIR/metadata/repo.db" << EOF
+# LFS Package Repository
+repo_name="Custom LFS Repo"
+repo_version="1.0"
+repo_arch="x86_64"
+repo_url="http://repo.lfs.local"
+EOF
+
+# Index packages
+for pkg in "$REPO_DIR"/packages/*.lpm; do
+    pkg_name=$(basename "$pkg" .lpm)
+    pkg_version=$(tar -xf "$pkg" -O ./metadata/version)
+    pkg_size=$(stat -c%s "$pkg")
+    
+    echo "$pkg_name:$pkg_version:$pkg_size:$pkg_name.lpm" >> "$REPO_DIR/metadata/packages.db"
+done
+
+# Generate GPG signature
+gpg --detach-sign --armor "$REPO_DIR/metadata/repo.db"
+```
+
+### Repository Configuration
+
+```bash
+# /etc/lpm/repos.d/custom.repo
+REPO_NAME="custom"
+REPO_URL="http://repo.lfs.local"
+REPO_ENABLED="yes"
+REPO_PRIORITY="10"
+REPO_GPG_CHECK="yes"
+REPO_GPG_KEY="/etc/lpm/trusted.gpg.d/custom.asc"
+```
+
+### Package Build Server
+
+```bash
+#!/bin/bash
+# tools/build-server.sh
+
+# Webhook listener for automated builds
+while true; do
+    # Listen for GitHub webhook
+    nc -l 8080 | while read line; do
+        if echo "$line" | grep -q "push"; then
+            # Trigger build
+            cd /srv/lfs-builder
+            git pull
+            python3 builder.py --profile secure --output /srv/builds/latest
+            # Upload to repository
+            scp /srv/builds/latest/lfs-installer.iso repo.lfs.local:/var/www/html/
+        fi
+    done
+done
+```
+
+---
+
+## Kernel Optimization
+
+### Custom Kernel Configuration
+
+```bash
+# Generate optimal config for your hardware
+cd /sources/linux-*
+make localmodconfig  # Uses only loaded modules
+make localyesconfig  # Embeds modules into kernel
+make tinyconfig      # Minimal kernel (embedded)
+
+# Custom kernel patch
+cat > kernel.patch << 'EOF'
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1234,6 +1234,9 @@
+     /* Custom scheduling optimization */
+     if (unlikely(current->policy == SCHED_IDLE))
+         yield();
++    
++    /* LFS custom patch: improve desktop responsiveness */
++    if (current->mm && current->mm->mmap_count > 100)
++        set_user_nice(current, -5);
+ EOF
+
+patch -p1 < kernel.patch
+```
+
+### Kernel Build Optimization
+
+```bash
+# Use all cores with compiler optimizations
+export MAKEFLAGS="-j$(nproc) -O2 -pipe -march=native"
+
+# Build only needed modules
+make localmodconfig
+make -j$(nproc) bzImage modules
+make modules_install
+
+# Reduce kernel size
+make INSTALL_MOD_STRIP=1 modules_install
+make STRIP=/usr/bin/strip INSTALL_HDR_STRIP=1 headers_install
+```
+
+### Real-time Kernel
+
+```bash
+# Patch for real-time
+wget https://www.kernel.org/pub/linux/kernel/projects/rt/6.6/patch-6.6.14-rt19.patch.xz
+xzcat patch-6.6.14-rt19.patch.xz | patch -p1
+
+# Configure PREEMPT_RT
+make olddefconfig
+scripts/config --enable CONFIG_PREEMPT_RT
+scripts/config --disable CONFIG_DEBUG_PREEMPT
+```
+
+---
+
+## Init System Deep Dive
+
+### Custom systemd Unit
+
+```bash
+cat > /etc/systemd/system/myapp@.service << 'EOF'
+[Unit]
+Description=My Application Instance %I
+After=network.target
+
+[Service]
+Type=simple
+User=myuser
+WorkingDirectory=/opt/myapp
+EnvironmentFile=-/etc/default/myapp@%i
+ExecStart=/opt/myapp/bin/start --instance=%i
+ExecStop=/opt/myapp/bin/stop --instance=%i
+Restart=on-failure
+RestartSec=5
+CPUQuota=50%
+MemoryMax=1G
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Usage
+systemctl enable myapp@1 myapp@2
+```
+
+### SysV Init Custom Script
+
+```bash
+cat > /etc/rc.d/init.d/custom-daemon << 'EOF'
+#!/bin/bash
+# chkconfig: 345 85 15
+# description: Custom daemon control
+
+DAEMON=/usr/local/sbin/custom-daemon
+PIDFILE=/var/run/custom-daemon.pid
+
+case "$1" in
+    start)
+        echo -n "Starting custom daemon: "
+        start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON
+        echo "OK"
+        ;;
+    stop)
+        echo -n "Stopping custom daemon: "
+        start-stop-daemon --stop --quiet --pidfile $PIDFILE
+        rm -f $PIDFILE
+        echo "OK"
+        ;;
+    restart)
+        $0 stop
+        sleep 1
+        $0 start
+        ;;
+    status)
+        status_of_proc -p $PIDFILE $DAEMON custom-daemon
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
+EOF
+
+chmod +x /etc/rc.d/init.d/custom-daemon
+update-rc.d custom-daemon defaults
+```
+
+### OpenRC Custom Service
+
+```bash
+cat > /etc/init.d/custom << 'EOF'
+#!/sbin/openrc-run
+
+description="Custom Service"
+pidfile="/run/${RC_SVCNAME}.pid"
+command="/usr/sbin/custom-daemon"
+command_args="--daemon"
+
+depend() {
+    need net
+    after firewall
+    use logger
+}
+
+start_pre() {
+    ebegin "Preparing custom environment"
+    mkdir -p /var/log/custom
+    chown custom:custom /var/log/custom
+    eend $?
+}
+
+stop_post() {
+    ebegin "Cleaning up"
+    rm -f /var/run/custom.pid
+    eend $?
+}
+EOF
+
+chmod +x /etc/init.d/custom
+rc-update add custom default
+```
+
+---
+
+## Security Hardening Levels
+
+### Level 0: Development (No hardening)
+
+```json
+"security": {
+    "kernel_hardening": false,
+    "firewall": {"enabled": false},
+    "fail2ban": {"enabled": false},
+    "audit": {"enabled": false},
+    "user_hardening": {"enable": false}
+}
+```
+
+### Level 1: Basic (Workstation)
+
+```json
+"security": {
+    "kernel_hardening": true,
+    "firewall": {"enabled": true, "allow_ssh": true},
+    "fail2ban": {"enabled": true, "ban_time": 3600},
+    "user_hardening": {"password_min_length": 8, "disable_root_login": true}
+}
+```
+
+### Level 2: Enhanced (Server)
+
+```json
+"security": {
+    "kernel_hardening": true,
+    "firewall": {"enabled": true, "allow_ssh": true, "rate_limit": true},
+    "fail2ban": {"enabled": true, "ban_time": 86400},
+    "audit": {"enabled": true, "monitor_files": ["/etc", "/var/www"]},
+    "apparmor": {"enabled": true},
+    "user_hardening": {"password_min_length": 12, "login_delay": 4}
+}
+```
+
+### Level 3: Hardened (Production)
+
+```json
+"security": {
+    "kernel_hardening": true,
+    "firewall": {"enabled": true, "default_drop": true},
+    "fail2ban": {"enabled": true, "permanent_bans": true},
+    "audit": {"enabled": true, "monitor_all": true},
+    "apparmor": {"enabled": true, "enforce_all": true},
+    "hids": {"enabled": true, "daily_scan": true},
+    "encryption": {"encrypted_swap": true, "full_disk": true},
+    "selinux": {"enabled": true, "strict": true}
+}
+```
+
+### Level 4: Military Grade
+
+```json
+"security": {
+    "kernel_hardening": true,
+    "firewall": {"enabled": true, "whitelist_only": true},
+    "fail2ban": {"enabled": true, "global_bans": true},
+    "audit": {"enabled": true, "comprehensive": true},
+    "selinux": {"enabled": true, "mls": true},
+    "encryption": {"full_disk": true, "tpm": true, "secure_boot": true},
+    "network": {"tor": true, "vpns": true, "dns_encryption": true},
+    "hardware": {"tpm": true, "smartcard": true, "secure_enclave": true}
+}
+```
+
+---
+
+## Performance Tuning
+
+### Build System Optimization
+
+```bash
+# Use tmpfs for build directory (RAM disk)
+sudo mount -t tmpfs -o size=32G tmpfs /mnt/lfs-build
+
+# Use ccache for repeated builds
+apt install ccache
+export PATH="/usr/lib/ccache:$PATH"
+export CCACHE_DIR="/mnt/lfs-build/.ccache"
+export CCACHE_SIZE="20G"
+
+# Use parallel compression
+export XZ_OPT="-T0 -9"
+export GZIP="-9"
+
+# Profile-guided optimization (PGO)
+cat > /sources/gcc-pgo.sh << 'EOF'
+# Build GCC with PGO
+mkdir -p gcc-build-pgo
+cd gcc-build-pgo
+../configure --with-profile-feedback
+make profiledbootstrap
+EOF
+```
+
+### Runtime Performance
+
+```bash
+# System-wide performance tuning
+cat > /etc/sysctl.d/99-performance.conf << 'EOF'
+# CPU
+kernel.sched_autogroup_enabled = 1
+kernel.sched_child_runs_first = 1
+
+# Memory
+vm.swappiness = 10
+vm.vfs_cache_pressure = 50
+vm.dirty_ratio = 30
+vm.dirty_background_ratio = 5
+
+# I/O
+block/bfq/quantum = 8
+block/bfq/low_latency = 1
+
+# Network
+net.core.rmem_max = 134217728
+net.core.wmem_max = 134217728
+net.ipv4.tcp_rmem = 4096 87380 134217728
+net.ipv4.tcp_wmem = 4096 65536 134217728
+EOF
+
+# CPU governor for performance
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
+# I/O scheduler for SSDs
+echo noop > /sys/block/sda/queue/scheduler
+echo 2048 > /sys/block/sda/queue/read_ahead_kb
+```
+
+### Desktop Performance
+
+```bash
+# Xorg tuning
+cat > /etc/X11/xorg.conf.d/50-performance.conf << 'EOF'
+Section "Device"
+    Identifier "Intel"
+    Driver "intel"
+    Option "TearFree" "false"
+    Option "AccelMethod" "sna"
+    Option "SwapbuffersWait" "false"
+EndSection
+
+Section "Extensions"
+    Option "Composite" "Enable"
+EndSection
+EOF
+
+# XFCE performance
+xfconf-query -c xfwm4 -p /general/vblank_mode -s "off"
+xfconf-query -c xfwm4 -p /general/sync_to_vblank -s "false"
+```
+
+---
+
+## Container Integration
+
+### Docker Build Environment
+
+```dockerfile
+# Dockerfile.builder
+FROM ubuntu:22.04
+
+RUN apt update && apt install -y \
+    build-essential bison flex gawk texinfo \
+    wget curl git python3 python3-pip \
+    xorriso isolinux mtools dosfstools \
+    parted rsync bc cpio kmod \
+    libssl-dev libelf-dev
+
+VOLUME /lfs-build
+WORKDIR /lfs-builder
+
+ENTRYPOINT ["python3", "builder.py"]
+```
+
+```bash
+# Build with Docker
+docker build -t lfs-builder -f Dockerfile.builder .
+docker run --privileged \
+    -v "$(pwd)/output:/lfs-build" \
+    -v "$(pwd):/lfs-builder" \
+    lfs-builder --profile secure --output /lfs-build
+```
+
+### Podman Integration
+
+```bash
+# Rootless build with Podman
+podman run --privileged \
+    --device=/dev/loop-control \
+    -v ./output:/lfs-build:Z \
+    localhost/lfs-builder:latest
+
+# Quadlet service
+cat > ~/.config/containers/systemd/lfs-builder.container << 'EOF'
+[Unit]
+Description=LFS Builder Service
+
+[Container]
+Image=localhost/lfs-builder:latest
+Volume=/var/lib/lfs-build:/lfs-build:Z
+AddCapability=ALL
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+EOF
+```
+
+### Kubernetes Job
+
+```yaml
+# lfs-build-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: lfs-builder
+spec:
+  template:
+    spec:
+      containers:
+      - name: builder
+        image: lfs-builder:latest
+        args: ["--profile", "secure", "--output", "/lfs-build"]
+        volumeMounts:
+        - name: build-volume
+          mountPath: /lfs-build
+        securityContext:
+          privileged: true
+      volumes:
+      - name: build-volume
+        persistentVolumeClaim:
+          claimName: lfs-build-pvc
+      restartPolicy: Never
+```
+
+---
+
+## CI/CD Pipeline
+
+### GitHub Actions
+
+```yaml
+# .github/workflows/build.yml
+name: LFS Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        profile: [minimal, xfce, secure]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential bison flex gawk texinfo \
+          wget curl python3 xorriso isolinux parted rsync
+    
+    - name: Build LFS
+      run: |
+        python3 builder.py --profile ${{ matrix.profile }} --output ./build
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: lfs-${{ matrix.profile }}
+        path: ./build/lfs-installer.iso
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scan for vulnerabilities
+      run: |
+        trivy fs --severity HIGH,CRITICAL .
+```
+
+### GitLab CI
+
+```yaml
+# .gitlab-ci.yml
+stages:
+  - build
+  - test
+  - release
+
+variables:
+  LFS_CACHE_DIR: "${CI_PROJECT_DIR}/cache"
+
+build:secure:
+  stage: build
+  tags:
+    - lfs-builder
+  script:
+    - python3 builder.py --profile secure
+  artifacts:
+    paths:
+      - lfs-build/lfs-installer.iso
+    expire_in: 1 week
+  cache:
+    key: lfs-sources
+    paths:
+      - lfs-build/sources/
+
+test:boot:
+  stage: test
+  script:
+    - qemu-system-x86_64 -cdrom lfs-build/lfs-installer.iso -m 2048 -nographic -no-reboot
+```
+
+### Jenkins Pipeline
+
+```groovy
+// Jenkinsfile
+pipeline {
+    agent { label 'lfs-builder' }
+    
+    parameters {
+        choice(name: 'PROFILE', choices: ['minimal', 'xfce', 'secure', 'full'])
+    }
+    
+    stages {
+        stage('Build') {
+            steps {
+                sh "python3 builder.py --profile ${params.PROFILE}"
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                sh """
+                    qemu-system-x86_64 \
+                        -cdrom lfs-build/lfs-installer.iso \
+                        -m 2048 \
+                        -nographic \
+                        -no-reboot
+                """
+            }
+        }
+        
+        stage('Release') {
+            when { branch 'main' }
+            steps {
+                sh """
+                    scp lfs-build/lfs-installer.iso \
+                        releases.lfs.org:/var/www/html/lfs-${params.PROFILE}-latest.iso
+                """
+            }
+        }
+    }
+}
+```
+
+---
+
+## Embedded Systems
+
+### Raspberry Pi Build
+
+```bash
+# Cross-compile for Raspberry Pi 4
+export LFS_TGT="aarch64-lfs-linux-gnu"
+export CFLAGS="-march=armv8-a+crc -mtune=cortex-a72 -mfpu=neon-fp-armv8"
+
+# Enable Pi-specific features
+cat >> config/kernel-config-arm64 << 'EOF'
+CONFIG_ARCH_BCM2835=y
+CONFIG_BCM2835_WDT=y
+CONFIG_RASPBERRYPI_FIRMWARE=y
+CONFIG_VIDEO_BCM2835=y
+CONFIG_SND_BCM2835=y
+EOF
+
+# Create bootable SD image
+make -C scripts/final/ sd-image TARGET=/dev/mmcblk0
+```
+
+### Buildroot Integration
+
+```bash
+# Generate Buildroot configuration from LFS
+python3 tools/export-to-buildroot.py > configs/lfs_defconfig
+
+# Build with Buildroot
+make lfs_defconfig
+make -j$(nproc)
+
+# Flash to device
+dd if=output/images/sdcard.img of=/dev/sdb bs=1M
+```
+
+### Yocto Recipe
+
+```bitbake
+# meta-lfs/recipes-lfs/images/lfs-image.bb
+SUMMARY = "LFS Linux Image"
+LICENSE = "GPL-3.0-only"
+
+IMAGE_FSTYPES = "tar.xz ext4.gz"
+
+PACKAGE_INSTALL = " \
+    packagegroup-core-boot \
+    kernel-modules \
+    openssh \
+    lpm \
+"
+
+IMAGE_ROOTFS_SIZE = "8192"
+
+do_image_ext4[depends] += " \
+    lfs-builder-native:do_populate_sysroot \
+"
+
+IMAGE_CMD_ext4() {
+    python3 ${STAGING_BINDIR_NATIVE}/builder.py \
+        --profile embedded \
+        --output ${IMGDEPLOYDIR}
+}
+```
+
+---
+
+## Recovery and Debugging
+
+### Build Failure Analysis
+
+```bash
+#!/bin/bash
+# tools/analyze-failure.sh
+
+FAILED_STAGE="$1"
+LOG_FILE="lfs-build/logs/${FAILED_STAGE}.log"
+
+analyze_stage() {
+    case "$FAILED_STAGE" in
+        toolchain)
+            grep -E "(error|undefined reference|missing)" "$LOG_FILE"
+            ;;
+        lfs-system)
+            grep -E "(configure: error|make:.*\*\*\*)" "$LOG_FILE"
+            ;;
+        desktop)
+            grep -E "(X11|display|DISPLAY|meson|ninja)" "$LOG_FILE"
+            ;;
+        security)
+            grep -E "(SELinux|AppArmor|pam|crypto)" "$LOG_FILE"
+            ;;
+    esac
+}
+
+suggest_fix() {
+    if grep -q "missing.*header" "$LOG_FILE"; then
+        echo "Suggestion: Install development headers"
+    elif grep -q "cannot find -l" "$LOG_FILE"; then
+        echo "Suggestion: Install missing library"
+    elif grep -q "Permission denied" "$LOG_FILE"; then
+        echo "Suggestion: Check file permissions or run with sudo"
+    fi
+}
+
+analyze_stage
+suggest_fix
+```
+
+### Chroot Debugging
+
+```bash
+# Enter failed chroot environment
+sudo chroot lfs-build/image /bin/bash
+
+# Check system state
+ps aux
+df -h
+mount
+journalctl -xe
+
+# Re-run failed command manually
+cd /sources/package-name
+./configure --prefix=/usr
+make
+make install
+
+# Fix and continue
+exit
+python3 builder.py --resume-from failed-stage
+```
+
+### Rescue System
+
+```bash
+#!/bin/bash
+# Create rescue ISO with debugging tools
+cat > scripts/final/15-create-rescue.sh << 'EOF'
+#!/bin/bash
+
+# Add rescue tools to ISO
+RESCUE_PACKAGES=(
+    "gdb strace ltrace"
+    "hexdump xxd binwalk"
+    "testdisk foremost scalpel"
+    "rsync unison"
+    "htop iotop iftop"
+    "wireshark-cli tcpdump"
+)
+
+# Include recovery scripts
+cat > $LFS/usr/local/sbin/rescue-check << 'EOF'
+#!/bin/bash
+echo "=== LFS Rescue Check ==="
+echo -n "Kernel: "; uname -r
+echo -n "Init: "; pidof systemd && echo "systemd" || echo "sysv"
+echo "Last boot errors:"
+journalctl -b -p 3 2>/dev/null || dmesg | grep -i error
+echo "Disk health:"
+smartctl -H /dev/sda
+echo "Filesystem check:"
+fsck -N $(mount | grep ' / ' | cut -d' ' -f1)
+EOF
+
+chmod +x $LFS/usr/local/sbin/rescue-check
+EOF
+```
+
+### Performance Profiling
+
+```bash
+# Profile build process
+time python3 builder.py --profile full
+
+# Profile individual stages
+perf stat -e cycles,instructions,cache-misses \
+    python3 builder.py --resume-from desktop
+
+# Memory profiling
+valgrind --tool=massif --massif-out-file=build.out \
+    python3 builder.py --profile secure
+
+# Analyze with ms_print
+ms_print build.out | less
+```
+
+---
+
+## Advanced Configuration Examples
+
+### Custom Build Hooks
+
+```bash
+# pre-build.sh
+#!/bin/bash
+# Runs before build starts
+echo "Custom pre-build hook"
+export CUSTOM_FLAGS="-O3 -march=native"
+
+# post-build.sh
+#!/bin/bash
+# Runs after successful build
+scp lfs-build/lfs-installer.iso backup.lfs.org:/backups/
+notify-send "LFS Build Complete" "ISO ready in lfs-build/"
+```
+
+### Build Variants
+
+```python
+# config/variants.py
+BUILD_VARIANTS = {
+    'debug': {
+        'CFLAGS': '-O0 -g -ggdb',
+        'enable_debug': True,
+        'strip_binaries': False
+    },
+    'release': {
+        'CFLAGS': '-O3 -DNDEBUG',
+        'enable_debug': False,
+        'strip_binaries': True
+    },
+    'profile': {
+        'CFLAGS': '-O2 -pg -g',
+        'enable_debug': True,
+        'profile_guided': True
+    }
+}
+
+def get_variant_config(variant):
+    return BUILD_VARIANTS.get(variant, BUILD_VARIANTS['release'])
+```
+
+### Automated Benchmarking
+
+```bash
+#!/bin/bash
+# tools/benchmark.sh
+
+PROFILES=("minimal" "xfce" "secure" "full")
+ITERATIONS=3
+
+for profile in "${PROFILES[@]}"; do
+    for i in $(seq 1 $ITERATIONS); do
+        echo "Benchmark: $profile (run $i)"
+        
+        # Clean build
+        python3 builder.py --clean --output "./bench-$profile-$i"
+        
+        # Time the build
+        /usr/bin/time -f "%e real,%U user,%S sys" \
+            python3 builder.py \
+            --profile "$profile" \
+            --output "./bench-$profile-$i" \
+            2>> "benchmark-$profile.log"
+        
+        # Measure ISO size
+        ls -lh "./bench-$profile-$i/lfs-installer.iso" \
+            >> "benchmark-$profile.log"
+    done
+done
+
+# Generate report
+python3 tools/analyze-benchmarks.py benchmark-*.log > report.html
+```
+
+---
+
+## Troubleshooting Advanced Issues
+
+| Issue | Solution |
+|-------|----------|
+| `No space left on device` | Use `--clean` or mount tmpfs |
+| `Failed to download sources` | Check network, use mirror |
+| `Chroot: failed to run command` | Verify `$LFS` is set correctly |
+| `Kernel panic` | Rebuild initramfs, check modules |
+| `GRUB installation failed` | Manual install: `grub-install --target=i386-pc /dev/sda` |
+| `X11 fails to start` | Check `/var/log/Xorg.0.log`, reconfigure |
+| `systemd boot loop` | Boot with `systemd.unit=rescue.target` |
+| `Package conflicts` | Use `lpm remove` before install |
+
+---
+
+## Further Resources
+
+- [LFS Hint: Advanced Builds](https://www.linuxfromscratch.org/hints/)
+- [Gentoo Wiki: Init Systems](https://wiki.gentoo.org/wiki/Init_system)
+- [Arch Linux: Optimizing Performance](https://wiki.archlinux.org/title/performance)
+- [Debian: Securing Debian Manual](https://www.debian.org/doc/manuals/securing-debian-howto/)
+- [Kernel Newbies: Kernel Configuration](https://kernelnewbies.org/KernelBuild)
+
+---
+
+This document is continuously updated. For questions, open an issue on GitHub.
+```
+
 ### **tools/multi-platform/docker-build.sh** (Cross-platform Docker Builder)
 
 ```bash
