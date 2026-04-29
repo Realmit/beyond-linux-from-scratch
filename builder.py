@@ -740,6 +740,57 @@ def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
         logger.info("Clean cancelled")
         return False
 
+# Ajouter dans la classe LFSBuilder, méthode __init__
+
+def get_init_system(self) -> str:
+    """Get init system choice from config"""
+    init_choices = ['systemd', 'sysv', 'openrc', 'runit', 's6']
+    init = self.config.get('init_system', 'systemd')
+
+    if init not in init_choices:
+        self.logger.warning(f"Unknown init system: {init}, using systemd")
+        init = 'systemd'
+
+    return init
+
+# Modifier les stages dans get_build_stages()
+def get_build_stages(self) -> List[Tuple[str, Path]]:
+    """Get ordered list of build stages"""
+    init_system = self.get_init_system()
+
+    stages = [
+        ('host-check', Path('scripts/host/01-check-host.sh')),
+        ('host-prepare', Path('scripts/host/02-prepare-host.sh')),
+        ('disk-image', Path('scripts/host/03-create-disk-image.sh')),
+        ('toolchain', Path('scripts/host/04-build-toolchain.sh')),
+        ('lfs-basic', Path('scripts/lfs/05-build-lfs-basic.sh')),
+        ('lfs-system', Path('scripts/lfs/06-build-lfs-system.sh')),
+        # Insert init system setup BEFORE configure-lfs
+        ('init-system', Path('scripts/lfs/06a-init-system.sh')),
+        ('service-abstraction', Path('scripts/lfs/06b-service-management.sh')),
+        ('configure-lfs', Path('scripts/lfs/07-configure-lfs.sh')),
+        # ... suite des stages
+    ]
+
+    return stages
+
+# Modifier _get_env() pour inclure le choix de l'init
+def _get_env(self) -> Dict:
+    """Get environment variables for scripts"""
+    return {
+        'LFS': str(self.output_dir / 'image'),
+        'LFS_TGT': self.config.get('target_triplet'),
+        'MAKEFLAGS': f"-j{self.config.get('build_threads', os.cpu_count())}",
+        'PROFILE': self.profile,
+        'INIT_SYSTEM': self.get_init_system(),  # Ajouté
+        'SERVICE_STYLE': self.config.get('service_style', 'classic'),
+        'PARALLEL_STARTUP': str(self.config.get('parallel_startup', True)).lower(),
+        'AUTO_RESTART': str(self.config.get('auto_restart', True)).lower(),
+        'JAVA_DEV': str(self.profile_config['java_dev']).lower(),
+        'LPM_ENABLED': str(self.profile_config['package_manager']).lower(),
+        'LC_ALL': 'POSIX'
+    }
+
 
 def main():
     """Main entry point"""

@@ -61,3 +61,18 @@ python3 builder.py --verbose
 
 # Build complet avec Java et package manager
 python3 builder.py --profile full --output ./lfs-full
+
+
+# Choisir la configuration
+./tools/config-selector.sh
+
+# Ou directement:
+cp config/build.conf.java config/build.conf
+python3 builder.py --profile java-dev
+
+# Pour minimal (SysV init, sans desktop)
+cp config/build.conf.minimal config/build.conf
+python3 builder.py --profile minimal
+
+# Éditer manuellement
+vim config/build.conf
