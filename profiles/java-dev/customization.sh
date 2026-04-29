@@ -1,9 +1,10 @@
 #!/bin/bash
-# Profile Java Development pour LFS
+# Java Development Profile for LFS
 
 set -e
 
 log_info() { echo -e "\033[0;32m[INFO]\033[0m $1"; }
+log_error() { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
 log_success() { echo -e "\033[0;34m[SUCCESS]\033[0m $1"; }
 
 # Variables
@@ -15,17 +16,17 @@ NODE_HOME="/opt/node"
 
 # Installation
 install_java_dev() {
-    log_info "Installation du profile Java Development"
+    log_info "Installing Java Development profile"
 
-    # Exécuter le script d'installation
+    # Run installation script
     if [ -f "/sources/12-install-java-dev.sh" ]; then
         bash /sources/12-install-java-dev.sh
     else
-        log_error "Script d'installation Java non trouvé"
+        log_error "Java installation script not found"
         exit 1
     fi
 
-    # Configuration des alias pour l'utilisateur lfsuser
+    # Configure aliases for lfsuser
     cat >> /home/lfsuser/.bashrc << 'EOF'
 
 # Java Dev Aliases
@@ -43,16 +44,16 @@ alias tomcat-status='systemctl status tomcat'
 alias proj='cd ~/projects'
 EOF
 
-    # Création du répertoire projets
+    # Create projects directory
     mkdir -p /home/lfsuser/projects
     chown -R lfsuser:lfsuser /home/lfsuser/projects
 
-    log_success "Profile Java Development installé"
+    log_success "Java Development profile installed"
 }
 
-# Création d'exemples de projets
+# Create demo projects
 create_demo_projects() {
-    log_info "Création de projets de démonstration..."
+    log_info "Creating demo projects..."
 
     # Spring Boot demo
     cat > /home/lfsuser/projects/DemoApplication.java << 'EOF'
@@ -106,14 +107,14 @@ EOF
 
     chown -R lfsuser:lfsuser /home/lfsuser/projects
 
-    log_success "Projets de démonstration créés"
+    log_success "Demo projects created"
 }
 
 # Main
 main() {
     install_java_dev
     create_demo_projects
-    log_success "Profile Java Development prêt à l'emploi"
+    log_success "Java Development profile ready to use"
 }
 
 main

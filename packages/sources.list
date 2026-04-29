@@ -24,7 +24,7 @@ https://download.gimp.org/pub/gimp/v2.10/gimp-2.10.36.tar.bz2
 https://github.com/obsproject/obs-studio/archive/30.0.2.tar.gz
 
 # Java Development Tools
-https://download.java.net/java/GA/jdk21.0.2/6c0d5c0c4b1f4f9c8e9c8d7e6f5e4d3c/21/GPL/openjdk-21.0.2_linux-x64_bin.tar.gz
+https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.6%2B7/OpenJDK21U-jdk_x64_linux_hotspot_21.0.6_7.tar.gz
 https://dlcdn.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
 https://services.gradle.org/distributions/gradle-8.5-bin.zip
 https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.16/bin/apache-tomcat-10.1.16.tar.gz

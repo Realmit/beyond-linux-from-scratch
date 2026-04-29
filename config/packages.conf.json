@@ -1,0 +1,87 @@
+{
+  "version": "1.0",
+  "categories": {
+    "lfs_core": {
+      "required": true,
+      "description": "LFS core packages",
+      "packages": [
+        {"name": "linux", "version": "6.6.14", "url": "https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.6.14.tar.xz"},
+        {"name": "gcc", "version": "13.2.0", "url": "https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"},
+        {"name": "binutils", "version": "2.41", "url": "https://ftp.gnu.org/gnu/binutils/binutils-2.41.tar.xz"},
+        {"name": "glibc", "version": "2.38", "url": "https://ftp.gnu.org/gnu/glibc/glibc-2.38.tar.xz"},
+        {"name": "make", "version": "4.4.1", "url": "https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz"},
+        {"name": "bash", "version": "5.2.21", "url": "https://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz"},
+        {"name": "python", "version": "3.12.1", "url": "https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tar.xz"},
+        {"name": "systemd", "version": "255", "url": "https://github.com/systemd/systemd/archive/v255/systemd-255.tar.gz"},
+        {"name": "grub", "version": "2.12", "url": "https://ftp.gnu.org/gnu/grub/grub-2.12.tar.xz"}
+      ]
+    },
+    "blfs_core": {
+      "required": true,
+      "description": "BLFS core packages for desktop",
+      "packages": [
+        {"name": "xorg-server", "version": "21.1.10", "group": "x11"},
+        {"name": "mesa", "version": "23.3.5", "group": "graphics"},
+        {"name": "gtk", "version": "3.24.39", "group": "toolkit"},
+        {"name": "glib", "version": "2.78.3", "group": "core"},
+        {"name": "dbus", "version": "1.14.10", "group": "system"}
+      ]
+    },
+    "desktop": {
+      "xfce": {
+        "enabled": true,
+        "packages": [
+          "libxfce4util", "xfconf", "libxfce4ui", "exo", "garcon",
+          "xfce4-panel", "thunar", "xfwm4", "xfce4-session",
+          "xfce4-settings", "xfdesktop", "xfce4-appfinder"
+        ]
+      },
+      "gnome": {
+        "enabled": false,
+        "packages": [
+          "gdm", "gnome-shell", "mutter", "nautilus",
+          "gnome-control-center", "gnome-terminal", "gnome-settings-daemon"
+        ]
+      },
+      "kde": {
+        "enabled": false,
+        "packages": [
+          "plasma-desktop", "kwin", "dolphin", "konsole",
+          "systemsettings", "discover"
+        ]
+      }
+    },
+    "display_managers": {
+      "lightdm": {
+        "enabled": true,
+        "greeter": "lightdm-gtk-greeter",
+        "config": "/etc/lightdm/lightdm.conf"
+      },
+      "gdm": {"enabled": false},
+      "sddm": {"enabled": false}
+    },
+    "applications": {
+      "web": ["firefox", "chromium"],
+      "office": ["libreoffice"],
+      "multimedia": ["vlc", "gimp"],
+      "development": ["git", "curl", "vim", "htop"]
+    },
+    "java_dev": {
+      "enabled": true,
+      "packages": ["openjdk", "maven", "gradle", "tomcat", "jenkins"]
+    }
+  },
+  "build_order": [
+    "lfs_core",
+    "blfs_core",
+    "display_managers",
+    "desktop",
+    "applications",
+    "java_dev"
+  ],
+  "mirrors": {
+    "primary": "https://ftp.gnu.org/gnu",
+    "secondary": "https://mirror.rackspace.com/gnu",
+    "fallback": "https://ftp.fau.de/gnu"
+  }
+}
