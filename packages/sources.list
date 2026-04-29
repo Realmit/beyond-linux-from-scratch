@@ -22,3 +22,15 @@ https://download.documentfoundation.org/libreoffice/stable/7.6.4/src/libreoffice
 https://get.videolan.org/vlc/3.0.20/vlc-3.0.20.tar.xz
 https://download.gimp.org/pub/gimp/v2.10/gimp-2.10.36.tar.bz2
 https://github.com/obsproject/obs-studio/archive/30.0.2.tar.gz
+
+# Java Development Tools
+https://download.java.net/java/GA/jdk21.0.2/6c0d5c0c4b1f4f9c8e9c8d7e6f5e4d3c/21/GPL/openjdk-21.0.2_linux-x64_bin.tar.gz
+https://dlcdn.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
+https://services.gradle.org/distributions/gradle-8.5-bin.zip
+https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.16/bin/apache-tomcat-10.1.16.tar.gz
+https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.xz
+https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz
+https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl
+https://get.jenkins.io/war/2.440/jenkins.war
+https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-5.6.3.tgz
+https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
