@@ -40,3 +40,24 @@ python3 builder.py --profile xfce
 
 # Write to USB (when build completes)
 python3 builder.py --write-usb /dev/sdX
+
+# Voir tous les profils
+python3 builder.py --list-profiles
+
+# Info sur un profil
+python3 builder.py --profile-info java-dev
+
+# Build avec profil Java Dev
+python3 builder.py --profile java-dev --output ./lfs-java
+
+# Reprendre après erreur
+python3 builder.py --resume-from desktop
+
+# Nettoyer le build
+python3 builder.py --clean
+
+# Build avec verbosité
+python3 builder.py --verbose
+
+# Build complet avec Java et package manager
+python3 builder.py --profile full --output ./lfs-full
