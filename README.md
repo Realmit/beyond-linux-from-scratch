@@ -1,6 +1,3 @@
-## FICHIER: `README.md` (Version complète mise à jour)
-
-```markdown
 # LFS/BLFS Builder - Custom Linux Distribution Builder
 
 [![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)](https://github.com/lfs-builder/lfs-builder)
