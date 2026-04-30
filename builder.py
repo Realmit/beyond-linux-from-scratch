@@ -2,7 +2,7 @@
 """
 LFS/BLFS Builder - Main orchestrator
 Works on Linux, macOS, and Windows (WSL2)
-Version: 4.1.0 - Added U-Boot Support, Cross-Compilation, ARM64
+Version: 4.2.0 - Added U-Boot Support, Cross-Compilation, ARM64
 """
 
 import os
@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 # ============================================================================
 # VERSION INFO
 # ============================================================================
-__version__ = "4.1.0"
+__version__ = "4.2.0"
 __build_date__ = "2026-04-30"
 
 # ============================================================================
