@@ -1,0 +1,308 @@
+# ============================================================================
+# LFS Minimal Profile Package List
+# Command-line only minimal system for servers and embedded devices
+# Total size: ~1GB
+# ============================================================================
+
+# ============================================================================
+# BASE SYSTEM (Required - DO NOT REMOVE)
+# ============================================================================
+# Core system packages
+linux-headers
+glibc
+gcc
+binutils
+make
+bash
+coreutils
+util-linux
+systemd
+sysvinit
+procps
+psmisc
+findutils
+grep
+sed
+gawk
+diffutils
+patch
+tar
+gzip
+xz-utils
+bzip2
+zlib
+file
+which
+less
+man-db
+man-pages
+kbd
+e2fsprogs
+
+# ============================================================================
+# BOOTLOADER (Minimal)
+# ============================================================================
+grub
+efibootmgr (for UEFI systems)
+
+# ============================================================================
+# KERNEL AND MODULES (Minimal)
+# ============================================================================
+linux
+kernel-modules
+linux-firmware (minimal)
+dkms
+
+# ============================================================================
+# FILESYSTEM SUPPORT (Essential)
+# ============================================================================
+ext4
+xfsprogs
+btrfs-progs
+f2fs-tools
+dosfstools
+e2fsprogs
+ntfs-3g
+exfat-utils
+fuse3
+
+# ============================================================================
+# NETWORKING (Minimal)
+# ============================================================================
+iproute2
+iputils (ping, traceroute)
+dhcpcd
+wpa_supplicant
+wireless-tools
+openssh-server
+openssh-client
+curl
+wget
+rsync
+openssl
+ca-certificates
+
+# ============================================================================
+# SHELL AND UTILITIES
+# ============================================================================
+bash
+bash-completion
+zsh (optional alternative)
+tmux
+screen
+vim
+nano
+less
+tree
+htop
+iotop
+iftop
+ncdu
+lsof
+strace
+ltrace
+
+# ============================================================================
+# SYSTEM ADMINISTRATION
+# ============================================================================
+sudo
+polkit
+dbus
+logrotate
+cronie (or cronie)
+rsyslog (or syslog-ng)
+systemd-journald
+auditd
+acpid
+systemd-udev
+systemd-resolved
+systemd-networkd
+
+# ============================================================================
+# SECURITY (Minimal)
+# ============================================================================
+fail2ban
+firewalld (minimal)
+iptables
+nftables
+openssh
+openssl
+ca-certificates
+shadow
+pam
+sudo
+
+# ============================================================================
+# DATABASES (Optional for minimal server)
+# ============================================================================
+sqlite
+
+# ============================================================================
+# WEB SERVERS (Optional)
+# ============================================================================
+nginx
+# apache2 (heavier, uncomment if needed)
+
+# ============================================================================
+# DEVELOPMENT TOOLS (Minimal for compilation)
+# ============================================================================
+gcc
+g++
+make
+cmake
+git
+automake
+autoconf
+libtool
+pkg-config
+m4
+bison
+flex
+patch
+perl
+python3
+python3-pip
+
+# ============================================================================
+# CONTAINER RUNTIMES (Optional)
+# ============================================================================
+docker
+docker-compose
+containerd
+runc
+podman
+cri-o
+
+# ============================================================================
+# MONITORING AND LOGGING
+# ============================================================================
+prometheus-node-exporter
+node_exporter
+netdata
+glances
+nmon
+htop
+iotop
+iftop
+sysstat
+
+# ============================================================================
+# COMPRESSION TOOLS
+# ============================================================================
+tar
+gzip
+bzip2
+xz-utils
+zip
+unzip
+p7zip
+
+# ============================================================================
+# TEXT PROCESSING
+# ============================================================================
+grep
+sed
+awk
+cut
+sort
+uniq
+wc
+tr
+col
+join
+paste
+split
+
+# ============================================================================
+# NETWORK DIAGNOSTIC TOOLS
+# ============================================================================
+tcpdump
+nmap
+netcat
+telnet
+ftp
+mtr
+traceroute
+dig
+host
+nslookup
+whois
+iperf3
+
+# ============================================================================
+# PACKAGE MANAGEMENT (LPM)
+# ============================================================================
+lpm
+lpm-repo
+lpm-build
+
+# ============================================================================
+# TIME SYNCHRONIZATION
+# ============================================================================
+chrony (or ntp)
+systemd-timesyncd
+
+# ============================================================================
+# LOGIN AND SESSION MANAGEMENT
+# ============================================================================
+agetty
+login
+mingetty
+pam
+systemd-logind
+
+# ============================================================================
+# HARDWARE TOOLS
+# ============================================================================
+lshw
+lscpu
+lsblk
+lspci
+lsusb
+dmidecode
+smartmontools
+hdparm
+sdparm
+nvme-cli
+
+# ============================================================================
+# VIRTUALIZATION (Guest tools)
+# ============================================================================
+qemu-guest-agent
+virtualbox-guest-utils (optional)
+open-vm-tools (for VMware)
+
+# ============================================================================
+# FIRMWARE (Minimal)
+# ============================================================================
+linux-firmware (minimal set)
+
+# ============================================================================
+# DEPENDENCIES (Automatically resolved)
+# ============================================================================
+# glibc
+# gcc-libs
+# libstdc++
+# libgcc
+# libselinux
+# libsepol
+# libpcre2
+# libzstd
+# libgcrypt
+# libgpg-error
+# libcap
+# libattr
+# libacl
+# libidn2
+# libunistring
+# libffi
+# libnsl
+# libtirpc
+# libxcrypt
+# libdb
+# libnl
+# libmnl
+# libnetfilter
+# libnfnetlink
+# libnftnl
+# libmnl
