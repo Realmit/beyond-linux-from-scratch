@@ -35,6 +35,9 @@ class LFSConfig:
     """LFS Builder Configuration Manager"""
 
     def __init__(self, config_file: Path):
+        # CORRECTION: Convertir en Path si c'est une string
+        if isinstance(config_file, str):
+            config_file = Path(config_file)
         self.config_file = config_file
         self.data = self.load()
 
@@ -631,6 +634,9 @@ class LFSBuilder:
     def __init__(self, profile: str, output_dir: Path, config_file: Path):
         self.profile = profile
         self.output_dir = Path(output_dir)
+        # CORRECTION: S'assurer que config_file est un Path
+        if isinstance(config_file, str):
+            config_file = Path(config_file)
         self.config = LFSConfig(config_file)
         self.system = platform.system()
         self.logger = self.setup_logging()
