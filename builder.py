@@ -2,7 +2,7 @@
 """
 LFS/BLFS Builder - Main orchestrator
 Works on Linux, macOS, and Windows (WSL2)
-Version: 4.0.0 - Added Live System, Update/Upgrade Manager, Full Security Suite
+Version: 4.1.0 - Added U-Boot Support, Cross-Compilation, ARM64
 """
 
 import os
@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 # ============================================================================
 # VERSION INFO
 # ============================================================================
-__version__ = "4.0.0"
+__version__ = "4.1.0"
 __build_date__ = "2026-04-30"
 
 # ============================================================================
@@ -61,6 +61,10 @@ class LFSConfig:
             "architecture": "x86_64",
             "target_triplet": "x86_64-lfs-linux-gnu",
             "build_threads": os.cpu_count(),
+            "cross_compile": False,
+            "cross_prefix": "",
+            "sysroot": "",
+            "qemu_user": "",
 
             "init_system": {
                 "choice": "systemd",
@@ -126,6 +130,13 @@ class LFSConfig:
                 "encryption": {"encrypted_swap": True, "swap_size_mb": 2048},
                 "hids": {"enabled": True, "daily_check": True, "tool": "aide"},
                 "daily_scans": {"enabled": True, "rootkit_check": True, "port_scan": True}
+            },
+
+            "bootloader": {
+                "type": "grub",
+                "config": "config/grub.cfg",
+                "uboot_config": "config/u-boot.config",
+                "uboot_board": "rpi_4"
             },
 
             "filesystem": {
@@ -219,7 +230,7 @@ class LFSConfig:
 # ============================================================================
 
 class ProfileManager:
-    """Manage build profiles (minimal, xfce, gnome, java-dev, security, full, etc.)"""
+    """Manage build profiles (minimal, xfce, gnome, java-dev, security, full, arm64, etc.)"""
 
     PROFILES = {
         'minimal': {
@@ -299,6 +310,22 @@ class ProfileManager:
             'privacy_tools': True,
             'live_system': True,
             'system_updater': True
+        },
+        'arm64': {
+            'description': 'ARM64 server (Raspberry Pi, Orange Pi)',
+            'size_gb': 2,
+            'build_time_hours': 3,
+            'packages': ['base', 'network', 'ssh'],
+            'desktop': None,
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': True,
+            'privacy_tools': False,
+            'live_system': False,
+            'system_updater': True,
+            'cross_compile': True,
+            'architecture': 'aarch64',
+            'bootloader': 'uboot'
         }
     }
 
@@ -326,6 +353,8 @@ class ProfileManager:
 ║ Size:          ~{profile['size_gb']} GB
 ║ Build time:    ~{profile['build_time_hours']} hours
 ║ Desktop:       {profile['desktop'] or 'None (CLI only)'}
+║ Architecture:  {profile.get('architecture', 'x86_64')}
+║ Bootloader:    {profile.get('bootloader', 'grub')}
 ║ Java Dev:      {'✓' if profile['java_dev'] else '✗'}
 ║ Package Mgr:   {'✓' if profile['package_manager'] else '✗'}
 ║ Security:      {'✓' if profile.get('security_hardening', False) else '✗'}
@@ -555,7 +584,6 @@ class USBWriter:
             logger.error(f"ISO not found: {iso_path}")
             return False
 
-        # Validate device
         if not device.startswith('/dev/'):
             device = f"/dev/{device}"
 
@@ -569,7 +597,6 @@ class USBWriter:
         system = platform.system()
 
         if system == "Linux":
-            # Unmount any mounted partitions
             subprocess.run(['sudo', 'umount', f'{device}*'], capture_output=True, text=True)
             cmd = ['sudo', 'dd', f'if={iso_path}', f'of={device}', 'bs=4M', 'status=progress', 'conv=fsync']
         elif system == "Darwin":
@@ -584,7 +611,6 @@ class USBWriter:
             subprocess.run(cmd, check=True)
             logger.info(f"Successfully written to {device}")
 
-            # Sync and eject
             subprocess.run(['sync'], check=False)
             if system == "Linux":
                 subprocess.run(['sudo', 'eject', device], check=False)
@@ -622,12 +648,18 @@ class LFSBuilder:
         if self.profile_config.get('desktop'):
             self.config.set('desktop.type', self.profile_config['desktop'])
 
+        # Apply cross-compilation settings from profile
+        if self.profile_config.get('cross_compile', False):
+            self.config.set('cross_compile', True)
+            self.config.set('architecture', self.profile_config.get('architecture', 'aarch64'))
+            self.config.set('target_triplet', f"{self.profile_config.get('architecture', 'aarch64')}-lfs-linux-gnu")
+            self.config.set('bootloader.type', self.profile_config.get('bootloader', 'uboot'))
+
         self.config.set('java_dev.enabled', self.profile_config.get('java_dev', False))
         self.config.set('package_manager.enabled', self.profile_config.get('package_manager', True))
         self.config.set('live_system.enabled', self.profile_config.get('live_system', True))
         self.config.set('system_updater.enabled', self.profile_config.get('system_updater', True))
 
-        # Apply security settings based on profile
         if self.profile_config.get('security_hardening', False):
             self.config.set('security.kernel_hardening', True)
             self.config.set('security.firewall.enabled', True)
@@ -637,8 +669,34 @@ class LFSBuilder:
 
         if self.profile_config.get('privacy_tools', False):
             self.config.set('security.privacy.disable_telemetry', True)
-            self.config.set('security.privacy_tools.dnscrypt', True)
-            self.config.set('security.privacy_tools.wireguard', True)
+
+    def is_cross_compile(self) -> bool:
+        """Check if cross-compilation is enabled"""
+        return self.config.get('cross_compile', False)
+
+    def get_target_architecture(self) -> str:
+        """Get target architecture for cross-compilation"""
+        return self.config.get('architecture', 'x86_64')
+
+    def get_cross_prefix(self) -> str:
+        """Get cross-compilation toolchain prefix"""
+        return self.config.get('cross_prefix', f"/usr/bin/{self.get_target_architecture()}-linux-gnu-")
+
+    def get_qemu_user(self) -> str:
+        """Get QEMU user emulator for target architecture"""
+        arch = self.get_target_architecture()
+        qemu_map = {
+            'aarch64': 'qemu-aarch64-static',
+            'arm': 'qemu-arm-static',
+            'armv7l': 'qemu-arm-static',
+            'riscv64': 'qemu-riscv64-static',
+            'mips64': 'qemu-mips64-static'
+        }
+        return self.config.get('qemu_user', qemu_map.get(arch, ''))
+
+    def get_sysroot(self) -> str:
+        """Get sysroot path for cross-compilation"""
+        return self.config.get('sysroot', f"/sysroots/{self.get_target_architecture()}-lfs")
 
     def get_init_system(self) -> str:
         """Get init system choice from config"""
@@ -653,7 +711,7 @@ class LFSBuilder:
 
     def _get_env(self) -> Dict:
         """Get environment variables for scripts"""
-        return {
+        env = {
             'LFS': str(self.output_dir / 'image'),
             'LFS_TGT': self.config.get('target_triplet'),
             'MAKEFLAGS': f"-j{self.config.get('build_threads', os.cpu_count())}",
@@ -671,6 +729,20 @@ class LFSBuilder:
             'LFS_VERSION': __version__,
             'LC_ALL': 'POSIX'
         }
+
+        # Add cross-compilation variables if enabled
+        if self.is_cross_compile():
+            env['CROSS_COMPILE'] = '1'
+            env['CROSS_PREFIX'] = self.get_cross_prefix()
+            env['QEMU_USER'] = self.get_qemu_user()
+            env['SYSROOT'] = self.get_sysroot()
+            env['ARCH'] = self.get_target_architecture()
+            self.logger.info(f"Cross-compilation enabled for architecture: {self.get_target_architecture()}")
+            self.logger.info(f"Cross prefix: {self.get_cross_prefix()}")
+            self.logger.info(f"QEMU user: {self.get_qemu_user()}")
+            self.logger.info(f"Sysroot: {self.get_sysroot()}")
+
+        return env
 
     def setup_logging(self) -> logging.Logger:
         """Setup logging configuration"""
@@ -698,6 +770,14 @@ class LFSBuilder:
             required_cmds = ['bash', 'gcc', 'make', 'bison', 'gawk', 'm4', 'texinfo', 'wget', 'tar', 'gzip', 'xorriso', 'parted']
             required_space = 50
             self.logger.info("Linux detected - Native build mode")
+
+            # Add cross-compilation requirements
+            if self.is_cross_compile():
+                cross_gcc = f"{self.get_target_architecture()}-linux-gnu-gcc"
+                if not shutil.which(cross_gcc):
+                    self.logger.warning(f"Cross-compiler not found: {cross_gcc}")
+                    self.logger.info("Install with: apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu")
+
         elif self.system == "Darwin":
             required_cmds = ['bash', 'docker', 'make', 'gawk', 'm4']
             required_space = 60
@@ -747,6 +827,12 @@ class LFSBuilder:
             d.mkdir(parents=True, exist_ok=True)
             self.logger.debug(f"Created directory: {d}")
 
+        # Create sysroot for cross-compilation
+        if self.is_cross_compile():
+            sysroot = Path(self.get_sysroot())
+            sysroot.mkdir(parents=True, exist_ok=True)
+            self.logger.info(f"Sysroot created: {sysroot}")
+
         build_info = {
             'profile': self.profile,
             'build_date': datetime.now().isoformat(),
@@ -757,6 +843,8 @@ class LFSBuilder:
             'system': self.system,
             'cpu_cores': os.cpu_count(),
             'python_version': sys.version,
+            'cross_compile': self.is_cross_compile(),
+            'target_architecture': self.get_target_architecture() if self.is_cross_compile() else None,
             'features': {
                 'java_dev': self.profile_config.get('java_dev', False),
                 'security': self.profile_config.get('security_hardening', False),
@@ -811,6 +899,16 @@ class LFSBuilder:
             ('configure-desktop', Path('scripts/blfs/11-configure-desktop.sh')),
         ]
 
+        # Add QEMU setup stage for cross-compilation
+        if self.is_cross_compile():
+            stages.insert(1, ('qemu-setup', Path('scripts/host/00-setup-qemu.sh')))
+
+        # Add U-Boot stage if bootloader type is uboot
+        bootloader_type = self.config.get('bootloader.type', 'grub')
+        if bootloader_type == 'uboot':
+            stages.append(('uboot', Path('scripts/host/05-build-uboot.sh')))
+            self.logger.info(f"U-Boot bootloader will be built for board: {self.config.get('bootloader.uboot_board', 'rpi_4')}")
+
         # Add Java Dev if enabled
         if self.profile_config.get('java_dev', False):
             stages.append(('java-dev', Path('scripts/blfs/12-install-java-dev.sh')))
@@ -850,6 +948,11 @@ class LFSBuilder:
         self.logger.info(f"Init system: {self.get_init_system()}")
         self.logger.info(f"Live system: {self.profile_config.get('live_system', True)}")
         self.logger.info(f"Output directory: {self.output_dir}")
+
+        if self.is_cross_compile():
+            self.logger.info(f"Cross-compiling for: {self.get_target_architecture()}")
+            self.logger.info(f"Bootloader: {self.config.get('bootloader.type', 'grub')}")
+
         self.logger.info("=" * 70)
 
         stages = self.get_build_stages()
@@ -875,9 +978,12 @@ class LFSBuilder:
             size_gb = size_mb / 1024
             self.logger.info(f"Installer ISO: {iso_path} ({size_gb:.1f} GB / {size_mb:.0f} MB)")
 
-            # Calculate checksum
             sha256 = hashlib.sha256(iso_path.read_bytes()).hexdigest()
             self.logger.info(f"SHA256: {sha256[:32]}...")
+
+        if self.is_cross_compile():
+            self.logger.info(f"\nCross-compilation completed for {self.get_target_architecture()}")
+            self.logger.info(f"Flash to SD card: dd if={self.output_dir}/lfs-installer.img of=/dev/sdb bs=4M")
 
         return True
 
@@ -923,14 +1029,14 @@ Examples:
   # Build with default profile (XFCE + Live USB)
   python3 builder.py
 
+  # Build for ARM64 (Raspberry Pi)
+  python3 builder.py --profile arm64 --config config/build-cross.conf
+
   # Build with Java development profile
   python3 builder.py --profile java-dev --output ./lfs-java
 
   # Build security-hardened system
   python3 builder.py --profile secure --init sysv
-
-  # Build minimalist server
-  python3 builder.py --profile minimal --no-live
 
   # Build full system with everything
   python3 builder.py --profile full --output ./lfs-full
@@ -940,9 +1046,6 @@ Examples:
 
   # List available profiles
   python3 builder.py --list-profiles
-
-  # Show profile details
-  python3 builder.py --profile-info secure
 
   # Write ISO to USB
   python3 builder.py --write-usb /dev/sdb
@@ -998,7 +1101,6 @@ def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
         logger.info("Build directory does not exist")
         return True
 
-    # Show directory size
     size_bytes = sum(f.stat().st_size for f in output_dir.rglob('*') if f.is_file())
     size_gb = size_bytes / (1024**3)
 
@@ -1019,7 +1121,6 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
 
-    # Handle list-profiles
     if args.list_profiles:
         print("\n" + "=" * 50)
         print("Available LFS Build Profiles")
@@ -1031,17 +1132,16 @@ def main():
             print(f"    Size: ~{info['size_gb']} GB")
             print(f"    Build time: ~{info['build_time_hours']} hours")
             print(f"    Desktop: {info['desktop'] or 'CLI only'}")
+            print(f"    Architecture: {info.get('architecture', 'x86_64')}")
             print(f"    Security: {'Yes' if info.get('security_hardening', False) else 'No'}")
             print(f"    Live USB: {'Yes' if info.get('live_system', True) else 'No'}")
         print()
         return
 
-    # Handle profile-info
     if args.profile_info:
         print(ProfileManager.get_profile_info(args.profile_info))
         return
 
-    # Handle clean
     if args.clean:
         output_dir = Path(args.output)
         logging.basicConfig(level=logging.INFO)
@@ -1049,58 +1149,49 @@ def main():
         clean_build_directory(output_dir, logger)
         return
 
-    # Initialize builder
     builder = LFSBuilder(
         profile=args.profile,
         output_dir=args.output,
         config_file=args.config
     )
 
-    # Override init system if specified
     if args.init:
         builder.config.set('init_system.choice', args.init)
         builder.logger.info(f"Init system overridden to: {args.init}")
 
-    # Disable live system if requested
     if args.no_live:
         builder.config.set('live_system.enabled', False)
         builder.logger.info("Live system disabled")
 
-    # Set verbose logging if requested
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
         builder.logger.setLevel(logging.DEBUG)
         builder.logger.info("Verbose logging enabled")
 
-    # Display build info
     print("\n" + "=" * 70)
     print(f"LFS/BLFS Builder v{__version__}")
     print("=" * 70)
     print(ProfileManager.get_profile_info(args.profile))
     print(f"  Init System:    {builder.get_init_system()}")
     print(f"  Live System:    {'Yes' if builder.config.get('live_system.enabled', True) else 'No'}")
+    print(f"  Cross-Compile:  {'Yes (' + builder.get_target_architecture() + ')' if builder.is_cross_compile() else 'No'}")
     print(f"  Output:         {args.output}")
     print(f"  Host System:    {builder.system}")
     print("=" * 70 + "\n")
 
-    # Check prerequisites
     if not builder.check_prerequisites():
         sys.exit(1)
 
-    # Prepare environment
     if not builder.prepare_environment():
         sys.exit(1)
 
-    # Download sources
     if not args.resume_from:
         if not builder.download_sources():
             sys.exit(1)
 
-    # Build system
     if not builder.build(resume_from=args.resume_from):
         sys.exit(1)
 
-    # Write to USB if requested
     if args.write_usb:
         builder.create_writable_media(args.write_usb)
 
@@ -1114,6 +1205,13 @@ def main():
     print("  2. Boot from USB")
     print("  3. Select 'Try LFS Linux' to test live mode")
     print("  4. Or select 'Install LFS Linux' for permanent installation")
+
+    if builder.is_cross_compile():
+        print(f"\n📱 For ARM64 target ({builder.get_target_architecture()}):")
+        print(f"   - Flash to SD card: dd if={builder.output_dir}/lfs-installer.img of=/dev/sdb bs=4M")
+        print(f"   - Boot on your ARM device (Raspberry Pi, Orange Pi, etc.)")
+        print(f"   - Default login: lfsuser / lfsuser123")
+
     print("\n🔧 After installation:")
     print("  - Check for updates:   lfs-update check")
     print("  - Upgrade system:      lfs-update upgrade")
@@ -1121,13 +1219,14 @@ def main():
     print("  - Package manager:     lpm list")
     print()
 
-    # Show security features status
     if builder.profile_config.get('security_hardening', False):
         print("🛡️  Security features: ENABLED")
         print("   - Kernel hardening, Firewall, Fail2ban, Audit, HIDS")
     if builder.profile_config.get('privacy_tools', False):
         print("🔒 Privacy tools: ENABLED")
         print("   - DNSCrypt, WireGuard, Tor, Telemetry blocking")
+    if builder.is_cross_compile():
+        print(f"🔄 Cross-compilation: ENABLED for {builder.get_target_architecture()}")
     print()
 
 

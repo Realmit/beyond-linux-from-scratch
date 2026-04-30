@@ -5,6 +5,69 @@ All notable changes to the LFS/BLFS Builder project will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-04-30
+
+### Added
+- **Cross-Compilation Support**
+  - Full cross-compilation for ARM64 (aarch64), ARM (armv7l), RISC-V (riscv64)
+  - Automatic QEMU user emulation setup (`00-setup-qemu.sh`)
+  - Sysroot management for target filesystems
+  - Cross-toolchain detection and configuration
+  - Environment variables: `CROSS_COMPILE`, `CROSS_PREFIX`, `QEMU_USER`, `SYSROOT`, `ARCH`
+
+- **U-Boot Bootloader Support**
+  - U-Boot build stage (`05-build-uboot.sh`)
+  - Support for multiple ARM boards (Raspberry Pi, Orange Pi, Banana Pi)
+  - Board configuration via `uboot_board` parameter
+  - Device tree blob (DTB) compilation
+  - U-Boot environment configuration
+
+- **New Build Profile: `arm64`**
+  - Optimized for Raspberry Pi and ARM64 SBCs
+  - U-Boot bootloader by default
+  - Minimal server configuration (2GB image)
+  - Cross-compilation enabled by default
+  - Specific kernel configuration for ARM64
+
+- **New Configuration Files**
+  - `config/kernel-config-arm64` - ARM64 kernel configuration
+  - `config/u-boot.config` - U-Boot build configuration
+  - `config/build-cross.conf` - Cross-compilation example configuration
+
+- **Builder Enhancements**
+  - `--config` flag now supports cross-compilation configs
+  - Automatic detection of cross-compilation from profile
+  - Cross-compilation status in build info and summary
+  - SD card image generation for ARM devices
+
+### Changed
+- **builder.py** upgraded to v4.1.0
+  - Added `is_cross_compile()`, `get_target_architecture()`, `get_cross_prefix()`, `get_qemu_user()`, `get_sysroot()` methods
+  - Extended `_get_env()` with cross-compilation variables
+  - Modified `get_build_stages()` to conditionally add QEMU setup and U-Boot stages
+  - Updated profile manager with architecture and bootloader properties
+  - Enhanced build summary with cross-compilation information
+
+- **Profile Manager**
+  - Added `arm64` profile with cross-compilation defaults
+  - Profiles now include `architecture`, `cross_compile`, `bootloader` properties
+  - Profile info display includes architecture and bootloader type
+
+- **Documentation**
+  - Updated `ADVANCED.md` with cross-compilation guide
+  - Added ARM64 build instructions
+  - U-Boot configuration documentation
+
+### Fixed
+- Cross-compilation toolchain detection
+- QEMU user emulation registration for foreign architectures
+- Sysroot directory creation and permissions
+- U-Boot build dependencies checking
+
+### Security
+- Cross-compiled binaries maintain security hardening
+- QEMU user emulation runs in restricted mode
+
 ## [4.0.0] - 2026-04-30
 
 ### Added
@@ -324,11 +387,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Printing system (CUPS) integration
 - Gaming optimizations (Wine, Proton, Steam)
 - Real-time kernel option (PREEMPT_RT)
-- Embedded systems profile (Raspberry Pi, ARM64)
 - RISC-V architecture support
 - ZFS filesystem support
 - Btrfs snapshots and rollback
 - System monitoring dashboard (Cockpit)
+- Container (Docker/Podman) optimizations
+- Kubernetes deployment support
 
 ---
 
@@ -336,7 +400,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Status | Key Features |
 |---------|------|--------|--------------|
-| 4.0.0 | 2026-04-30 | ✅ Current | Live USB, System Updater, Package Updater |
+| 4.1.0 | 2026-04-30 | ✅ Current | Cross-Compilation, U-Boot, ARM64 Support |
+| 4.0.0 | 2026-04-30 | ✅ Stable | Live USB, System Updater, Package Updater |
 | 3.0.0 | 2026-04-15 | ✅ Stable | Security Hardening, Privacy Tools, Init Systems |
 | 2.0.0 | 2026-04-15 | ✅ Stable | Java Dev Environment, LPM Package Manager |
 | 1.0.0 | 2025-12-20 | ✅ Stable | Base LFS/BLFS with XFCE |
@@ -345,31 +410,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upgrade Notes
 
+### From 4.0.0 to 4.1.0
+1. Update `builder.py` to v4.1.0
+2. Add cross-compilation sections to `build.conf` if needed
+3. Install cross-compilation toolchain: `apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu`
+4. For ARM64 builds: `python3 builder.py --profile arm64 --config config/build-cross.conf`
+
 ### From 3.0.0 to 4.0.0
 1. Update `builder.py` to v4.0.0
 2. Add `system_updater` and `live_system` sections to `build.conf`
 3. Run new scripts: `18-system-updater.sh`, `19-package-updater.sh`
-4. Rebuild ISO for live system support: `python3 builder.py --profile secure`
+4. Rebuild ISO for live system support
 
 ### From 2.0.0 to 3.0.0
 1. Add `security` section to `build.conf`
 2. Run security hardening scripts
 3. Configure init system in `config/init.conf`
 
-### From 1.0.0 to 2.0.0
-1. Add Java development sources to `packages/sources.list`
-2. Run Java installation scripts
-
 ### Fresh Installation
+
 ```bash
 # Clone repository
 git clone https://github.com/lfs-builder/lfs-builder.git
 cd lfs-builder
 
-# Build with live system support
+# For x86_64 desktop with live USB
 python3 builder.py --profile full
 
-# Write to USB
-python3 builder.py --write-usb /dev/sdX
+# For ARM64 (Raspberry Pi)
+python3 builder.py --profile arm64 --config config/build-cross.conf
 
-# Boot from USB and select "Try LFS Linux"
+# Write to USB/SD card
+python3 builder.py --write-usb /dev/sdX

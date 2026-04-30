@@ -1,0 +1,132 @@
+# Linux Kernel Configuration for ARM64 (aarch64)
+# LFS Linux - ARM64 Server/Desktop Configuration
+
+# ============================================================================
+# GENERAL SETUP
+# ============================================================================
+CONFIG_ARM64=y
+CONFIG_ARM64_64K_PAGES=y
+CONFIG_ARM64_SW_TTBR0_PAN=y
+CONFIG_ARM64_VA_BITS=48
+CONFIG_SCHED_MC=y
+CONFIG_SCHED_SMT=y
+CONFIG_NR_CPUS=8
+CONFIG_HZ=250
+CONFIG_HZ_250=y
+CONFIG_PREEMPT_VOLUNTARY=y
+
+# ============================================================================
+# PLATFORM SUPPORT
+# ============================================================================
+# Raspberry Pi 4 / BCM2711
+CONFIG_ARCH_BCM2835=y
+CONFIG_BCM2835_WDT=y
+CONFIG_BCM2711=y
+
+# Generic ARM64
+CONFIG_ARCH_SUNXI=y
+CONFIG_ARCH_ROCKCHIP=y
+CONFIG_ARCH_IMX8M=y
+CONFIG_ARCH_QCOM=y
+
+# ============================================================================
+# POWER MANAGEMENT
+# ============================================================================
+CONFIG_PM=y
+CONFIG_PM_SLEEP=y
+CONFIG_PM_DEBUG=y
+CONFIG_CPU_IDLE=y
+CONFIG_ARM64_CPUIDLE=y
+
+# ============================================================================
+# NETWORKING
+# ============================================================================
+CONFIG_NET=y
+CONFIG_PACKET=y
+CONFIG_UNIX=y
+CONFIG_INET=y
+CONFIG_IP_MULTICAST=y
+CONFIG_IP_PNP=y
+CONFIG_IP_PNP_DHCP=y
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_DEFAULT_TCP_CONG="cubic"
+
+# ============================================================================
+# DEVICE DRIVERS - MMC/SD
+# ============================================================================
+CONFIG_MMC=y
+CONFIG_MMC_BCM2835=y
+CONFIG_MMC_SDHCI=y
+CONFIG_MMC_SDHCI_PLTFM=y
+CONFIG_MMC_SDHCI_OF_DWCMSHC=y
+
+# ============================================================================
+# DEVICE DRIVERS - USB
+# ============================================================================
+CONFIG_USB=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_OHCI_HCD=y
+CONFIG_USB_DWC2=y
+CONFIG_USB_DWC3=y
+CONFIG_USB_STORAGE=y
+
+# ============================================================================
+# DEVICE DRIVERS - NETWORK
+# ============================================================================
+CONFIG_NETDEVICES=y
+CONFIG_ETHERNET=y
+CONFIG_NET_VENDOR_BROADCOM=y
+CONFIG_GENET=y
+CONFIG_SMSC95XX=y
+
+# ============================================================================
+# DEVICE DRIVERS - GRAPHICS
+# ============================================================================
+CONFIG_DRM=y
+CONFIG_DRM_VC4=y
+CONFIG_FB_SIMPLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+
+# ============================================================================
+# DEVICE DRIVERS - I2C/SPI
+# ============================================================================
+CONFIG_I2C=y
+CONFIG_I2C_BCM2835=y
+CONFIG_SPI=y
+CONFIG_SPI_BCM2835=y
+
+# ============================================================================
+# DEVICE DRIVERS - GPIO
+# ============================================================================
+CONFIG_GPIOLIB=y
+CONFIG_GPIO_SYSFS=y
+CONFIG_GPIO_BCM2835=y
+
+# ============================================================================
+# FILESYSTEMS
+# ============================================================================
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+CONFIG_VFAT_FS=y
+CONFIG_FAT_DEFAULT_IOCHARSET="utf8"
+CONFIG_BTRFS_FS=y
+CONFIG_XFS_FS=y
+CONFIG_FUSE_FS=y
+CONFIG_OVERLAY_FS=y
+
+# ============================================================================
+# ARM SPECIFIC FEATURES
+# ============================================================================
+CONFIG_ARM64_CRYPTO=y
+CONFIG_CRYPTO_AES_ARM64=y
+CONFIG_CRYPTO_SHA256_ARM64=y
+CONFIG_KVM=y
+CONFIG_VIRTUALIZATION=y
+
+# ============================================================================
+# DEBUG (disable for production)
+# ============================================================================
+# CONFIG_DEBUG_INFO is not set
+# CONFIG_DEBUG_KERNEL is not set
