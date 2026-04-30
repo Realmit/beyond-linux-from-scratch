@@ -1,0 +1,438 @@
+# ============================================================================
+# LFS Java Development Profile Package List
+# Complete Java development environment
+# Total size: ~3-5GB
+# ============================================================================
+
+# ============================================================================
+# JAVA DEVELOPMENT KITS (JDK)
+# ============================================================================
+# OpenJDK 21 LTS (Latest LTS version)
+openjdk-21
+openjdk-21-jdk
+openjdk-21-jre
+openjdk-21-headless
+openjdk-21-doc
+openjdk-21-source
+openjdk-21-demo
+
+# Alternative JDKs (optional)
+# openjdk-17 (LTS)
+# openjdk-11 (LTS)
+# openjdk-8 (Legacy)
+# graalvm-ce-java21 (GraalVM for native images)
+# microsoft-openjdk (Microsoft build)
+# amazon-corretto (AWS optimized)
+
+# Java runtime only (for running apps)
+jre-openjdk-headless
+jre-openjdk
+
+# ============================================================================
+# BUILD TOOLS
+# ============================================================================
+# Maven
+maven
+maven-completion
+maven-doc
+maven-wrapper
+
+# Gradle
+gradle
+gradle-completion
+gradle-doc
+
+# Ant (legacy)
+ant
+ant-contrib
+ant-junit
+
+# Other build tools
+sbt (Scala build tool)
+leiningen (Clojure)
+cargo (Rust - for native libs)
+make (for native components)
+
+# ============================================================================
+# APPLICATION SERVERS
+# ============================================================================
+# Apache Tomcat (Servlet container)
+tomcat10
+tomcat10-admin
+tomcat10-examples
+tomcat10-docs
+
+# Apache TomEE (Full Java EE)
+tomee-plume
+tomee-webprofile
+
+# WildFly (JBoss)
+wildfly
+wildfly-modules
+
+# Jetty
+jetty12
+jetty12-webapps
+jetty12-doc
+
+# GlassFish (Full Jakarta EE)
+glassfish
+glassfish-embedded
+
+# ============================================================================
+# FRAMEWORKS AND LIBRARIES
+# ============================================================================
+# Spring Framework
+spring-boot-cli
+spring-framework
+spring-security
+spring-data
+spring-cloud
+
+# Quarkus (Kubernetes native Java)
+quarkus-cli
+quarkus-bom
+
+# Micronaut
+micronaut-cli
+micronaut
+
+# Jakarta EE
+jakarta-ee-api
+jakarta-ee-sdk
+
+# ============================================================================
+# DATABASES (for development)
+# ============================================================================
+# Embedded databases
+h2database
+hsqldb
+derby
+
+# Full databases (optional)
+postgresql
+mysql-server
+mariadb
+mongodb
+redis
+
+# Database clients (JDBC drivers)
+postgresql-jdbc
+mysql-jdbc
+mariadb-jdbc
+h2-jdbc
+sqlite-jdbc
+
+# ============================================================================
+# TESTING FRAMEWORKS
+# ============================================================================
+# Unit testing
+junit5
+junit5-platform
+junit5-params
+junit4
+testng
+
+# Mocking
+mockito
+mockito-core
+mockito-junit-jupiter
+
+# Assertions
+assertj-core
+hamcrest
+
+# Integration testing
+testcontainers
+testcontainers-junit
+
+# Performance testing
+jmeter
+jmeter-plugins
+gatling
+k6
+
+# ============================================================================
+# CODE QUALITY TOOLS
+# ============================================================================
+# Static analysis
+sonarqube
+sonar-scanner
+checkstyle
+pmd
+spotbugs
+spotbugs-sa
+
+# Code coverage
+jacoco
+jacoco-maven-plugin
+cobertura
+
+# Formatters
+google-java-format
+spotless
+prettier-java
+
+# ============================================================================
+# BUILD AND PACKAGE TOOLS
+# ============================================================================
+# Package managers
+npm (Node.js packages)
+yarn
+pnpm
+
+# Containerization
+docker
+docker-compose
+podman
+buildah
+skopeo
+
+# Kubernetes
+kubectl
+helm
+k9s
+minikube (local k8s)
+kind (Kubernetes in Docker)
+
+# ============================================================================
+# DATABASE TOOLS
+# ============================================================================
+# SQL clients
+dbeaver
+sqldeveloper
+pgadmin4
+mysql-workbench
+adminer
+
+# Migration tools
+flyway
+liquibase
+
+# ============================================================================
+# API DEVELOPMENT
+# ============================================================================
+# API testing
+postman
+newman (Postman CLI)
+insomnia
+httpie
+
+# API documentation
+swagger-ui
+openapi-generator
+redoc
+
+# GraphQL
+graphql-java
+altair
+
+# ============================================================================
+# MESSAGE QUEUES
+# ============================================================================
+rabbitmq
+apache-kafka
+activemq
+pulsar
+
+# ============================================================================
+# IDE AND EDITORS (Optional)
+# ============================================================================
+# IntelliJ IDEA Community
+intellij-idea-community-edition
+intellij-idea-ultimate (paid)
+
+# Eclipse IDE
+eclipse-java
+eclipse-ee
+
+# VS Code with Java extensions
+vscode
+vscode-java-pack
+vscode-spring-boot
+vscode-gradle
+vscode-maven
+vscode-quarkus
+
+# NetBeans
+netbeans
+netbeans-java
+
+# ============================================================================
+# SPRING BOOT CLI
+# ============================================================================
+spring-boot-cli
+spring-initializr (project generator)
+
+# ============================================================================
+# VERSION CONTROL
+# ============================================================================
+git
+git-lfs
+git-flow
+gh (GitHub CLI)
+gitlab-cli
+svn (legacy)
+mercurial (legacy)
+
+# ============================================================================
+# CONTINUOUS INTEGRATION
+# ============================================================================
+jenkins
+jenkins-lts
+gitlab-runner
+github-actions-runner
+drone
+woodpecker
+tekton
+
+# ============================================================================
+# MONITORING TOOLS (for Java apps)
+# ============================================================================
+visualvm (JVM monitoring)
+jmc (Java Mission Control)
+jconsole
+jstat
+jmap
+jstack
+
+# APM tools
+elastic-apm-agent
+datadog-java-agent
+newrelic-java-agent
+jaeger
+prometheus-jmx-exporter
+
+# ============================================================================
+# PROFILING TOOLS
+# ============================================================================
+async-profiler
+flight-recorder
+yourkit (optional)
+jprofiler (optional)
+
+# ============================================================================
+# LOGGING FRAMEWORKS
+# ============================================================================
+log4j2
+logback
+slf4j
+tinylog
+
+# ============================================================================
+# CACHE AND DATA GRIDS
+# ============================================================================
+hazelcast
+hazelcast-client
+ehcache
+infinispan
+apache-ignite
+
+# ============================================================================
+# SEARCH ENGINES
+# ============================================================================
+elasticsearch
+elasticsearch-plugin
+lucene
+solr
+
+# ============================================================================
+# CONTAINER ORCHESTRATION (Development)
+# ============================================================================
+docker-compose
+kubernetes-helm
+skaffold
+tilt
+
+# ============================================================================
+# MAVEN REPOSITORY MANAGERS
+# ============================================================================
+nexus-repository (Sonatype Nexus)
+artifactory (JFrog)
+archiva
+
+# ============================================================================
+# DEBUGGING TOOLS
+# ============================================================================
+jdb (Java debugger)
+jdwp (Java debug wire protocol)
+bts (bytecode tools)
+javap (class disassembler)
+jad (decompiler)
+procyon (decompiler)
+cfr (decompiler)
+
+# ============================================================================
+# PERFOMANCE TESTING
+# ============================================================================
+jmeter
+gatling
+wrk
+ab (Apache Bench)
+siege
+
+# ============================================================================
+# SECURITY TOOLS (Java specific)
+# ============================================================================
+keytool (included in JDK)
+openssl
+keystore-explorer
+jwt-tool
+owasp-dependency-check
+snyk
+
+# ============================================================================
+# DOCUMENTATION TOOLS
+# ============================================================================
+javadoc (included in JDK)
+asciidoctor
+spring-restdocs
+swagger2markup
+
+# ============================================================================
+# CLOUD DEVELOPMENT
+# ============================================================================
+aws-cli
+azure-cli
+gcloud-sdk
+terraform
+packer
+ansible
+
+# ============================================================================
+# DEPENDENCIES (Auto-resolved)
+# ============================================================================
+# glibc
+# gcc
+# make
+# libstdc++
+# libcurl
+# openssl
+# zlib
+# libxml2
+# libxslt
+# libffi
+# libuuid
+# libgcrypt
+# libgpg-error
+# libltdl (libtool)
+# pcre
+# readline
+# ncurses
+# python3
+# perl
+# ruby
+# nodejs
+# npm
+# libuv
+# libnghttp2
+# libpsl
+# libbrotli
+# libzstd
+# libssh2
+# libldap
+# libsasl2
+# libkrb5
+# libcom_err
+# libidn2
+# libunistring
