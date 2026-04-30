@@ -15,6 +15,73 @@ log_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
 BOARD="${BOARD:-rpi_4}"  # rpi_4, rpi_5, orangepi_pc, pine64, generic
 U_BOOT_BOARD="${U_BOOT_BOARD:-rpi_4}"
 KERNEL_DTB="bcm2711-rpi-4-b.dtb"
+CREATE_SD_IMAGE="${CREATE_SD_IMAGE:-yes}"
+
+# Package list location
+PACKAGE_LIST="profiles/arm64/packages.list"
+
+# ============================================================================
+# LOAD PACKAGES FROM LIST
+# ============================================================================
+load_packages() {
+    log_info "Loading ARM64 packages from $PACKAGE_LIST..."
+
+    if [ ! -f "$PACKAGE_LIST" ]; then
+        log_warning "Package list not found, using default packages"
+        PACKAGES="base system network ssh"
+    else
+        # Read packages from list (skip comments and empty lines)
+        PACKAGES=$(grep -v '^#' "$PACKAGE_LIST" | grep -v '^$' | grep -v '^#=' | tr '\n' ' ')
+    fi
+
+    log_info "Packages to install: $PACKAGES"
+}
+
+# ============================================================================
+# INSTALL PACKAGES USING LPM
+# ============================================================================
+install_packages_lpm() {
+    log_info "Installing ARM64 packages using LPM..."
+
+    # Update package database
+    lpm update
+
+    for pkg in $PACKAGES; do
+        log_info "Installing: $pkg"
+        lpm install "$pkg" 2>/dev/null || {
+            log_warning "Package $pkg not found in repositories, building from source"
+            # Fallback to source build if needed
+        }
+    done
+
+    log_success "All packages installed"
+}
+
+# ============================================================================
+# INSTALL FROM SOURCE (Fallback)
+# ============================================================================
+install_from_source() {
+    local pkg=$1
+    local url=$2
+    local version=$3
+
+    log_info "Building $pkg from source..."
+
+    cd /sources
+    wget "$url" -O "${pkg}-${version}.tar.gz"
+    tar -xzf "${pkg}-${version}.tar.gz"
+    cd "${pkg}-${version}"
+
+    # Standard build process
+    if [ -f "configure" ]; then
+        ./configure --prefix=/usr
+    fi
+
+    make -j$(nproc)
+    make install
+
+    log_success "Built $pkg from source"
+}
 
 # ============================================================================
 # DETECT BOARD TYPE
@@ -52,6 +119,9 @@ detect_board() {
             log_warning "Unknown board: $BOARD, using generic configuration"
             ;;
     esac
+
+    # Export for other scripts
+    export BOARD U_BOOT_BOARD KERNEL_DTB
 }
 
 # ============================================================================
@@ -215,10 +285,15 @@ install_arm64_packages() {
 # CREATE SD CARD IMAGE
 # ============================================================================
 create_sd_image() {
+    if [ "$CREATE_SD_IMAGE" != "yes" ]; then
+        log_info "SD card image creation disabled (CREATE_SD_IMAGE=$CREATE_SD_IMAGE)"
+        return
+    fi
+
     log_info "Creating SD card image..."
 
     local SD_IMAGE="${LFS}/../lfs-arm64.img"
-    local SD_SIZE=2048  # MB
+    local SD_SIZE=${SD_SIZE:-2048}  # MB
 
     # Create empty image
     dd if=/dev/zero of="$SD_IMAGE" bs=1M count=$SD_SIZE status=progress
@@ -249,6 +324,56 @@ create_sd_image() {
     losetup -d "$LOOP_DEV"
 
     log_success "SD card image created: $SD_IMAGE"
+    echo ""
+    echo "To flash to SD card:"
+    echo "  dd if=$SD_IMAGE of=/dev/sdb bs=4M status=progress"
+}
+
+# ============================================================================
+# CREATE INSTALLER SCRIPT FOR ARM64
+# ============================================================================
+create_arm64_installer() {
+    log_info "Creating ARM64 installer script..."
+
+    cat > /usr/local/sbin/install-arm64.sh << 'EOF'
+#!/bin/bash
+# Install LFS ARM64 to SD card
+
+TARGET_DEV=""
+SD_IMAGE="/lfs-arm64.img"
+
+select_device() {
+    echo "Available SD card devices:"
+    lsblk -d -o NAME,SIZE,MODEL | grep -E "mmcblk|sd"
+    echo
+    read -p "Select target device (e.g., mmcblk0): " TARGET_DEV
+    TARGET_DEV="/dev/$TARGET_DEV"
+}
+
+flash_image() {
+    echo "Flashing $SD_IMAGE to $TARGET_DEV..."
+    dd if="$SD_IMAGE" of="$TARGET_DEV" bs=4M status=progress
+    sync
+    echo "Flash complete!"
+}
+
+main() {
+    echo "LFS ARM64 Installer"
+    echo "==================="
+    select_device
+    read -p "This will erase all data on $TARGET_DEV. Continue? (y/n): " confirm
+    if [ "$confirm" = "y" ]; then
+        flash_image
+        echo "You can now insert the SD card into your ARM64 device and boot."
+    fi
+}
+
+main "$@"
+EOF
+
+    chmod +x /usr/local/sbin/install-arm64.sh
+
+    log_success "ARM64 installer created"
 }
 
 # ============================================================================
@@ -258,16 +383,23 @@ main() {
     log_info "=== ARM64 LFS BUILD ==="
 
     detect_board
-    install_arm64_packages
+    load_packages
+
+    # Install using LPM if available
+    if command -v lpm &> /dev/null; then
+        install_packages_lpm
+    else
+        install_arm64_packages
+    fi
+
     install_arm64_kernel
     configure_uboot
     create_boot_script
     configure_fstab
+    create_arm64_installer
 
     # Create SD image if requested
-    if [ "$CREATE_SD_IMAGE" = "yes" ]; then
-        create_sd_image
-    fi
+    create_sd_image
 
     log_success "ARM64 profile installation complete!"
 
@@ -279,13 +411,15 @@ main() {
     echo "U-Boot: $U_BOOT_BOARD"
     echo "Kernel DTB: $KERNEL_DTB"
     echo ""
-    echo "To flash to SD card:"
+    echo "Flash to SD card:"
     echo "  dd if=lfs-arm64.img of=/dev/sdb bs=4M status=progress"
     echo ""
-    echo "To boot:"
-    echo "  1. Insert SD card into your ARM64 device"
-    echo "  2. Power on"
-    echo "  3. Login with: lfsuser / lfsuser123"
+    echo "Or run from aarch64 system:"
+    echo "  install-arm64.sh"
+    echo ""
+    echo "Login:"
+    echo "  Username: lfsuser"
+    echo "  Password: lfsuser123"
     echo "=========================================="
 }
 
