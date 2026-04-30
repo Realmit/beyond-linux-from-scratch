@@ -1,124 +1,43 @@
-# ============================================================================
-# LFS CORE PACKAGES (Updated for LFS 12.2)
-# See: https://www.linuxfromscratch.org/lfs/view/stable/
-# ============================================================================
-
-# Linux Kernel 6.12.10 (LTS)
+# LFS Core Packages
 https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.12.10.tar.xz
+https://ftp.gnu.org/gnu/gcc/gcc-14.2.0/gcc-14.2.0.tar.xz
+https://ftp.gnu.org/gnu/binutils/binutils-2.43.1.tar.xz
+https://ftp.gnu.org/gnu/glibc/glibc-2.40.tar.xz
+https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz
+https://ftp.gnu.org/gnu/bash/bash-5.2.37.tar.gz
+https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz
 
-# GNU Toolchain
-https://ftp.gnu.org/gnu/gcc/gcc-14.2.0/gcc-14.2.0.tar.xz          # gcc 14.2.0
-https://ftp.gnu.org/gnu/binutils/binutils-2.43.1.tar.xz          # binutils 2.43.1
-https://ftp.gnu.org/gnu/glibc/glibc-2.40.tar.xz                  # glibc 2.40
-https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz                    # make 4.4.1
-
-# Core System
-https://ftp.gnu.org/gnu/bash/bash-5.2.37.tar.gz                  # bash 5.2.37
-https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz     # Python 3.12.8
-
-# Additional LFS required packages (often forgotten)
-https://ftp.gnu.org/gnu/gawk/gawk-5.3.1.tar.xz
-https://ftp.gnu.org/gnu/grep/grep-3.11.tar.xz
-https://ftp.gnu.org/gnu/sed/sed-4.9.tar.xz
-https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
-https://zlib.net/zlib-1.3.1.tar.gz
-https://www.openssl.org/source/openssl-3.4.0.tar.gz
-
-
-# ============================================================================
-# BLFS CORE PACKAGES (Updated for BLFS 12.2)
-# See: https://www.linuxfromscratch.org/blfs/view/stable/
-# ============================================================================
-
-# GLib 2.82.4 (core dependency)
+# BLFS Core
 https://download.gnome.org/sources/glib/2.82/glib-2.82.4.tar.xz
-
-# Xorg Utility Macros 1.20.2
 https://xorg.org/pub/individual/util/util-macros-1.20.2.tar.xz
-
-# GTK+ 3.24.48 (still widely used)
-https://download.gnome.org/sources/gtk+/3.24/gtk+-3.24.48.tar.xz
-
-# Graphical stack dependencies
+https://download.gnome.org/sources/gtk+/3.94/gtk+-3.94.0.tar.xz
 https://gitlab.freedesktop.org/xorg/lib/libxcb/-/archive/libxcb-1.17.0/libxcb-1.17.0.tar.gz
 https://www.x.org/pub/individual/lib/libX11-1.8.10.tar.xz
 
+# Desktop
+https://archive.xfce.org/xfce/4.20/fat_tarballs/xfce-4.20.tar.bz2
+https://github.com/canonical/lightdm/archive/refs/tags/1.32.0.tar.gz
 
-# ============================================================================
-# DESKTOP ENVIRONMENT (XFCE 4.20)
-# ============================================================================
-
-# XFCE 4.20 (latest stable)
-https://archive.xfce.org/xfce/4.20/fat/tarballs/xfce4-4.20.tar.bz2
-
-# LightDM 1.32.1 (Display Manager)
-https://github.com/canonical/lightdm/releases/download/1.32.1/lightdm-1.32.1.tar.gz
-
-
-# ============================================================================
-# APPLICATIONS (Updated versions)
-# ============================================================================
-
-# Firefox 128.4.0esr (Extended Support Release)
+# Applications
 https://ftp.mozilla.org/pub/firefox/releases/128.4.0esr/source/firefox-128.4.0esr.source.tar.xz
-
-# LibreOffice 24.8.4 (Stable Fresh)
-https://download.documentfoundation.org/libreoffice/stable/24.8.4/src/libreoffice-24.8.4.2.tar.xz
-
-# VLC 3.0.21
+https://download.documentfoundation.org/libreoffice/stable/26.2.3/deb/x86_64/LibreOffice_26.2.3_Linux_x86-64_deb.tar.gz
 https://get.videolan.org/vlc/3.0.21/vlc-3.0.21.tar.xz
-
-# GIMP 2.10.38 (stable)
 https://download.gimp.org/pub/gimp/v2.10/gimp-2.10.38.tar.bz2
-
-# OBS Studio 31.0.2
 https://github.com/obsproject/obs-studio/archive/31.0.2.tar.gz
 
-
-# ============================================================================
-# JAVA DEVELOPMENT ENVIRONMENT (JDK 21.0.8 LTS)
-# ============================================================================
-
-# Eclipse Temurin JDK 21.0.8 (Java 21 LTS)
+# Java Dev
 https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.8_9.tar.gz
-
-# Maven 3.9.9
-https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz
-
-# Gradle 8.13
+https://dlcdn.apache.org/maven/maven-3/3.9.15/binaries/apache-maven-3.9.15-bin.tar.gz
 https://services.gradle.org/distributions/gradle-8.13-bin.zip
-
-# Apache Tomcat 10.1.39
-https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.39/bin/apache-tomcat-10.1.39.tar.gz
-
-# Node.js 22.14.0 (LTS)
+https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.54/bin/apache-tomcat-10.1.54.tar.gz
 https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.xz
-
-# Docker 27.4.1
 https://download.docker.com/linux/static/stable/x86_64/docker-27.4.1.tgz
-
-# kubectl 1.32.3
 https://dl.k8s.io/release/v1.32.3/bin/linux/amd64/kubectl
-
-# Jenkins 2.492.2 LTS
 https://get.jenkins.io/war-stable/2.492.2/jenkins.war
-
-# Apache JMeter 5.6.3 (latest stable is still 5.6.3)
-https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-5.6.3.tgz
-
-# Allure 2.32.0
+https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
 https://github.com/allure-framework/allure2/releases/download/2.32.0/allure-2.32.0.tgz
 
-
-# ============================================================================
-# SECURITY & PRIVACY TOOLS
-# ============================================================================
-
-# Fail2ban 1.1.0
+# Security
 https://github.com/fail2ban/fail2ban/archive/1.1.0.tar.gz
-
-# Lynis 3.1.3 (security auditing)
 https://github.com/CISOfy/lynis/archive/3.1.3.tar.gz
-
-# rkhunter 1.4.6 (rootkit hunter)
 https://downloads.sourceforge.net/project/rkhunter/rkhunter/1.4.6/rkhunter-1.4.6.tar.gz

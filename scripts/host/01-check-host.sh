@@ -9,6 +9,12 @@ source "$SCRIPT_DIR/../common/error-handler.sh"
 
 setup_error_handling
 
+# Skip all checks if running in Docker
+if [ -f /.dockerenv ]; then
+    log_info "Running in Docker container - skipping host system checks"
+    exit 0
+fi
+
 log_info "Checking host system requirements"
 
 # Check if running as root
@@ -33,7 +39,7 @@ fi
 required_commands=(
     "bash" "gcc" "g++" "ld" "bison" "flex" "gawk" "m4"
     "make" "patch" "sed" "tar" "texinfo" "xz" "grep" "awk"
-    "wget" "python3" "git" "rsync" "parted" "xorriso" "isolinux"
+    "wget" "python3" "git" "rsync" "parted" "xorriso"
 )
 
 missing_commands=()

@@ -9,6 +9,12 @@ source "$SCRIPT_DIR/../common/error-handler.sh"
 
 setup_error_handling
 
+# Skip if running in Docker
+if [ -f /.dockerenv ]; then
+    log_info "Running in Docker container - skipping host preparation"
+    exit 0
+fi
+
 log_info "Preparing host system for LFS build"
 
 # Create LFS user if not exists

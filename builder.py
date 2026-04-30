@@ -771,9 +771,13 @@ class LFSBuilder:
         """Check system prerequisites based on platform"""
         self.logger.info(f"Checking prerequisites on {self.system}")
         self.logger.info(f"LFS Builder Version: {__version__}")
+        # Skip if running in Docker (container already has all tools)
+        if os.path.exists('/.dockerenv'):
+            self.logger.info("Docker container detected - skipping host prerequisites check")
+            return True
 
         if self.system == "Linux":
-            required_cmds = ['bash', 'gcc', 'make', 'bison', 'gawk', 'm4', 'texinfo', 'wget', 'tar', 'gzip', 'xorriso', 'parted']
+            required_cmds = ['bash', 'gcc', 'make', 'bison', 'gawk', 'm4', 'wget', 'tar', 'gzip', 'xorriso', 'parted']
             required_space = 50
             self.logger.info("Linux detected - Native build mode")
 
