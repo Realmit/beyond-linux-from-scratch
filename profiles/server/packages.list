@@ -1,0 +1,405 @@
+# ============================================================================
+# LFS Server Profile Package List
+# Optimized for server workloads - production ready
+# Total size: ~1.5GB
+# ============================================================================
+
+# ============================================================================
+# BASE SYSTEM (Core - Required)
+# ============================================================================
+linux-headers
+glibc
+gcc
+binutils
+make
+bash
+coreutils
+util-linux
+systemd
+procps
+psmisc
+findutils
+grep
+sed
+gawk
+diffutils
+patch
+tar
+gzip
+xz-utils
+bzip2
+zlib
+file
+which
+less
+man-db
+man-pages
+kbd
+e2fsprogs
+cronie
+rsyslog
+logrotate
+
+# ============================================================================
+# BOOTLOADER
+# ============================================================================
+grub
+efibootmgr
+
+# ============================================================================
+# KERNEL (Server optimized)
+# ============================================================================
+linux-server
+linux-server-headers
+linux-firmware
+dkms
+
+# ============================================================================
+# FILESYSTEM SUPPORT (Server)
+# ============================================================================
+ext4
+xfsprogs
+btrfs-progs
+zfs (optional - enterprise)
+f2fs-tools
+dosfstools
+e2fsprogs
+ntfs-3g
+fuse3
+nfs-utils
+samba
+cifs-utils
+
+# ============================================================================
+# NETWORKING (Server)
+# ============================================================================
+iproute2
+iputils
+dhcpcd
+dhcp-server
+network-manager (optional)
+wpa_supplicant
+openssh-server
+openssh-client
+curl
+wget
+rsync
+openssl
+ca-certificates
+bind-tools (dig, nslookup)
+dnsmasq (DNS/DHCP server)
+iptables
+nftables
+firewalld
+ufw
+tcpdump
+nmap
+netcat
+telnet
+ftp
+mtr
+traceroute
+iperf3
+
+# ============================================================================
+# WEB SERVERS
+# ============================================================================
+nginx
+apache2
+apache2-mod_ssl
+apache2-mod_wsgi
+lighttpd
+caddy
+traefik
+
+# ============================================================================
+# DATABASES
+# ============================================================================
+mysql-server (or mariadb)
+postgresql-server
+postgresql-contrib
+sqlite3
+redis-server
+mongodb (optional)
+cassandra (optional)
+
+# ============================================================================
+# APPLICATION SERVERS
+# ============================================================================
+tomcat10 (Java applications)
+jetty (Java)
+nodejs (JavaScript)
+python3 (Python apps)
+ruby (Ruby apps)
+php-fpm (PHP apps)
+php-apache (mod_php)
+php-mysql
+php-pgsql
+php-sqlite3
+php-redis
+
+# ============================================================================
+# CONTAINER RUNTIMES
+# ============================================================================
+docker
+docker-compose
+containerd
+runc
+podman
+cri-o
+kubernetes (kubeadm, kubelet, kubectl)
+
+# ============================================================================
+# ORCHESTRATION
+# ============================================================================
+kubernetes-node
+etcd
+flannel
+calico
+kube-router
+
+# ============================================================================
+# MONITORING AND OBSERVABILITY
+# ============================================================================
+prometheus
+prometheus-node-exporter
+grafana
+alertmanager
+blackbox-exporter
+victoria-metrics
+netdata
+glances
+htop
+iotop
+iftop
+nmon
+sysstat
+collectd
+telegraf
+influxdb
+
+# ============================================================================
+# LOGGING
+# ============================================================================
+elasticsearch
+logstash
+kibana (ELK stack)
+fluentd
+loki
+promtail
+graylog
+
+# ============================================================================
+# BACKUP AND RECOVERY
+# ============================================================================
+rsync
+restic
+borgbackup
+duplicity
+timeshift (system snapshots)
+rclone
+s3cmd
+awscli
+duplicati
+
+# ============================================================================
+# SECURITY (Server)
+# ============================================================================
+fail2ban
+crowdsec
+auditd
+aide
+tripwire
+ossec (Wazuh)
+selinux
+apparmor
+clamav (antivirus)
+rkhunter
+chkrootkit
+lynis
+openscap
+
+# ============================================================================
+# SSL/TLS CERTIFICATE MANAGEMENT
+# ============================================================================
+certbot (Let's Encrypt)
+acme.sh
+openssl
+ca-certificates
+stunnel
+
+# ============================================================================
+# VPN AND TUNNELING
+# ============================================================================
+openvpn
+wireguard-tools
+strongswan (IPsec)
+softether
+socat
+autossh
+
+# ============================================================================
+# LOAD BALANCING
+# ============================================================================
+haproxy
+nginx (as load balancer)
+keepalived (high availability)
+heartbeat
+corosync
+pacemaker
+
+# ============================================================================
+# QUEUE AND MESSAGE BROKERS
+# ============================================================================
+rabbitmq-server
+apache-kafka
+activemq
+redis (as message broker)
+zeromq
+
+# ============================================================================
+# EMAIL SERVER
+# ============================================================================
+postfix
+dovecot
+courier
+exim
+sendmail
+spamassassin
+clamav-milter
+opendkim
+opendmarc
+
+# ============================================================================
+# DATABASE MANAGEMENT TOOLS
+# ============================================================================
+phpmyadmin (MySQL web interface)
+adminer (lightweight)
+pgadmin (PostgreSQL)
+redis-commander
+mongo-express
+
+# ============================================================================
+# SYSTEM ADMINISTRATION
+# ============================================================================
+sudo
+polkit
+dbus
+logrotate
+cronie
+anacron
+systemd-journald
+systemd-resolved
+systemd-networkd
+systemd-timesyncd
+chrony (NTP)
+ntpd
+auditd
+acpid
+acpi
+lm-sensors
+smartmontools
+
+# ============================================================================
+# VIRTUALIZATION
+# ============================================================================
+qemu-kvm
+libvirt
+virt-manager
+virt-viewer
+ovmf (UEFI for VMs)
+vde2
+bridge-utils
+openvswitch
+
+# ============================================================================
+# STORAGE AND SAN
+# ============================================================================
+iscsi-initiator-utils
+iscsi-target
+multipath-tools
+ceph-common
+glusterfs-server
+nfs-kernel-server
+samba
+samba-client
+
+# ============================================================================
+# DNS SERVICES
+# ============================================================================
+bind (named)
+dnsmasq
+powerdns
+unbound
+
+# ============================================================================
+# REMOTE ACCESS
+# ============================================================================
+openssh-server
+openssh-client
+telnetd (legacy - not recommended)
+vsftpd (FTP)
+proftpd
+pure-ftpd
+rclone
+
+# ============================================================================
+# VERSION CONTROL
+# ============================================================================
+git
+git-lfs
+subversion
+mercurial
+
+# ============================================================================
+# CI/CD (Optional)
+# ============================================================================
+jenkins
+gitlab-runner
+drone
+woodpecker
+
+# ============================================================================
+# PERFORMANCE TUNING
+# ============================================================================
+sysstat
+perf
+tuned
+irqbalance
+numactl
+
+# ============================================================================
+# HEALTH CHECKS
+# ============================================================================
+monit
+health-checker
+supervisor
+
+# ============================================================================
+# DEPENDENCIES (Auto-resolved)
+# ============================================================================
+# libssl
+# libcurl
+# libxml2
+# libxslt
+# libpq (PostgreSQL client)
+# libmysqlclient (MySQL client)
+# libsqlite3
+# libpq
+# libldap
+# libpam
+# libcap
+# libattr
+# libacl
+# libgcrypt
+# libgpg-error
+# libsecret
+# libsodium
+# libevent
+# libuv
+# libnghttp2
+# libpsl
+# libbrotli
+# libzstd
+# liblz4
+# libzstd
