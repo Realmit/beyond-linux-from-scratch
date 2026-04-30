@@ -17,8 +17,8 @@ fi
 
 log_info "Checking host system requirements"
 
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then
+# Check if running as root (skip for Lima VM)
+if [ "$EUID" -ne 0 ] && [ ! -f /etc/lima-version ]; then
     log_error "Please run as root"
     exit 1
 fi

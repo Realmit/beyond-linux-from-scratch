@@ -82,6 +82,8 @@ docker build -t $DOCKER_IMAGE -f Dockerfile.mac .
 log_info "Starting LFS build in Docker"
 
 docker run --rm --privileged \
+    --cap-add=SYS_ADMIN \
+    --security-opt seccomp=unconfined \
     -v "$OUTPUT_DIR:/output" \
     -v "$(pwd):/lfs-builder" \
     -v /dev:/dev \
