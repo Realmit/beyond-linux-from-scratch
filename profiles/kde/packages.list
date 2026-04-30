@@ -1,0 +1,460 @@
+# ============================================================================
+# LFS KDE Plasma Desktop Package List
+# Full KDE Plasma 6 desktop environment for LFS Linux
+# Total size: ~8-10GB
+# ============================================================================
+
+# ============================================================================
+# KDE PLASMA CORE (Required)
+# ============================================================================
+# Plasma Shell
+plasma-desktop
+plasma-workspace
+plasma-workspace-wallpapers
+plasma-sdk
+plasma-nm (NetworkManager)
+plasma-pa (PulseAudio)
+plasma-firewall
+plasma-browser-integration
+plasma-disks
+plasma-systemmonitor
+plasma-vault
+plasma-welcome
+plasma-thunderbolt
+
+# KDE Frameworks (Essential)
+kf6-kcoreaddons
+kf6-kconfig
+kf6-ki18n
+kf6-kcrash
+kf6-kdbusaddons
+kf6-kdoctools
+kf6-kguiaddons
+kf6-kwindowsystem
+kf6-solid
+kf6-kdeclarative
+kf6-kjs
+kf6-kjsembed
+kf6-kio
+kf6-knewstuff
+kf6-knotifications
+kf6-knotifyconfig
+kf6-kpackage
+kf6-kparts
+kf6-kpeople
+kf6-ktexteditor
+kf6-kwallet
+kf6-kxmlgui
+kf6-kbookmarks
+kf6-kcmutils
+kf6-kcodecs
+kf6-kcompletion
+kf6-kconfigwidgets
+kf6-kcoreaddons
+kf6-kcrash
+kf6-kdav
+kf6-kdbusaddons
+kf6-kdnssd
+kf6-kemoticons
+kf6-kfilemetadata
+kf6-kglobalaccel
+kf6-kholidays
+kf6-kiconthemes
+kf6-kidletime
+kf6-kimageformats
+kf6-kinit
+kf6-kjobwidgets
+kf6-kpty
+kf6-kquickcharts
+kf6-kross
+kf6-krunner
+kf6-kservice
+kf6-ktextwidgets
+kf6-kunitconversion
+kf6-kuserfeedback
+kf6-kwayland
+kf6-purpose
+kf6-syntax-highlighting
+kf6-threadweaver
+
+# ============================================================================
+# KDE APPLICATIONS (Essential)
+# ============================================================================
+# File manager
+dolphin
+dolphin-plugins
+ffmpegthumbs
+
+# Terminal
+konsole
+yakuake (dropdown terminal)
+
+# Text editor
+kate
+kwrite
+
+# System settings
+systemsettings
+kinfocenter
+kde-systemsettings
+
+# Display manager
+sddm
+sddm-kcm
+
+# Screen management
+kscreen
+kscreenlocker
+
+# Audio
+plasma-pa
+kamoso (webcam)
+dragonplayer (media)
+juk (audio player)
+elisa (music player)
+
+# Disk management
+kdf (disk usage)
+partitionmanager
+k3b (CD/DVD burning)
+
+# Printing
+print-manager
+
+# Archiving
+ark
+
+# Document viewer
+okular
+gwenview (image viewer)
+krita (image editor)
+kolourpaint
+
+# Utilities
+kcalc
+kcharselect
+kfind
+kgpg
+khelpcenter
+klipper (clipboard)
+kmag (magnifier)
+kmousetool
+kmouth
+knotes
+krfb (desktop sharing)
+kshisen (games)
+ksnakeduel
+ktimer
+kwalletmanager
+
+# ============================================================================
+# KDE INTERNET & NETWORKING
+# ============================================================================
+# Web browser
+falkon
+angelfish
+
+# Email client
+kmail
+korganizer
+kaddressbook
+akonadi
+akonadi-calendar
+akonadi-contacts
+akonadi-import-wizard
+akonadi-mime
+akonadi-notes
+akonadi-search
+messagelib
+pimcommon
+mailcommon
+
+# Instant messaging
+kopete
+telepathy
+
+# Remote desktop
+krfb (server)
+krdc (client)
+
+# File sharing
+kdenetwork-filesharing
+kget (download manager)
+
+# Sync
+kdeconnect
+kpeoplevcard
+
+# ============================================================================
+# KDE GRAPHICS
+# ============================================================================
+gwenview
+kamera
+kcolorchooser
+kgamma
+kooka
+kruler
+ksnapshot
+kdegraphics-thumbnailers
+libkdcraw
+libkexiv2
+libkipi
+okular
+svgpart
+
+# ============================================================================
+# KDE MULTIMEDIA
+# ============================================================================
+# Video
+dragon
+kdenlive (video editor)
+kmix
+kscd
+kamoso
+audiocd-kio
+ffmpegthumbs
+libkcddb
+libkcompactdisc
+
+# Audio
+elisa
+juk
+k3b (CD/DVD)
+kamoso
+
+# ============================================================================
+# KDE GAMES (Optional)
+# ============================================================================
+kdegames
+kmahjongg
+ksudoku
+kpat
+kshisen
+knavalbattle
+kbreakout
+ktuberling
+kblocks
+bomber
+granatier
+kapman
+kollision
+knetwalk
+kigo
+ksquares
+katomic
+kblackbox
+klickety
+kmines
+kolf
+kollision
+kpat
+kreversi
+kspaceduel
+ksnakeduel
+
+# ============================================================================
+# KDE EDUCATION (Optional)
+# ============================================================================
+kdeedu
+kstars (astronomy)
+marble (map)
+kalzium (chemistry)
+kmplot (mathematics)
+kbruch (fractions)
+kgeography (geography)
+khangman (hangman)
+kig (geometry)
+kiten (japanese)
+klettres (alphabet)
+klines
+kmouth
+kpercentage
+kstars
+ktouch (typing)
+kturtle (programming)
+kwordquiz
+parley
+
+# ============================================================================
+# KDE OFFICE
+# ============================================================================
+calligra-suite
+calligra-stage (presentations)
+calligra-words (word processor)
+calligra-sheets (spreadsheet)
+calligra-plan (project management)
+karbon (vector graphics)
+kexi (database)
+krita (image editing)
+koconverter
+kooka
+krita
+
+# ============================================================================
+# KDE SYSTEM TOOLS
+# ============================================================================
+kdeadmin
+kcron
+ksystemlog
+kuser
+kpackage
+system-config-printer-kde
+kde-inotify-survey
+kio-fuse
+kio-gdrive
+kio-extras
+kio-fuse
+
+# ============================================================================
+# KDE DEVELOPMENT
+# ============================================================================
+kdevelop
+kdev-php
+kdev-python
+kdev-ruby
+kdev-embedded
+kdev-js
+kdev-qmake
+kdesdk
+cervisia (CVS)
+kdesvn (SVN)
+kdiff3
+kompare
+kmtrace
+kprofilemethod
+lokalize (translation)
+poxml
+umbrello (UML)
+
+# ============================================================================
+# KDE WIDGETS AND PLASMOIDS
+# ============================================================================
+kdeplasma-addons
+plasma-widgets-addons
+plasma-runners-addons
+plasma-calendar-addons
+plasma-nm
+plasma-pa
+plasma-sdk
+plasma-vault
+plasma-disks
+plasma-thunderbolt
+plasma-firewall
+plasma-systemmonitor
+
+# ============================================================================
+# QT6 FRAMEWORK (Required for KDE6)
+# ============================================================================
+qt6-base
+qt6-declarative
+qt6-tools
+qt6-multimedia
+qt6-networkauth
+qt6-svg
+qt6-quick3d
+qt6-quickcontrols
+qt6-quicktimeline
+qt6-virtualkeyboard
+qt6-webchannel
+qt6-webengine
+qt6-3d
+qt6-5compat
+qt6-charts
+qt6-connectivity
+qt6-datavis3d
+qt6-languageserver
+qt6-lottie
+qt6-positioning
+qt6-remoteobjects
+qt6-scxml
+qt6-sensors
+qt6-serialbus
+qt6-serialport
+qt6-speech
+qt6-webview
+qt6-websockets
+qt6-quick3d
+qt6-quickcontrols
+
+# ============================================================================
+# GRAPHICS STACK
+# ============================================================================
+xorg-server
+xorg-xinit
+xwayland
+wayland
+mesa
+mesa-dri-drivers
+mesa-vulkan-drivers
+libva
+libva-utils
+vulkan-loader
+vulkan-headers
+glslang
+
+# ============================================================================
+# AUDIO STACK
+# ============================================================================
+pipewire
+pipewire-pulse
+wireplumber
+alsa-lib
+alsa-utils
+pulseaudio (optional)
+libpulse
+libcanberra
+
+# ============================================================================
+# FONTS
+# ============================================================================
+noto-fonts
+noto-fonts-emoji
+cantarell-fonts
+dejavu-fonts
+liberation-fonts
+source-code-pro-fonts
+jetbrains-mono-fonts
+oxygen-fonts
+fontconfig
+freetype
+
+# ============================================================================
+# ICON THEMES
+# ============================================================================
+breeze-icons
+oxygen-icons
+papirus-icon-theme
+adwaita-icon-theme
+hicolor-icon-theme
+
+# ============================================================================
+# DEPENDENCIES (Auto-resolved)
+# ============================================================================
+# libx11
+# libxcb
+# libxrandr
+# libxfixes
+# libxcomposite
+# libxdamage
+# libxinerama
+# libxss
+# libxtst
+# libxcursor
+# libxft
+# libxi
+# libxkbfile
+# libxkbcommon
+# libxklavier
+# libxml2
+# libxslt
+# libjpeg-turbo
+# libpng
+# libtiff
+# libwebp
+# freetype
+# fontconfig
+# glib2
+# gtk3 (for compatibility)
+# dbus
+# polkit
+# systemd
