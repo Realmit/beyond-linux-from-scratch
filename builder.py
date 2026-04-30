@@ -2,7 +2,7 @@
 """
 LFS/BLFS Builder - Main orchestrator
 Works on Linux, macOS, and Windows (WSL2)
-Version: 3.0.0 - Added Security Hardening, Privacy Tools, Init System Choice
+Version: 4.0.0 - Added Live System, Update/Upgrade Manager, Full Security Suite
 """
 
 import os
@@ -20,6 +20,12 @@ import logging
 import tempfile
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
+
+# ============================================================================
+# VERSION INFO
+# ============================================================================
+__version__ = "4.0.0"
+__build_date__ = "2026-04-30"
 
 # ============================================================================
 # CONFIGURATION CLASSES
@@ -50,8 +56,8 @@ class LFSConfig:
     def get_default_config(self) -> Dict:
         """Return default configuration"""
         return {
-            "lfs_version": "12.1",
-            "blfs_version": "12.1",
+            "lfs_version": "12.2",
+            "blfs_version": "12.2",
             "architecture": "x86_64",
             "target_triplet": "x86_64-lfs-linux-gnu",
             "build_threads": os.cpu_count(),
@@ -72,14 +78,30 @@ class LFSConfig:
                 "version": "1.0.0",
                 "repositories": ["official", "community"],
                 "auto_clean": True,
-                "dependency_resolution": True
+                "dependency_resolution": True,
+                "upgrade_check_daily": True
+            },
+
+            "system_updater": {
+                "enabled": True,
+                "auto_check": True,
+                "backup_before_upgrade": True,
+                "keep_backups": 5,
+                "rollback_support": True
+            },
+
+            "live_system": {
+                "enabled": True,
+                "squashfs_compression": "xz",
+                "persistence_support": True,
+                "default_boot": "live"
             },
 
             "java_dev": {
                 "enabled": False,
-                "version": "21.0.6",
+                "version": "21.0.8",
                 "distribution": "temurin",
-                "tools": ["maven", "gradle", "tomcat", "jenkins"],
+                "tools": ["maven", "gradle", "tomcat", "jenkins", "docker", "kubectl"],
                 "optimizations": True,
                 "demo_projects": True
             },
@@ -88,32 +110,38 @@ class LFSConfig:
                 "type": "xfce",
                 "display_manager": "lightdm",
                 "theme": "adwaita",
-                "extras": ["firefox", "libreoffice", "gimp", "vlc"]
+                "icon_theme": "Papirus",
+                "font": "Noto Sans 10",
+                "wallpaper": "/usr/share/backgrounds/default.jpg",
+                "extras": ["firefox", "libreoffice", "gimp", "vlc", "thunar", "xfce4-terminal"]
             },
 
             "security": {
                 "kernel_hardening": True,
-                "firewall": {"enabled": True, "backend": "nftables", "allow_ssh": True},
-                "privacy": {"disable_telemetry": True, "clear_tmp_on_boot": True},
-                "fail2ban": {"enabled": True, "ban_time": 3600},
-                "audit": {"enabled": True, "monitor_files": ["/etc/passwd", "/etc/shadow"]},
-                "user_hardening": {"password_min_length": 12, "disable_root_login": True},
+                "firewall": {"enabled": True, "backend": "nftables", "allow_ssh": True, "allow_http": False},
+                "privacy": {"disable_telemetry": True, "clear_tmp_on_boot": True, "disable_core_dumps": True},
+                "fail2ban": {"enabled": True, "ban_time": 3600, "max_retry": 5},
+                "audit": {"enabled": True, "monitor_files": ["/etc/passwd", "/etc/shadow", "/etc/sudoers"]},
+                "user_hardening": {"password_min_length": 12, "disable_root_login": True, "max_login_attempts": 5},
                 "encryption": {"encrypted_swap": True, "swap_size_mb": 2048},
-                "hids": {"enabled": True, "daily_check": True},
-                "daily_scans": {"enabled": True, "rootkit_check": True}
+                "hids": {"enabled": True, "daily_check": True, "tool": "aide"},
+                "daily_scans": {"enabled": True, "rootkit_check": True, "port_scan": True}
             },
 
             "filesystem": {
                 "type": "ext4",
                 "size_mb": 10240,
                 "swap_mb": 2048,
-                "boot_mb": 512
+                "boot_mb": 512,
+                "compress": False,
+                "noatime": True
             },
 
             "kernel": {
-                "version": "6.6.14",
+                "version": "6.12.10",
                 "config": "config/kernel-config",
-                "modules": ["ext4", "xfs", "nvme", "virtio", "usb_storage"]
+                "modules": ["ext4", "xfs", "nvme", "virtio", "usb_storage", "overlay", "vfat", "ntfs"],
+                "custom_patches": []
             },
 
             "locale": "en_US.UTF-8",
@@ -122,20 +150,27 @@ class LFSConfig:
             "keyboard_layout": "us",
 
             "users": [
-                {"name": "lfsuser", "groups": ["wheel", "audio", "video", "storage"], "sudo": True}
+                {"name": "lfsuser", "groups": ["wheel", "audio", "video", "storage", "docker"], "sudo": True, "autologin": True}
             ],
 
             "network": {
                 "dhcp": True,
-                "dns_servers": ["8.8.8.8", "8.8.4.4"],
-                "enable_ipv6": True
+                "dns_servers": ["8.8.8.8", "8.8.4.4", "1.1.1.1"],
+                "enable_ipv6": True,
+                "wireless": True,
+                "bluetooth": True
             },
 
-            "custom_scripts": ["packages/custom-scripts/post-install.sh"],
+            "custom_scripts": {
+                "post_install": ["packages/custom-scripts/post-install.sh"],
+                "theme_setup": "packages/custom-scripts/theme-setup.sh",
+                "first_boot": "packages/custom-scripts/first-boot.sh"
+            },
 
             "repositories": [
                 "https://www.linuxfromscratch.org/lfs/view/stable/wget-list",
-                "https://www.linuxfromscratch.org/blfs/view/stable/wget-list"
+                "https://www.linuxfromscratch.org/blfs/view/stable/wget-list",
+                "https://raw.githubusercontent.com/lfs-builder/repo/main/packages.list"
             ],
 
             "build_options": {
@@ -143,13 +178,16 @@ class LFSConfig:
                 "keep_build_dirs": False,
                 "strip_binaries": True,
                 "checksum_verification": True,
-                "verbose_logging": False
+                "verbose_logging": False,
+                "download_timeout": 300,
+                "retry_downloads": 3
             },
 
             "logging": {
                 "level": "INFO",
                 "max_size_mb": 100,
-                "max_files": 10
+                "max_files": 10,
+                "log_build_output": True
             }
         }
 
@@ -193,7 +231,9 @@ class ProfileManager:
             'java_dev': False,
             'package_manager': True,
             'security_hardening': False,
-            'privacy_tools': False
+            'privacy_tools': False,
+            'live_system': False,
+            'system_updater': False
         },
         'xfce': {
             'description': 'XFCE desktop environment',
@@ -204,7 +244,9 @@ class ProfileManager:
             'java_dev': False,
             'package_manager': True,
             'security_hardening': True,
-            'privacy_tools': False
+            'privacy_tools': False,
+            'live_system': True,
+            'system_updater': True
         },
         'gnome': {
             'description': 'GNOME desktop environment',
@@ -215,7 +257,9 @@ class ProfileManager:
             'java_dev': False,
             'package_manager': True,
             'security_hardening': True,
-            'privacy_tools': False
+            'privacy_tools': False,
+            'live_system': True,
+            'system_updater': True
         },
         'java-dev': {
             'description': 'Java development environment with XFCE',
@@ -226,18 +270,22 @@ class ProfileManager:
             'java_dev': True,
             'package_manager': True,
             'security_hardening': True,
-            'privacy_tools': False
+            'privacy_tools': False,
+            'live_system': True,
+            'system_updater': True
         },
         'secure': {
             'description': 'Security-hardened system with privacy tools',
             'size_gb': 6,
             'build_time_hours': 5,
-            'packages': ['base', 'network', 'ssh', 'xorg', 'xfce', 'security'],
+            'packages': ['base', 'network', 'ssh', 'xorg', 'xfce', 'security', 'privacy'],
             'desktop': 'xfce',
             'java_dev': False,
             'package_manager': True,
             'security_hardening': True,
-            'privacy_tools': True
+            'privacy_tools': True,
+            'live_system': True,
+            'system_updater': True
         },
         'full': {
             'description': 'Complete system with everything',
@@ -248,7 +296,9 @@ class ProfileManager:
             'java_dev': True,
             'package_manager': True,
             'security_hardening': True,
-            'privacy_tools': True
+            'privacy_tools': True,
+            'live_system': True,
+            'system_updater': True
         }
     }
 
@@ -269,15 +319,20 @@ class ProfileManager:
         """Get profile information string"""
         profile = cls.get_profile(name)
         return f"""
-Profile: {name}
-  Description: {profile['description']}
-  Size: ~{profile['size_gb']} GB
-  Build time: ~{profile['build_time_hours']} hours
-  Desktop: {profile['desktop'] or 'None'}
-  Java Dev: {profile['java_dev']}
-  Package Manager: {profile['package_manager']}
-  Security Hardening: {profile.get('security_hardening', False)}
-  Privacy Tools: {profile.get('privacy_tools', False)}
+╔══════════════════════════════════════════════════════════════════╗
+║ Profile: {name.upper()}
+╠══════════════════════════════════════════════════════════════════╣
+║ Description:   {profile['description']}
+║ Size:          ~{profile['size_gb']} GB
+║ Build time:    ~{profile['build_time_hours']} hours
+║ Desktop:       {profile['desktop'] or 'None (CLI only)'}
+║ Java Dev:      {'✓' if profile['java_dev'] else '✗'}
+║ Package Mgr:   {'✓' if profile['package_manager'] else '✗'}
+║ Security:      {'✓' if profile.get('security_hardening', False) else '✗'}
+║ Privacy:       {'✓' if profile.get('privacy_tools', False) else '✗'}
+║ Live System:   {'✓' if profile.get('live_system', False) else '✗'}
+║ Auto Updates:  {'✓' if profile.get('system_updater', False) else '✗'}
+╚══════════════════════════════════════════════════════════════════╝
 """
 
 
@@ -296,11 +351,11 @@ class SourceDownloader:
     def _create_session(self):
         """Create urllib session with retry logic"""
         opener = urllib.request.build_opener()
-        opener.addheaders = [('User-Agent', 'LFS-Builder/3.0')]
+        opener.addheaders = [('User-Agent', f'LFS-Builder/{__version__}')]
         return opener
 
-    def download(self, url: str, filename: Optional[str] = None) -> bool:
-        """Download a file with progress indication"""
+    def download(self, url: str, filename: Optional[str] = None, retries: int = 3) -> bool:
+        """Download a file with progress indication and retry"""
         if filename is None:
             filename = url.split('/')[-1]
 
@@ -310,15 +365,19 @@ class SourceDownloader:
             self.logger.info(f"Already exists: {filename}")
             return True
 
-        self.logger.info(f"Downloading: {filename}")
-
-        try:
-            urllib.request.urlretrieve(url, dest, self._reporthook)
-            print()  # New line after progress
-            return True
-        except Exception as e:
-            self.logger.error(f"Failed to download {url}: {e}")
-            return False
+        for attempt in range(retries):
+            self.logger.info(f"Downloading: {filename} (attempt {attempt + 1}/{retries})")
+            try:
+                urllib.request.urlretrieve(url, dest, self._reporthook)
+                print()
+                return True
+            except Exception as e:
+                self.logger.warning(f"Attempt {attempt + 1} failed: {e}")
+                if attempt < retries - 1:
+                    continue
+                self.logger.error(f"Failed to download {url}: {e}")
+                return False
+        return False
 
     def _reporthook(self, blocknum, blocksize, totalsize):
         """Download progress callback"""
@@ -466,21 +525,26 @@ class USBWriter:
     """Write bootable ISO to USB drive"""
 
     @staticmethod
-    def list_devices() -> List[str]:
-        """List available USB devices"""
+    def list_devices() -> List[Dict]:
+        """List available USB devices with details"""
         devices = []
 
         if platform.system() == "Linux":
-            result = subprocess.run(['lsblk', '-d', '-o', 'NAME,SIZE,MODEL', '-l'],
+            result = subprocess.run(['lsblk', '-d', '-o', 'NAME,SIZE,MODEL,TYPE,MOUNTPOINT', '-l'],
                                     capture_output=True, text=True)
             for line in result.stdout.split('\n')[1:]:
-                if line.strip():
-                    devices.append(line.strip())
+                if line.strip() and 'disk' in line:
+                    parts = line.split()
+                    devices.append({
+                        'name': f"/dev/{parts[0]}",
+                        'size': parts[1] if len(parts) > 1 else '?',
+                        'model': parts[2] if len(parts) > 2 else 'Unknown'
+                    })
         elif platform.system() == "Darwin":
             result = subprocess.run(['diskutil', 'list'], capture_output=True, text=True)
             for line in result.stdout.split('\n'):
                 if '/dev/disk' in line and 'external' in line.lower():
-                    devices.append(line.strip())
+                    devices.append({'name': line.split()[0], 'size': '?', 'model': 'USB Drive'})
 
         return devices
 
@@ -491,17 +555,23 @@ class USBWriter:
             logger.error(f"ISO not found: {iso_path}")
             return False
 
-        logger.warning(f"This will overwrite {device}")
-        response = input("Continue? (yes/no): ")
+        # Validate device
+        if not device.startswith('/dev/'):
+            device = f"/dev/{device}"
 
-        if response.lower() != 'yes':
+        logger.warning(f"This will overwrite ALL data on {device}")
+        response = input("Type 'YES' to continue: ")
+
+        if response != 'YES':
             logger.info("Operation cancelled")
             return False
 
         system = platform.system()
 
         if system == "Linux":
-            cmd = ['sudo', 'dd', f'if={iso_path}', f'of={device}', 'bs=4M', 'status=progress']
+            # Unmount any mounted partitions
+            subprocess.run(['sudo', 'umount', f'{device}*'], capture_output=True, text=True)
+            cmd = ['sudo', 'dd', f'if={iso_path}', f'of={device}', 'bs=4M', 'status=progress', 'conv=fsync']
         elif system == "Darwin":
             raw_device = device.replace('disk', 'rdisk')
             cmd = ['sudo', 'dd', f'if={iso_path}', f'of={raw_device}', 'bs=4m']
@@ -510,8 +580,15 @@ class USBWriter:
             return False
 
         try:
+            logger.info(f"Writing ISO to {device}...")
             subprocess.run(cmd, check=True)
             logger.info(f"Successfully written to {device}")
+
+            # Sync and eject
+            subprocess.run(['sync'], check=False)
+            if system == "Linux":
+                subprocess.run(['sudo', 'eject', device], check=False)
+            logger.info("USB drive is ready. You can safely remove it.")
             return True
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to write ISO: {e}")
@@ -547,6 +624,8 @@ class LFSBuilder:
 
         self.config.set('java_dev.enabled', self.profile_config.get('java_dev', False))
         self.config.set('package_manager.enabled', self.profile_config.get('package_manager', True))
+        self.config.set('live_system.enabled', self.profile_config.get('live_system', True))
+        self.config.set('system_updater.enabled', self.profile_config.get('system_updater', True))
 
         # Apply security settings based on profile
         if self.profile_config.get('security_hardening', False):
@@ -587,6 +666,9 @@ class LFSBuilder:
             'LPM_ENABLED': str(self.profile_config.get('package_manager', True)).lower(),
             'SECURITY_HARDENING': str(self.profile_config.get('security_hardening', False)).lower(),
             'PRIVACY_TOOLS': str(self.profile_config.get('privacy_tools', False)).lower(),
+            'LIVE_SYSTEM': str(self.profile_config.get('live_system', True)).lower(),
+            'SYSTEM_UPDATER': str(self.profile_config.get('system_updater', True)).lower(),
+            'LFS_VERSION': __version__,
             'LC_ALL': 'POSIX'
         }
 
@@ -610,10 +692,12 @@ class LFSBuilder:
     def check_prerequisites(self) -> bool:
         """Check system prerequisites based on platform"""
         self.logger.info(f"Checking prerequisites on {self.system}")
+        self.logger.info(f"LFS Builder Version: {__version__}")
 
         if self.system == "Linux":
-            required_cmds = ['bash', 'gcc', 'make', 'bison', 'gawk', 'm4', 'texinfo', 'wget', 'tar', 'gzip']
+            required_cmds = ['bash', 'gcc', 'make', 'bison', 'gawk', 'm4', 'texinfo', 'wget', 'tar', 'gzip', 'xorriso', 'parted']
             required_space = 50
+            self.logger.info("Linux detected - Native build mode")
         elif self.system == "Darwin":
             required_cmds = ['bash', 'docker', 'make', 'gawk', 'm4']
             required_space = 60
@@ -633,11 +717,13 @@ class LFSBuilder:
 
         if missing:
             self.logger.error(f"Missing commands: {', '.join(missing)}")
+            if self.system == "Linux":
+                self.logger.info("Install missing packages: sudo apt install build-essential bison flex gawk texinfo wget xorriso parted")
             return False
 
         free_space = shutil.disk_usage(self.output_dir).free // (1024**3)
         if free_space < required_space:
-            self.logger.warning(f"Low disk space: {free_space}GB (need {required_space}GB)")
+            self.logger.warning(f"Low disk space: {free_space}GB (recommended: {required_space}GB)")
 
         self.logger.info("Prerequisites check passed")
         return True
@@ -653,21 +739,31 @@ class LFSBuilder:
             self.output_dir / 'logs',
             self.output_dir / 'image',
             self.output_dir / 'cache',
-            self.output_dir / 'backups'
+            self.output_dir / 'backups',
+            self.output_dir / 'live'
         ]
 
         for d in directories:
             d.mkdir(parents=True, exist_ok=True)
+            self.logger.debug(f"Created directory: {d}")
 
         build_info = {
             'profile': self.profile,
             'build_date': datetime.now().isoformat(),
+            'builder_version': __version__,
             'lfs_version': self.config.get('lfs_version'),
             'blfs_version': self.config.get('blfs_version'),
             'init_system': self.get_init_system(),
             'system': self.system,
             'cpu_cores': os.cpu_count(),
-            'python_version': sys.version
+            'python_version': sys.version,
+            'features': {
+                'java_dev': self.profile_config.get('java_dev', False),
+                'security': self.profile_config.get('security_hardening', False),
+                'privacy': self.profile_config.get('privacy_tools', False),
+                'live_system': self.profile_config.get('live_system', True),
+                'system_updater': self.profile_config.get('system_updater', True)
+            }
         }
 
         with open(self.output_dir / 'build_info.json', 'w') as f:
@@ -732,7 +828,12 @@ class LFSBuilder:
         if self.profile_config.get('privacy_tools', False):
             stages.append(('privacy', Path('scripts/blfs/16-privacy-tools.sh')))
 
-        # Final stages
+        # Add System Updater if enabled
+        if self.profile_config.get('system_updater', True):
+            stages.append(('system-updater', Path('scripts/blfs/18-system-updater.sh')))
+            stages.append(('package-updater', Path('scripts/blfs/19-package-updater.sh')))
+
+        # Final stages (installer creates live system if enabled)
         stages.extend([
             ('initramfs', Path('scripts/final/12-create-initramfs.sh')),
             ('bootloader', Path('scripts/final/13-create-bootloader.sh')),
@@ -743,9 +844,13 @@ class LFSBuilder:
 
     def build(self, resume_from: Optional[str] = None) -> bool:
         """Main build process"""
-        self.logger.info(f"Starting LFS build with profile: {self.profile}")
+        self.logger.info("=" * 70)
+        self.logger.info(f"LFS Builder v{__version__}")
+        self.logger.info(f"Profile: {self.profile}")
         self.logger.info(f"Init system: {self.get_init_system()}")
+        self.logger.info(f"Live system: {self.profile_config.get('live_system', True)}")
         self.logger.info(f"Output directory: {self.output_dir}")
+        self.logger.info("=" * 70)
 
         stages = self.get_build_stages()
 
@@ -760,14 +865,19 @@ class LFSBuilder:
                 self.logger.info(f"You can resume with: --resume-from {stage_name}")
                 return False
 
-        self.logger.info("=" * 60)
+        self.logger.info("=" * 70)
         self.logger.info("BUILD COMPLETED SUCCESSFULLY!")
-        self.logger.info("=" * 60)
+        self.logger.info("=" * 70)
 
         iso_path = self.output_dir / 'lfs-installer.iso'
         if iso_path.exists():
             size_mb = iso_path.stat().st_size / (1024 * 1024)
-            self.logger.info(f"Installer ISO: {iso_path} ({size_mb:.1f} MB)")
+            size_gb = size_mb / 1024
+            self.logger.info(f"Installer ISO: {iso_path} ({size_gb:.1f} GB / {size_mb:.0f} MB)")
+
+            # Calculate checksum
+            sha256 = hashlib.sha256(iso_path.read_bytes()).hexdigest()
+            self.logger.info(f"SHA256: {sha256[:32]}...")
 
         return True
 
@@ -783,12 +893,15 @@ class LFSBuilder:
             return USBWriter.write_iso(installer, device, self.logger)
         else:
             self.logger.info(f"ISO created: {installer}")
-            self.logger.info("\nAvailable devices:")
+            self.logger.info("\nAvailable USB devices:")
             devices = USBWriter.list_devices()
             for dev in devices:
-                self.logger.info(f"  {dev}")
+                self.logger.info(f"  {dev['name']} - {dev['size']} - {dev['model']}")
+
             self.logger.info("\nTo write to USB, run:")
             self.logger.info(f"  python3 builder.py --write-usb /dev/sdX")
+            self.logger.info("\nOr use:")
+            self.logger.info("  sudo dd if=lfs-installer.iso of=/dev/sdX bs=4M status=progress")
             return True
 
 
@@ -801,32 +914,39 @@ def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description='LFS/BLFS Builder - Custom Linux Distribution Builder',
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=f"""
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                             LFS Builder v{__version__}
+╚═══════════════════════════════════════════════════════════════════════════╝
+
 Examples:
-  # Build with default profile (XFCE)
+  # Build with default profile (XFCE + Live USB)
   python3 builder.py
-  
+
   # Build with Java development profile
   python3 builder.py --profile java-dev --output ./lfs-java
-  
-  # Build with security hardening
-  python3 builder.py --profile secure
-  
-  # Build full system
+
+  # Build security-hardened system
+  python3 builder.py --profile secure --init sysv
+
+  # Build minimalist server
+  python3 builder.py --profile minimal --no-live
+
+  # Build full system with everything
   python3 builder.py --profile full --output ./lfs-full
-  
+
   # Resume from failed stage
   python3 builder.py --resume-from desktop
-  
+
   # List available profiles
   python3 builder.py --list-profiles
-  
-  # Show profile info
-  python3 builder.py --profile-info java-dev
-  
+
+  # Show profile details
+  python3 builder.py --profile-info secure
+
   # Write ISO to USB
   python3 builder.py --write-usb /dev/sdb
-  
+
   # Clean build directory
   python3 builder.py --clean --output ./lfs-build
         """
@@ -834,7 +954,7 @@ Examples:
 
     parser.add_argument('--profile', default='xfce',
                         choices=ProfileManager.list_profiles(),
-                        help='Build profile to use')
+                        help='Build profile to use (default: xfce)')
 
     parser.add_argument('--output', default='./lfs-build',
                         help='Output directory (default: ./lfs-build)')
@@ -849,19 +969,25 @@ Examples:
                         help='Write ISO to USB device (e.g., /dev/sdb)')
 
     parser.add_argument('--list-profiles', action='store_true',
-                        help='List all available profiles')
+                        help='List all available build profiles')
 
     parser.add_argument('--profile-info', metavar='PROFILE',
-                        help='Show information about a profile')
+                        help='Show detailed information about a profile')
 
     parser.add_argument('--clean', action='store_true',
                         help='Clean build directory')
 
     parser.add_argument('--verbose', '-v', action='store_true',
-                        help='Enable verbose output')
+                        help='Enable verbose output (DEBUG level)')
 
     parser.add_argument('--init', choices=['systemd', 'sysv', 'openrc', 'runit', 's6'],
                         help='Override init system choice')
+
+    parser.add_argument('--no-live', action='store_true',
+                        help='Disable live system creation')
+
+    parser.add_argument('--version', action='version',
+                        version=f'LFS Builder v{__version__} ({__build_date__})')
 
     return parser
 
@@ -872,7 +998,13 @@ def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
         logger.info("Build directory does not exist")
         return True
 
+    # Show directory size
+    size_bytes = sum(f.stat().st_size for f in output_dir.rglob('*') if f.is_file())
+    size_gb = size_bytes / (1024**3)
+
+    logger.warning(f"Build directory size: {size_gb:.1f} GB")
     response = input(f"Delete {output_dir}? (yes/no): ")
+
     if response.lower() == 'yes':
         shutil.rmtree(output_dir)
         logger.info(f"Removed: {output_dir}")
@@ -898,7 +1030,9 @@ def main():
             print(f"    Description: {info['description']}")
             print(f"    Size: ~{info['size_gb']} GB")
             print(f"    Build time: ~{info['build_time_hours']} hours")
+            print(f"    Desktop: {info['desktop'] or 'CLI only'}")
             print(f"    Security: {'Yes' if info.get('security_hardening', False) else 'No'}")
+            print(f"    Live USB: {'Yes' if info.get('live_system', True) else 'No'}")
         print()
         return
 
@@ -927,20 +1061,27 @@ def main():
         builder.config.set('init_system.choice', args.init)
         builder.logger.info(f"Init system overridden to: {args.init}")
 
+    # Disable live system if requested
+    if args.no_live:
+        builder.config.set('live_system.enabled', False)
+        builder.logger.info("Live system disabled")
+
     # Set verbose logging if requested
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+        builder.logger.setLevel(logging.DEBUG)
+        builder.logger.info("Verbose logging enabled")
 
     # Display build info
     print("\n" + "=" * 70)
-    print(f"LFS/BLFS Builder v3.0")
-    print(f"Profile: {args.profile}")
-    print(f"Init System: {builder.get_init_system()}")
-    print(f"Output: {args.output}")
-    print(f"System: {builder.system}")
-    print("=" * 70 + "\n")
-
+    print(f"LFS/BLFS Builder v{__version__}")
+    print("=" * 70)
     print(ProfileManager.get_profile_info(args.profile))
+    print(f"  Init System:    {builder.get_init_system()}")
+    print(f"  Live System:    {'Yes' if builder.config.get('live_system.enabled', True) else 'No'}")
+    print(f"  Output:         {args.output}")
+    print(f"  Host System:    {builder.system}")
+    print("=" * 70 + "\n")
 
     # Check prerequisites
     if not builder.check_prerequisites():
@@ -967,12 +1108,26 @@ def main():
     print("✅ BUILD COMPLETED SUCCESSFULLY!")
     print("=" * 70)
     print(f"📀 ISO location: {builder.output_dir}/lfs-installer.iso")
-    print("\nNext steps:")
-    print("  1. Write ISO to USB: python3 builder.py --write-usb /dev/sdX")
+    print("\n📝 Next steps:")
+    print("  1. Write ISO to USB:")
+    print(f"     python3 builder.py --write-usb /dev/sdX")
     print("  2. Boot from USB")
-    print("  3. Follow installer prompts")
-    print("\nSecurity features enabled:" +
-          (" ✓" if builder.profile_config.get('security_hardening', False) else ""))
+    print("  3. Select 'Try LFS Linux' to test live mode")
+    print("  4. Or select 'Install LFS Linux' for permanent installation")
+    print("\n🔧 After installation:")
+    print("  - Check for updates:   lfs-update check")
+    print("  - Upgrade system:      lfs-update upgrade")
+    print("  - System status:       lfs-update status")
+    print("  - Package manager:     lpm list")
+    print()
+
+    # Show security features status
+    if builder.profile_config.get('security_hardening', False):
+        print("🛡️  Security features: ENABLED")
+        print("   - Kernel hardening, Firewall, Fail2ban, Audit, HIDS")
+    if builder.profile_config.get('privacy_tools', False):
+        print("🔒 Privacy tools: ENABLED")
+        print("   - DNSCrypt, WireGuard, Tor, Telemetry blocking")
     print()
 
 

@@ -76,3 +76,26 @@ python3 builder.py --profile minimal
 
 # Éditer manuellement
 vim config/build.conf
+
+# Sur le système LFS installé:
+
+# Vérifier les mises à jour
+lfs-update check
+
+# Voir le statut du système
+lfs-update status
+
+# Mettre à jour tout le système
+lfs-update upgrade
+
+# Mettre à jour un paquet spécifique
+lpm upgrade firefox
+
+# Voir les paquets obsolètes
+lpm list-outdated
+
+# Annuler la dernière mise à jour
+lfs-update rollback
+
+# Nettoyer les vieux backups
+lfs-update clean
