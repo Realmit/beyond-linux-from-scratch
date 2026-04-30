@@ -1,0 +1,433 @@
+# ============================================================================
+# LFS XFCE Desktop Package List
+# Lightweight XFCE 4.20 desktop environment for LFS Linux
+# ============================================================================
+
+# ============================================================================
+# CORE XFCE (Required)
+# ============================================================================
+# Core libraries and framework
+libxfce4util
+libxfce4ui
+xfconf
+exo
+garcon
+
+# Core XFCE components
+xfce4-panel
+xfce4-session
+xfce4-settings
+xfwm4
+xfdesktop
+thunar
+thunar-volman
+tumbler
+
+# XFCE applications
+xfce4-appfinder
+xfce4-terminal
+xfce4-taskmanager
+xfce4-screenshooter
+xfce4-notifyd
+xfce4-power-manager
+
+# ============================================================================
+# XFCE GOODIES (Extensions and plugins)
+# ============================================================================
+# Panel plugins
+xfce4-whiskermenu-plugin
+xfce4-docklike-plugin
+xfce4-statusnotifier-plugin
+xfce4-cpugraph-plugin
+xfce4-netload-plugin
+xfce4-systemload-plugin
+xfce4-weather-plugin
+xfce4-datetime-plugin
+xfce4-mount-plugin
+xfce4-sensors-plugin
+xfce4-clipman-plugin
+xfce4-notes-plugin
+xfce4-genmon-plugin
+
+# Thunar plugins
+thunar-archive-plugin
+thunar-media-tags-plugin
+thunar-shares-plugin
+
+# ============================================================================
+# X11 / DISPLAY SERVER
+# ============================================================================
+xorg-server
+xorg-xinit
+xorg-apps
+xorg-drivers
+xorg-fonts
+xkbcomp
+xkeyboard-config
+xrandr
+xset
+xprop
+xwininfo
+
+# ============================================================================
+# GRAPHICS DRIVERS
+# ============================================================================
+mesa
+mesa-dri-drivers
+mesa-vulkan-drivers
+libva
+libva-utils
+xf86-video-intel
+xf86-video-amdgpu
+xf86-video-nouveau
+xf86-video-vesa
+xf86-video-fbdev
+
+# ============================================================================
+# GTK AND QT (Theme support)
+# ============================================================================
+gtk3
+gtk2
+gtk-engine-murrine
+gtk-engines
+qt5-base
+qt5-declarative
+qt5-tools
+qt5ct
+
+# ============================================================================
+# FONTS
+# ============================================================================
+dejavu-fonts
+liberation-fonts
+noto-fonts
+noto-fonts-emoji
+cantarell-fonts
+roboto-fonts
+source-code-pro-fonts
+fontconfig
+freetype
+ttf-droid
+ttf-ubuntu-font-family
+
+# ============================================================================
+# ICON THEMES
+# ============================================================================
+papirus-icon-theme
+adwaita-icon-theme
+hicolor-icon-theme
+gnome-icon-theme
+elementary-icon-theme
+oxygen-icons
+
+# ============================================================================
+# GTK THEMES
+# ============================================================================
+adwaita-gtk2-theme
+adwaita-gtk3-theme
+arc-gtk-theme
+matcha-gtk-theme
+numix-gtk-theme
+flat-remix-gtk-theme
+materia-gtk-theme
+
+# ============================================================================
+# SOUND AND AUDIO
+# ============================================================================
+alsa-lib
+alsa-utils
+pulseaudio
+pulseaudio-alsa
+pipewire
+pipewire-pulse
+wireplumber
+libcanberra
+libcanberra-gtk3
+volumeicon
+pavucontrol
+
+# ============================================================================
+# NETWORKING
+# ============================================================================
+network-manager-applet
+nm-applet
+dhcpcd
+wpa_supplicant
+wireless-tools
+openssh
+openssl
+curl
+wget
+rsync
+iptables
+nftables
+
+# ============================================================================
+# SYSTEM UTILITIES
+# ============================================================================
+systemd
+dbus
+polkit
+upower
+udisks2
+gvfs
+gvfs-smb
+gvfs-afc
+gvfs-mtp
+gvfs-goa
+accounts-service
+colord
+cups
+cups-pk-helper
+system-config-printer
+avahi
+ntfs-3g
+exfat-utils
+dosfstools
+e2fsprogs
+
+# ============================================================================
+# FILE MANAGEMENT
+# ============================================================================
+thunar
+thunar-archive-plugin
+thunar-media-tags-plugin
+gigolo (remote connections)
+tumbler (thumbnailer)
+ffmpegthumbnailer
+freetype
+poppler-glib
+libgsf
+
+# ============================================================================
+# APPLICATION LAUNCHERS AND MENU
+# ============================================================================
+xfce4-appfinder
+xfce4-whiskermenu-plugin
+alacarte (menu editor)
+
+# ============================================================================
+# TERMINAL
+# ============================================================================
+xfce4-terminal
+bash-completion
+tmux
+screen
+
+# ============================================================================
+# TASKBAR AND PANEL
+# ============================================================================
+xfce4-panel
+xfce4-docklike-plugin
+xfce4-whiskermenu-plugin
+xfce4-statusnotifier-plugin
+xfce4-cpugraph-plugin
+xfce4-netload-plugin
+xfce4-systemload-plugin
+xfce4-weather-plugin
+
+# ============================================================================
+# WINDOW MANAGEMENT
+# ============================================================================
+xfwm4
+xfwm4-themes
+compton
+picom
+devilspie
+
+# ============================================================================
+# POWER MANAGEMENT
+# ============================================================================
+xfce4-power-manager
+xfce4-power-manager-plugins
+tlp
+tlp-rdw
+
+# ============================================================================
+# NOTIFICATIONS
+# ============================================================================
+xfce4-notifyd
+libnotify
+notification-daemon
+dunst
+
+# ============================================================================
+# SCREENSHOTS AND RECORDING
+# ============================================================================
+xfce4-screenshooter
+xfce4-screensaver
+flameshot
+kazam
+obs-studio
+
+# ============================================================================
+# DESKTOP UTILITIES
+# ============================================================================
+ristretto (image viewer)
+mousepad (text editor)
+orage (calendar)
+parole (media player)
+gigolo (remote connections)
+gvfs
+udisks2
+upower
+
+# ============================================================================
+# BASIC APPLICATIONS (Recommended)
+# ============================================================================
+firefox
+thunderbird
+libreoffice
+gimp
+vlc
+inkscape
+audacity
+simple-scan
+evince
+eog
+file-roller
+galculator
+xfburn (CD/DVD burner)
+gparted
+baobab
+gnome-disk-utility
+
+# ============================================================================
+# DEVELOPMENT TOOLS (Optional)
+# ============================================================================
+git
+gcc
+make
+cmake
+python3
+nodejs
+npm
+vim
+nano
+geany
+codeblocks
+
+# ============================================================================
+# SECURITY AND PRIVACY
+# ============================================================================
+gnome-keyring
+libsecret
+seahorse
+keepassxc
+fail2ban
+firewalld
+audit
+aide
+lynis
+
+# ============================================================================
+# BACKUP AND SYNC
+# ============================================================================
+rsync
+timeshift
+deja-dup
+grsync
+
+# ============================================================================
+# MULTIMEDIA CODECS
+# ============================================================================
+gstreamer
+gst-plugins-base
+gst-plugins-good
+gst-plugins-bad
+gst-plugins-ugly
+gst-libav
+ffmpeg
+ffmpegthumbs
+
+# ============================================================================
+# PRINTING
+# ============================================================================
+cups
+cups-filters
+cups-pdf
+system-config-printer
+hplip
+gutenprint
+foomatic-db
+
+# ============================================================================
+# VIRTUALIZATION
+# ============================================================================
+virtualbox-guest-utils
+qemu-guest-agent
+spice-vdagent
+
+# ============================================================================
+# ACCESSIBILITY
+# ============================================================================
+xrandr
+xbacklight
+redshift
+orca
+brightnessctl
+
+# ============================================================================
+# COMPRESSION TOOLS
+# ============================================================================
+file-roller
+engrampa
+ark
+p7zip
+unrar
+zip
+unzip
+xz-utils
+
+# ============================================================================
+# DEPENDENCIES (Automatically resolved)
+# ============================================================================
+# glib2
+# gtk3
+# cairo
+# pango
+# atk
+# gdk-pixbuf2
+# libnotify
+# libwnck
+# libx11
+# libxcb
+# libxrandr
+# libxfixes
+# libxcomposite
+# libxdamage
+# libxinerama
+# libxss
+# libxtst
+# startup-notification
+# libexif
+# libjpeg-turbo
+# libpng
+# libtiff
+# libwebp
+# libxml2
+# libxslt
+# libgudev
+# libwacom
+# libinput
+# libevdev
+# libmtp
+# libgphoto2
+# lcms2
+# openjpeg2
+# giflib
+# libsndfile
+# libsamplerate
+# libvorbis
+# libogg
+# flac
+# lame
+# twolame
+# libmpeg2
+# x264
+# x265
+# libvpx
+# libtheora
+# opus
+# libvdpau
+# libva
