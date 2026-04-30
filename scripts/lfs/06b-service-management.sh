@@ -5,6 +5,7 @@
 set -e
 
 log_info() { echo -e "\033[0;32m[INFO]\033[0m $1"; }
+log_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
 
 INIT_SYSTEM="${INIT_SYSTEM:-systemd}"
 
@@ -25,15 +26,25 @@ detect_init() {
     fi
 }
 
+# Check if running in Docker
+IN_DOCKER=0
+if [ -f /.dockerenv ]; then
+    IN_DOCKER=1
+    log_warning "Running in Docker - service abstraction will be limited"
+fi
+
 # Unified service command
 create_service_abstraction() {
     log_info "Creating service management abstraction"
 
+    # Créer le répertoire si nécessaire (pour Docker)
+    if [ ! -d /usr/local/bin ]; then
+        mkdir -p /usr/local/bin 2>/dev/null || true
+    fi
+
     cat > /usr/local/bin/svc << 'SVCEOF'
 #!/bin/bash
 # Unified service command wrapper
-
-INIT_SYSTEM=$(detect_init 2>/dev/null || echo "systemd")
 
 detect_init() {
     if [ -f /usr/lib/systemd/systemd ] && command -v systemctl >/dev/null; then
@@ -51,13 +62,19 @@ detect_init() {
     fi
 }
 
+INIT_SYSTEM=$(detect_init 2>/dev/null || echo "systemd")
+
 service_action() {
     local action=$1
     local service=$2
 
     case $INIT_SYSTEM in
         systemd)
-            systemctl $action $service
+            if command -v systemctl >/dev/null; then
+                systemctl $action $service 2>/dev/null || echo "Service $service: systemctl $action failed"
+            else
+                echo "systemctl not available"
+            fi
             ;;
         sysv)
             if [ -f "/etc/rc.d/init.d/$service" ]; then
@@ -68,7 +85,11 @@ service_action() {
             fi
             ;;
         openrc)
-            rc-service $service $action
+            if command -v rc-service >/dev/null; then
+                rc-service $service $action
+            else
+                echo "rc-service not available"
+            fi
             ;;
         runit|s6)
             if [ -d "/etc/runit/runsvdir/default/$service" ] || [ -d "/etc/s6/servicedb/$service" ]; then
@@ -96,11 +117,11 @@ case "$1" in
         ;;
     list)
         case $INIT_SYSTEM in
-            systemd) systemctl list-units --type=service ;;
-            sysv) ls /etc/rc.d/init.d/ ;;
-            openrc) rc-service -l ;;
-            runit) ls /etc/runit/runsvdir/default/ ;;
-            s6) ls /etc/s6/servicedb/ ;;
+            systemd) systemctl list-units --type=service 2>/dev/null || echo "systemctl not available" ;;
+            sysv) ls /etc/rc.d/init.d/ 2>/dev/null || echo "No sysv services" ;;
+            openrc) rc-service -l 2>/dev/null || echo "rc-service not available" ;;
+            runit) ls /etc/runit/runsvdir/default/ 2>/dev/null || echo "No runit services" ;;
+            s6) ls /etc/s6/servicedb/ 2>/dev/null || echo "No s6 services" ;;
         esac
         ;;
     *)
@@ -112,10 +133,16 @@ case "$1" in
 esac
 SVCEOF
 
-    chmod +x /usr/local/bin/svc
+    if [ -f /usr/local/bin/svc ]; then
+        chmod +x /usr/local/bin/svc
+        log_info "Service abstraction created: 'svc' command available"
+    else
+        log_warning "Could not create svc command (permission denied?)"
+    fi
 
-    # Create compatibility aliases
-    cat >> /etc/profile.d/svc-alias.sh << 'EOF'
+    # Create compatibility aliases (dans /etc/profile.d si possible)
+    if [ -d /etc/profile.d ]; then
+        cat > /etc/profile.d/svc-alias.sh << 'EOF'
 # Service management aliases
 alias sv-start='svc start'
 alias sv-stop='svc stop'
@@ -125,10 +152,15 @@ alias sv-list='svc list'
 alias sv-enable='svc enable'
 alias sv-disable='svc disable'
 EOF
-
-    log_info "Service abstraction created: 'svc' command available"
+        chmod +x /etc/profile.d/svc-alias.sh 2>/dev/null || true
+        log_info "Aliases created in /etc/profile.d/svc-alias.sh"
+    else
+        log_warning "Could not create aliases (/etc/profile.d not writable)"
+    fi
 }
 
 # Main
 detect_init
 create_service_abstraction
+
+log_info "Service abstraction setup complete"

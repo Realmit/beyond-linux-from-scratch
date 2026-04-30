@@ -43,11 +43,28 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 
 RUN apt update && apt install -y \
-    build-essential bison flex gawk texinfo \
-    wget curl git python3 python3-pip \
-    xorriso isolinux mtools dosfstools \
-    parted rsync sudo bc cpio \
-    kmod libssl-dev libelf-dev \
+    build-essential \
+    bison \
+    flex \
+    gawk \
+    texinfo \
+    wget \
+    curl \
+    git \
+    python3 \
+    python3-pip \
+    xorriso \
+    isolinux \
+    mtools \
+    dosfstools \
+    parted \
+    rsync \
+    sudo \
+    bc \
+    cpio \
+    kmod \
+    libssl-dev \
+    libelf-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -G sudo builder && \
@@ -67,6 +84,7 @@ log_info "Starting LFS build in Docker"
 docker run --rm --privileged \
     -v "$OUTPUT_DIR:/output" \
     -v "$(pwd):/lfs-builder" \
+    -v /dev:/dev \
     -e LFS=/output/image \
     -e MAKEFLAGS="-j$(sysctl -n hw.ncpu)" \
     $DOCKER_IMAGE \

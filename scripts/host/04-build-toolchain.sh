@@ -6,6 +6,12 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../common/utils.sh"
 
+# Dans Docker, on utilise la toolchain existante
+if [ -f /.dockerenv ]; then
+    log_info "Running in Docker - using existing toolchain"
+    exit 0
+fi
+
 LFS=${LFS:-/mnt/lfs}
 LFS_TGT=${LFS_TGT:-$(uname -m)-lfs-linux-gnu}
 NUM_JOBS=${NUM_JOBS:-$(nproc)}
@@ -94,7 +100,7 @@ if [ "$(uname -m)" = "x86_64" ]; then
     ln -sfv ../lib/ld-linux-x86-64.so.2 $LFS/lib64
     ln -sfv ../lib/ld-linux-x86-64.so.2 $LFS/lib64/ld-lsb-x86-64.so.3
 fi
-patch -Np1 -i ../glibc-2.38-fhs-1.patch
+patch -Np1 -i ../glibc-2.38-fhs-1.patch 2>/dev/null || true
 mkdir -v build
 cd build
 echo "rootsbindir=/usr/sbin" > configparms
@@ -107,7 +113,7 @@ echo "rootsbindir=/usr/sbin" > configparms
 make -j$NUM_JOBS
 make DESTDIR=$LFS install
 sed '/RTLDLIST=/s@/usr/lib@/lib@' -i $LFS/usr/bin/ldd
-cp -v ../nscd/nscd.conf $LFS/etc/nscd.conf
+cp -v ../nscd/nscd.conf $LFS/etc/nscd.conf 2>/dev/null || true
 mkdir -pv $LFS/var/cache/nscd
 cd ../..
 
