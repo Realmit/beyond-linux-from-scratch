@@ -1,0 +1,277 @@
+# ============================================================================
+# LFS LXQt Desktop Package List
+# Lightweight Qt-based desktop environment
+# Total size: ~1.5-2GB
+# ============================================================================
+
+# ============================================================================
+# LXQT CORE (Required)
+# ============================================================================
+# Core libraries
+libqtxdg
+lxqt-build-tools
+libfm-qt
+lxqt-qtplugin
+lxqt-menu-data
+
+# Core LXQt components
+lxqt-session
+lxqt-panel
+lxqt-runner
+lxqt-config
+lxqt-notificationd
+lxqt-globalkeys
+lxqt-powermanagement
+lxqt-about
+lxqt-admin
+lxqt-openssh-askpass
+lxqt-policykit
+lxqt-sudo
+lxqt-themes
+
+# Desktop components
+pcmanfm-qt
+qterminal
+qterminal-l10n
+lximage-qt
+qps (process manager)
+obconf-qt (Openbox config)
+qpwgraph
+
+# ============================================================================
+# OPENBOX WINDOW MANAGER (Default for LXQt)
+# ============================================================================
+openbox
+obconf
+obmenu
+menu-cache
+lxmenu-data
+
+# ============================================================================
+# QT5 FRAMEWORK (Required for LXQt)
+# ============================================================================
+qt5-base
+qt5-declarative
+qt5-tools
+qt5-multimedia
+qt5-svg
+qt5-quickcontrols
+qt5-quickcontrols2
+qt5-graphicaleffects
+qt5-x11extras
+qt5-wayland
+
+# ============================================================================
+# PANEL PLUGINS AND WIDGETS
+# ============================================================================
+lxqt-panel-plugins
+lxqt-weather-plugin
+lxqt-connman-applet
+lxqt-bluetooth
+lxqt-network-monitor
+lxqt-system-tray
+lxqt-notes-plugin
+lxqt-powermanagement
+
+# ============================================================================
+# FILE MANAGER (PCManFM-Qt)
+# ============================================================================
+pcmanfm-qt
+libfm-qt
+libfm-qt-l10n
+fmqt
+gvfs
+gvfs-afc
+gvfs-mtp
+gvfs-smb
+gvfs-goa
+
+# ============================================================================
+# TERMINAL (QTerminal)
+# ============================================================================
+qterminal
+qterminal-l10n
+qtermwidget
+yakuake (optional dropdown terminal)
+
+# ============================================================================
+# SYSTEM TOOLS
+# ============================================================================
+# Configuration
+lxqt-config
+lxqt-config-l10n
+
+# Administration
+lxqt-admin
+lxqt-admin-l10n
+
+# Session management
+lxqt-session
+lxqt-session-l10n
+
+# Power management
+lxqt-powermanagement
+lxqt-powermanagement-l10n
+
+# Notifications
+lxqt-notificationd
+lxqt-notificationd-l10n
+
+# Global shortcuts
+lxqt-globalkeys
+lxqt-globalkeys-l10n
+
+# Runner (launcher)
+lxqt-runner
+lxqt-runner-l10n
+
+# PolicyKit agent
+lxqt-policykit
+lxqt-policykit-l10n
+
+# Screenshot
+screengrab
+
+# ============================================================================
+# APPLICATIONS (Recommended)
+# ============================================================================
+# Image viewer
+lximage-qt
+gwenview (alternative)
+
+# Text editor
+featherpad
+mousepad
+
+# Archive manager
+ark
+file-roller (alternative)
+
+# Calculator
+kcalc
+
+# Document viewer
+okular
+qpdfview
+
+# Media player
+mpv
+smplayer (Qt frontend for mpv)
+qmmp (audio player)
+
+# System monitoring
+qps
+htop
+lxtask
+
+# ============================================================================
+# NETWORKING
+# ============================================================================
+connman
+connman-gtk
+lxqt-connman-applet
+network-manager
+nm-applet
+lxqt-netctl
+wpa_supplicant
+dhcpcd
+openssh-client
+openssh-server
+curl
+wget
+rsync
+
+# ============================================================================
+# BLUETOOTH
+# ============================================================================
+bluez
+bluez-utils
+lxqt-bluetooth
+blueman
+
+# ============================================================================
+# POWER MANAGEMENT
+# ============================================================================
+upower
+tlp
+tlp-rdw
+xfce4-power-manager (for compatibility)
+
+# ============================================================================
+# SOUND AND AUDIO
+# ============================================================================
+alsa-lib
+alsa-utils
+pulseaudio
+pulseaudio-qt
+pavucontrol
+pipewire
+pipewire-pulse
+wireplumber
+
+# ============================================================================
+# GRAPHICS
+# ============================================================================
+xorg-server
+xorg-xinit
+xwayland
+mesa
+mesa-dri-drivers
+mesa-vulkan-drivers
+xrandr
+arandr (display configuration)
+
+# ============================================================================
+# FONTS
+# ============================================================================
+noto-fonts
+noto-fonts-emoji
+dejavu-fonts
+liberation-fonts
+cantarell-fonts
+source-code-pro-fonts
+fontconfig
+freetype
+
+# ============================================================================
+# ICON THEMES
+# ============================================================================
+papirus-icon-theme
+adwaita-icon-theme
+hicolor-icon-theme
+font-awesome
+material-icons
+
+# ============================================================================
+# GTK THEMES (for compatibility)
+# ============================================================================
+adwaita-gtk2-theme
+adwaita-gtk3-theme
+arc-gtk-theme
+breeze-gtk-theme
+
+# ============================================================================
+# DEPENDENCIES (Auto-resolved)
+# ============================================================================
+# glib2
+# gtk3
+# cairo
+# pango
+# atk
+# gdk-pixbuf2
+# libnotify
+# libx11
+# libxcb
+# libxrandr
+# libxfixes
+# libxcomposite
+# libxdamage
+# libxinerama
+# dbus
+# polkit
+# systemd
+# solid
+# kwindowsystem
+# kidletime
+# libkscreen
+# libqscreen
