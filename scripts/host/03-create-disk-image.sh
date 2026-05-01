@@ -3,15 +3,6 @@
 
 source scripts/common/utils.sh
 
-# Dans Docker, on utilise le système de fichiers du conteneur directement
-if [ -f /.dockerenv ]; then
-    log_info "Running in Docker - using container storage instead of disk image"
-    mkdir -pv "$LFS"
-    mkdir -pv "$LFS/boot"
-    log_info "Container storage ready at $LFS"
-    exit 0
-fi
-
 IMAGE_SIZE_MB=${IMAGE_SIZE_MB:-8192}
 BOOT_SIZE_MB=512
 SWAP_SIZE_MB=2048

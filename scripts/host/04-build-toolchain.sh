@@ -19,16 +19,6 @@ LC_ALL=POSIX
 
 log_info "Building cross-toolchain as $(whoami)"
 
-if [ "$EUID" -ne 0 ] && [ ! -f /etc/lima-version ]; then
-    log_error "Please run as root"
-    exit 1
-fi
-
-if [ "$EUID" -eq 0 ]; then
-    log_error "This script must NOT be run as root"
-    exit 1
-fi
-
 cd $LFS/sources
 
 # Binutils (first pass)

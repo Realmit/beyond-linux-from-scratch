@@ -6,13 +6,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../common/utils.sh"
 
-# Vérifier si on est dans Docker
-IN_DOCKER=0
-if [ -f /.dockerenv ]; then
-    IN_DOCKER=1
-    log_info "Running in Docker container - adapting build for Docker"
-fi
-
 log_info "Building complete LFS system"
 
 # Vérifier que LFS est défini

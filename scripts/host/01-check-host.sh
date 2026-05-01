@@ -9,12 +9,6 @@ source "$SCRIPT_DIR/../common/error-handler.sh"
 
 setup_error_handling
 
-# Skip all checks if running in Docker
-if [ -f /.dockerenv ]; then
-    log_info "Running in Docker container - skipping host system checks"
-    exit 0
-fi
-
 log_info "Checking host system requirements"
 
 # Check if running as root (skip for Lima VM)

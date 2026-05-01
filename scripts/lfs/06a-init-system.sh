@@ -4,13 +4,6 @@
 
 set -e
 
-# Vérifier si on est dans Docker
-IN_DOCKER=0
-if [ -f /.dockerenv ]; then
-    IN_DOCKER=1
-    echo "Running in Docker container - adapting init system setup"
-fi
-
 source /etc/lfs-build.conf 2>/dev/null || source /etc/profile.d/lfs.sh 2>/dev/null || true
 
 log_info() { echo -e "\033[0;32m[INFO]\033[0m $1"; }

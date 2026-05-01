@@ -26,13 +26,6 @@ detect_init() {
     fi
 }
 
-# Check if running in Docker
-IN_DOCKER=0
-if [ -f /.dockerenv ]; then
-    IN_DOCKER=1
-    log_warning "Running in Docker - service abstraction will be limited"
-fi
-
 # Unified service command
 create_service_abstraction() {
     log_info "Creating service management abstraction"
