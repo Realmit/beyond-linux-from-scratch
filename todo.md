@@ -2352,4 +2352,442 @@ cd lfs-builder
 python3 builder.py
 ```
 
+Parfait ! Voici l'arborescence complète avec **tous les chemins de fichiers** pour chaque feature. J'ai organisé cela comme une extension de ton projet existant.
+
+```
+lfs-builder/
+├── builder.py                          # Ton fichier principal (existant)
+├── requirements.txt                    # Dépendances Python
+├── setup.py                            # Script d'installation
+├── README.md                           # Documentation
+├── Makefile                            # Commandes make pour faciliter l'usage
+│
+├── config/                             # Configuration
+│   ├── build.conf                       # Ton fichier JSON existant
+│   ├── build.yaml                       # [NOUVEAU] Configuration YAML simplifiée
+│   ├── profiles/                        # [NOUVEAU] Profils prédéfinis
+│   │   ├── gaming.yaml
+│   │   ├── development.yaml
+│   │   ├── server.yaml
+│   │   ├── multimedia.yaml
+│   │   └── kiosk.yaml
+│   └── themes/                          # [NOUVEAU] Thèmes d'interface
+│       ├── dark.yaml
+│       ├── light.yaml
+│       └── hacker.yaml
+│
+├── scripts/                            # Scripts de build (ta structure existante)
+│   ├── host/
+│   ├── lfs/
+│   ├── blfs/
+│   └── final/
+│
+├── src/                                # [NOUVEAU] Code source Python organisé
+│   ├── __init__.py
+│   ├── cli/                            # Interface ligne de commande
+│   │   ├── __init__.py
+│   │   ├── main.py                      # Point d'entrée CLI
+│   │   ├── arguments.py                 # Parsing des arguments
+│   │   └── commands/                    # Sous-commandes
+│   │       ├── __init__.py
+│   │       ├── build.py
+│   │       ├── clean.py
+│   │       ├── config.py
+│   │       ├── monitor.py
+│   │       └── snapshot.py
+│   │
+│   ├── core/                           # Cœur du builder
+│   │   ├── __init__.py
+│   │   ├── builder.py                   # Classe LFSBuilder (refactorée)
+│   │   ├── config.py                    # Gestion de configuration
+│   │   ├── executor.py                  # ScriptExecutor amélioré
+│   │   └── downloader.py                # SourceDownloader amélioré
+│   │
+│   ├── features/                       # [NOUVEAU] Features par module
+│   │   ├── __init__.py
+│   │   ├── tui/                         # Feature 1: Interface TUI
+│   │   │   ├── __init__.py
+│   │   │   ├── app.py                   # LFSConfigApp
+│   │   │   ├── screens/
+│   │   │   │   ├── main.py
+│   │   │   │   ├── profile.py
+│   │   │   │   ├── desktop.py
+│   │   │   │   ├── security.py
+│   │   │   │   ├── network.py
+│   │   │   │   └── cross_compile.py
+│   │   │   └── widgets/
+│   │   │       ├── custom.py
+│   │   │       └── validators.py
+│   │   │
+│   │   ├── snapshot/                   # Feature 2: Snapshots
+│   │   │   ├── __init__.py
+│   │   │   ├── manager.py               # SnapshotManager
+│   │   │   ├── btrfs.py                 # Support Btrfs
+│   │   │   ├── zfs.py                   # Support ZFS
+│   │   │   ├── tar.py                   # Fallback tar
+│   │   │   └── rollback.py              # Rollback handler
+│   │   │
+│   │   ├── firstboot/                  # Feature 3: Assistant first-boot
+│   │   │   ├── __init__.py
+│   │   │   ├── assistant.py             # Script générateur
+│   │   │   ├── templates/               # Templates de scripts
+│   │   │   │   ├── first-boot.sh.tpl
+│   │   │   │   ├── network.sh.tpl
+│   │   │   │   ├── users.sh.tpl
+│   │   │   │   └── software.sh.tpl
+│   │   │   └── modules/                 # Modules assistant
+│   │   │       ├── user_setup.py
+│   │   │       ├── network_setup.py
+│   │   │       ├── software_selection.py
+│   │   │       └── theme_selector.py
+│   │   │
+│   │   ├── dryrun/                     # Feature 4: Dry-run mode
+│   │   │   ├── __init__.py
+│   │   │   ├── executor.py              # DryRunExecutor
+│   │   │   ├── analyzer.py              # Analyse de scripts
+│   │   │   └── reporter.py              # Rapport d'analyse
+│   │   │
+│   │   ├── downloader/                 # Feature 5: Advanced downloader
+│   │   │   ├── __init__.py
+│   │   │   ├── advanced.py              # AdvancedDownloader
+│   │   │   ├── aria2.py                 # Intégration aria2
+│   │   │   ├── cache.py                 # Gestion cache local
+│   │   │   ├── resume.py                # Reprise de téléchargement
+│   │   │   └── checksum.py              # Vérification parallèle
+│   │   │
+│   │   ├── monitor/                    # Feature 6: Web monitoring
+│   │   │   ├── __init__.py
+│   │   │   ├── server.py                # BuildMonitor (Flask)
+│   │   │   ├── templates/
+│   │   │   │   ├── dashboard.html
+│   │   │   │   ├── logs.html
+│   │   │   │   └── status.html
+│   │   │   ├── static/
+│   │   │   │   ├── css/
+│   │   │   │   │   └── style.css
+│   │   │   │   └── js/
+│   │   │   │       └── dashboard.js
+│   │   │   └── api.py                   # Endpoints API
+│   │   │
+│   │   ├── packagemanager/             # Feature 7: Advanced LPM
+│   │   │   ├── __init__.py
+│   │   │   ├── lpm.py                   # Script générateur
+│   │   │   ├── templates/
+│   │   │   │   └── lpm.sh.tpl
+│   │   │   └── hooks/                   # Hooks post-installation
+│   │   │       ├── post-install.sh
+│   │   │       └── pre-remove.sh
+│   │   │
+│   │   ├── userprofiles/               # Feature 8: User profiles
+│   │   │   ├── __init__.py
+│   │   │   ├── manager.py               # UserProfileManager
+│   │   │   ├── profiles.yaml            # Profils prédéfinis
+│   │   │   └── apply.py                 # Application des profils
+│   │   │
+│   │   ├── docker/                     # Feature 9: Docker support
+│   │   │   ├── __init__.py
+│   │   │   ├── builder.py               # DockerBuilder
+│   │   │   ├── Dockerfile
+│   │   │   ├── docker-compose.yml
+│   │   │   └── entrypoint.sh
+│   │   │
+│   │   ├── iso/                        # Feature 10: ISO customization
+│   │   │   ├── __init__.py
+│   │   │   ├── builder.py               # ISOBuilder
+│   │   │   ├── splash.py                # Gestion splash screen
+│   │   │   ├── secureboot.py            # SecureBoot support
+│   │   │   ├── hooks.py                 # Post-install hooks
+│   │   │   └── templates/
+│   │   │       ├── grub.cfg.tpl
+│   │   │       └── isolinux.cfg.tpl
+│   │   │
+│   │   ├── notifications/              # Feature 11: Notifications
+│   │   │   ├── __init__.py
+│   │   │   ├── manager.py               # NotificationManager
+│   │   │   ├── desktop.py               # Desktop notifications
+│   │   │   ├── mobile.py                # Pushover/Gotify
+│   │   │   ├── telegram.py              # Telegram bot
+│   │   │   └── slack.py                 # Slack webhook
+│   │   │
+│   │   ├── interactive/               # Feature 12: Interactive mode
+│   │   │   ├── __init__.py
+│   │   │   ├── builder.py               # InteractiveBuilder
+│   │   │   ├── error_handler.py         # Gestion erreurs interactive
+│   │   │   ├── shell.py                 # Shell de débogage
+│   │   │   └── recovery.py              # Stratégies de récupération
+│   │   │
+│   │   ├── hardware/                   # Feature 13: Hardware detection
+│   │   │   ├── __init__.py
+│   │   │   ├── detector.py              # HardwareCompatibility
+│   │   │   ├── cpu.py                   # Détection CPU
+│   │   │   ├── gpu.py                   # Détection GPU
+│   │   │   ├── disk.py                  # Détection disques
+│   │   │   ├── network.py               # Détection réseau
+│   │   │   └── recommendations.py       # Recommandations
+│   │   │
+│   │   └── distro/                     # Feature 14: Distro customization
+│   │       ├── __init__.py
+│   │       ├── customizer.py            # DistroCustomizer
+│   │       ├── branding.py              # Gestion branding
+│   │       ├── repositories.py          # Gestion dépôts
+│   │       ├── release.py               # Création release ISO
+│   │       └── templates/
+│   │           ├── os-release.tpl
+│   │           ├── lsb-release.tpl
+│   │           └── issue.tpl
+│   │
+│   └── utils/                          # Utilitaires
+│       ├── __init__.py
+│       ├── logging.py                   # Logging avancé
+│       ├── system.py                    # Détection système
+│       ├── network.py                   # Utilitaires réseau
+│       └── validation.py                # Validation données
+│
+├── data/                               # Données statiques
+│   ├── sources/                        # Sources téléchargées
+│   ├── snapshots/                      # Snapshots système
+│   │   └── .gitkeep
+│   ├── cache/                          # Cache téléchargements
+│   │   └── .gitkeep
+│   ├── themes/                         # Thèmes intégrés
+│   │   ├── default/
+│   │   │   ├── wallpaper.jpg
+│   │   │   ├── icon_theme/
+│   │   │   └── gtk.css
+│   │   ├── dark/
+│   │   └── hacker/
+│   └── hooks/                          # Hooks système
+│       ├── pre-build.d/
+│       ├── post-build.d/
+│       ├── pre-install.d/
+│       └── post-install.d/
+│
+├── tests/                              # Tests unitaires
+│   ├── __init__.py
+│   ├── test_config.py
+│   ├── test_downloader.py
+│   ├── test_snapshot.py
+│   ├── test_hardware.py
+│   └── fixtures/                       # Données de test
+│       ├── sample_config.json
+│       └── sample_script.sh
+│
+├── docs/                               # Documentation
+│   ├── index.md
+│   ├── installation.md
+│   ├── configuration.md
+│   ├── profiles.md
+│   ├── cross-compile.md
+│   ├── api/
+│   │   └── README.md
+│   └── examples/
+│       ├── gaming-build.md
+│       ├── server-build.md
+│       └── embedded-build.md
+│
+├── tools/                              # Outils supplémentaires
+│   ├── cleanup.sh                      # Nettoyage
+│   ├── backup.sh                       # Backup LFS
+│   ├── restore.sh                      # Restauration
+│   ├── benchmark.sh                    # Benchmark construction
+│   └── docker/
+│       ├── build.sh
+│       └── run.sh
+│
+├── scripts-generated/                  # Scripts générés (runtime)
+│   ├── lpm                             # Gestionnaire paquets généré
+│   ├── first-boot.sh                   # Assistant first-boot généré
+│   ├── monitor.sh                      # Script monitoring
+│   └── hooks/
+│
+└── var/                                # Données variables (runtime)
+    ├── logs/                           # Logs de build
+    ├── run/                            # PIDs, sockets
+    ├── tmp/                            # Fichiers temporaires
+    └── lib/                            # Base de données locale
+        ├── packages.db
+        └── snapshots.db
+```
+
+## 📁 Détail des fichiers importants par feature
+
+### Feature 1: Interface TUI
+```
+src/features/tui/app.py                  # Point d'entrée TUI
+src/features/tui/screens/main.py         # Écran principal
+src/features/tui/screens/profile.py      # Sélection profil
+src/features/tui/widgets/custom.py       # Widgets personnalisés
+```
+
+### Feature 2: Snapshots
+```
+src/features/snapshot/manager.py         # SnapshotManager
+src/features/snapshot/rollback.py        # Rollback handler
+data/snapshots/                          # Stockage snapshots
+scripts-generated/hooks/pre-upgrade.sh   # Snapshot avant upgrade
+```
+
+### Feature 3: First-boot assistant
+```
+src/features/firstboot/assistant.py      # Générateur assistant
+src/features/firstboot/templates/first-boot.sh.tpl  # Template
+scripts-generated/first-boot.sh          # Script généré (dans ISO)
+```
+
+### Feature 4: Dry-run
+```
+src/features/dryrun/executor.py          # DryRunExecutor
+src/features/dryrun/analyzer.py          # Analyseur scripts
+src/features/dryrun/reporter.py          # Générateur rapport
+```
+
+### Feature 5: Advanced downloader
+```
+src/features/downloader/advanced.py      # AdvancedDownloader
+src/features/downloader/aria2.py         # Intégration aria2c
+src/features/downloader/cache.py         # Cache manager
+data/cache/                              # Cache téléchargements
+```
+
+### Feature 6: Web monitoring
+```
+src/features/monitor/server.py           # Serveur Flask
+src/features/monitor/templates/dashboard.html  # Dashboard
+src/features/monitor/static/js/dashboard.js    # JS temps réel
+var/run/monitor.pid                      # PID du serveur
+```
+
+### Feature 7: Advanced LPM
+```
+src/features/packagemanager/lpm.py       # Générateur LPM
+src/features/packagemanager/templates/lpm.sh.tpl  # Template
+scripts-generated/lpm                    # Script généré
+var/lib/packages.db                      # Base SQLite des paquets
+/etc/lpm/repos.d/                        # Dépôts (sur système cible)
+```
+
+### Feature 8: User profiles
+```
+src/features/userprofiles/manager.py     # UserProfileManager
+src/features/userprofiles/profiles.yaml  # Définition profils
+config/profiles/gaming.yaml              # Profil gaming
+config/profiles/development.yaml         # Profil dev
+```
+
+### Feature 9: Docker support
+```
+src/features/docker/Dockerfile           # Image Docker
+src/features/docker/docker-compose.yml   # Compose multi-services
+tools/docker/build.sh                    # Script build image
+tools/docker/run.sh                      # Script run conteneur
+```
+
+### Feature 10: ISO customization
+```
+src/features/iso/builder.py              # ISOBuilder avancé
+src/features/iso/secureboot.py           # Signature SecureBoot
+data/themes/default/                     # Thèmes intégrés
+```
+
+### Feature 11: Notifications
+```
+src/features/notifications/manager.py    # NotificationManager
+src/features/notifications/telegram.py   # Telegram bot
+config/notifications.conf                # Tokens et webhooks
+```
+
+### Feature 12: Interactive mode
+```
+src/features/interactive/builder.py      # InteractiveBuilder
+src/features/interactive/error_handler.py # Gestion interactive
+src/features/interactive/recovery.py     # Stratégies recovery
+```
+
+### Feature 13: Hardware detection
+```
+src/features/hardware/detector.py        # HardwareCompatibility
+src/features/hardware/gpu.py             # Détection GPU
+src/features/hardware/recommendations.py # Recommandations kernel
+```
+
+### Feature 14: Distro customization
+```
+src/features/distro/customizer.py        # DistroCustomizer
+src/features/distro/branding.py          # Branding OS
+src/features/distro/release.py           # Génération release
+etc/os-release                           # (cible) OS info
+etc/lfs-release                          # (cible) Version LFS
+```
+
+## 📄 Fichiers de configuration principaux
+
+```yaml
+# config/build.yaml (Nouveau format YAML)
+distribution:
+  name: "MyLFS"
+  version: "1.0.0"
+  codename: "awesome-dragon"
+  
+profile: gaming
+
+features:
+  tui_enabled: true
+  snapshots: true
+  web_monitor: true
+  notifications:
+    desktop: true
+    telegram: "BOT_TOKEN"
+    
+customization:
+  theme: dark
+  wallpaper: "/usr/share/backgrounds/custom.jpg"
+  boot_splash: "data/themes/dark/splash.png"
+```
+
+## 🚀 Fichier Makefile pour simplifier l'usage
+
+```makefile
+# Makefile
+.PHONY: help build clean config monitor shell test docker
+
+help:
+	@echo "LFS Builder - Commandes disponibles:"
+	@echo "  make build      - Construire le système"
+	@echo "  make config     - Lancer interface TUI"
+	@echo "  make monitor    - Démarrer monitoring web"
+	@echo "  make shell      - Shell interactif"
+	@echo "  make test       - Lancer les tests"
+	@echo "  make docker     - Construire dans Docker"
+	@echo "  make clean      - Nettoyer"
+
+build:
+	python3 builder.py --profile $(PROFILE) --output $(OUTPUT)
+
+config:
+	python3 -m src.cli.main config --tui
+
+monitor:
+	python3 -m src.features.monitor.server --port 8080
+
+shell:
+	python3 -m src.cli.main shell
+
+test:
+	pytest tests/ -v --cov=src
+
+docker:
+	./tools/docker/run.sh
+
+clean:
+	rm -rf var/tmp/* var/logs/* data/cache/*
+```
+
+Cette organisation te permet de :
+1. **Ajouter des features sans tout casser** (modularité)
+2. **Tester chaque composant indépendamment**
+3. **Générer du code à la volée** (scripts LPM, first-boot, etc.)
+4. **Garder une séparation claire** entre code, données et runtime
+
+Tu veux que je détaille l'implémentation d'un de ces modules en particulier ?
+
 The system will automatically download all sources, build the toolchain, compile LFS/BLFS, configure the desktop, and create a bootable USB installer ISO.

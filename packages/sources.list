@@ -1,43 +1,202 @@
-# LFS Core Packages
-https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.12.10.tar.xz
-https://ftp.gnu.org/gnu/gcc/gcc-14.2.0/gcc-14.2.0.tar.xz
-https://ftp.gnu.org/gnu/binutils/binutils-2.43.1.tar.xz
-https://ftp.gnu.org/gnu/glibc/glibc-2.40.tar.xz
+# ============================================================================
+# LFS 13.0 CORE PACKAGES
+# See: https://www.linuxfromscratch.org/lfs/view/stable/
+# ============================================================================
+
+# Linux Kernel 6.12.20 (LTS)
+https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.12.20.tar.xz
+
+# GNU Toolchain
+https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz
+https://ftp.gnu.org/gnu/binutils/binutils-2.46.0.tar.xz
+https://ftp.gnu.org/gnu/glibc/glibc-2.43.tar.xz
 https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz
-https://ftp.gnu.org/gnu/bash/bash-5.2.37.tar.gz
-https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz
+https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz
+https://www.python.org/ftp/python/3.14.3/Python-3.14.3.tar.xz
 
-# BLFS Core
-https://download.gnome.org/sources/glib/2.82/glib-2.82.4.tar.xz
-https://xorg.org/pub/individual/util/util-macros-1.20.2.tar.xz
-https://download.gnome.org/sources/gtk+/3.94/gtk+-3.94.0.tar.xz
+# LFS Additional Required Packages
+https://www.kernel.org/pub/linux/docs/man-pages/man-pages-6.17.tar.xz
+https://www.iana.org/time-zones/repository/releases/tzdata2026b.tar.gz
+https://www.iana.org/assignments/iana-etc/iana-etc-20260202.tar.gz
+https://zlib.net/zlib-1.3.2.tar.gz
+https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
+https://tukaani.org/xz/xz-5.8.2.tar.xz
+https://github.com/lz4/lz4/releases/download/v1.10.0/lz4-1.10.0.tar.gz
+https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
+https://astron.com/pub/file/file-5.46.tar.gz
+https://ftp.gnu.org/gnu/readline/readline-8.3.tar.gz
+https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.bz2
+https://ftp.gnu.org/gnu/m4/m4-1.4.21.tar.xz
+https://ftp.gnu.org/gnu/bc/bc-7.0.3.tar.xz
+https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
+https://prdownloads.sourceforge.net/tcl/tcl8.6.17-src.tar.gz
+https://prdownloads.sourceforge.net/expect/expect5.45.4.tar.gz
+https://ftp.gnu.org/gnu/dejagnu/dejagnu-1.6.3.tar.gz
+https://distfiles.dereferenced.org/pkgconf/pkgconf-2.5.1.tar.xz
+https://ftp.gnu.org/gnu/binutils/binutils-2.46.0.tar.xz
+https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz
+https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz
+https://ftp.gnu.org/gnu/mpc/mpc-1.3.1.tar.gz
+https://download.savannah.gnu.org/releases/attr/attr-2.5.2.tar.gz
+https://download.savannah.gnu.org/releases/acl/acl-2.3.2.tar.xz
+https://sites.google.com/site/fullycapable/libcap-2.77.tar.xz
+https://github.com/besser82/libxcrypt/releases/download/v4.5.2/libxcrypt-4.5.2.tar.xz
+https://github.com/shadow-maint/shadow/releases/download/4.19.3/shadow-4.19.3.tar.xz
+
+# System Utilities
+https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz
+https://invisible-mirror.net/archives/ncurses/ncurses-6.6.tar.gz
+https://ftp.gnu.org/gnu/sed/sed-4.9.tar.xz
+https://sourceforge.net/projects/psmisc/files/psmisc/psmisc-23.7.tar.xz
+https://ftp.gnu.org/gnu/gettext/gettext-0.24.1.tar.xz
+https://ftp.gnu.org/gnu/bison/bison-3.8.2.tar.xz
+https://ftp.gnu.org/gnu/grep/grep-3.12.tar.xz
+https://ftp.gnu.org/gnu/libtool/libtool-2.5.4.tar.xz
+https://www.gnu.org/software/gdbm/gdbm-1.26.tar.gz
+https://ftp.gnu.org/gnu/gperf/gperf-3.3.tar.gz
+https://prdownloads.sourceforge.net/expat/expat-2.7.4.tar.xz
+https://ftp.gnu.org/gnu/inetutils/inetutils-2.7.tar.xz
+https://www.greenwoodsoftware.com/less/less-692.tar.gz
+https://www.cpan.org/src/5.0/perl-5.42.0.tar.xz
+https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.47.tar.gz
+https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz
+https://ftp.gnu.org/gnu/autoconf/autoconf-2.72.tar.xz
+https://ftp.gnu.org/gnu/automake/automake-1.18.1.tar.xz
+https://www.openssl.org/source/openssl-3.6.1.tar.gz
+https://sourceware.org/ftp/elfutils/0.192/elfutils-0.192.tar.bz2
+https://sourceware.org/libffi/libffi-3.5.2.tar.gz
+https://sqlite.org/2025/sqlite-autoconf-3510200.tar.gz
+
+# Python and Build Tools
+https://www.python.org/ftp/python/3.14.3/Python-3.14.3.tar.xz
+https://files.pythonhosted.org/packages/source/f/flit_core/flit_core-3.12.0.tar.gz
+https://files.pythonhosted.org/packages/source/p/packaging/packaging-26.0.tar.gz
+https://files.pythonhosted.org/packages/source/w/wheel/wheel-0.46.3.tar.gz
+https://files.pythonhosted.org/packages/source/s/setuptools/setuptools-82.0.0.tar.gz
+https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-1.13.2.tar.gz
+https://github.com/mesonbuild/meson/releases/download/1.10.1/meson-1.10.1.tar.gz
+https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-34.2.tar.xz
+
+# Core System Components
+https://ftp.gnu.org/gnu/coreutils/coreutils-9.10.tar.xz
+https://ftp.gnu.org/gnu/diffutils/diffutils-3.12.tar.xz
+https://ftp.gnu.org/gnu/gawk/gawk-5.3.2.tar.xz
+https://ftp.gnu.org/gnu/findutils/findutils-4.10.0.tar.xz
+https://ftp.gnu.org/gnu/groff/groff-1.23.0.tar.gz
+https://ftp.gnu.org/gnu/grub/grub-2.14.tar.xz
+https://ftp.gnu.org/gnu/gzip/gzip-1.14.tar.xz
+https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-6.18.0.tar.xz
+https://www.kernel.org/pub/linux/utils/kbd/kbd-2.9.0.tar.xz
+https://savannah.nongnu.org/download/libpipeline/libpipeline-1.5.8.tar.gz
+https://ftp.gnu.org/gnu/patch/patch-2.8.tar.xz
+https://ftp.gnu.org/gnu/tar/tar-1.35.tar.xz
+https://ftp.gnu.org/gnu/texinfo/texinfo-7.2.tar.xz
+https://github.com/vim/vim/archive/v9.2.0078/vim-9.2.0078.tar.gz
+https://files.pythonhosted.org/packages/source/M/MarkupSafe/markupsafe-3.0.3.tar.gz
+https://files.pythonhosted.org/packages/source/J/Jinja2/jinja2-3.1.6.tar.gz
+https://github.com/systemd/systemd/archive/v259.1/systemd-259.1.tar.gz
+https://savannah.nongnu.org/download/man-db/man-db-2.13.1.tar.xz
+https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-4.0.6.tar.xz
+https://www.kernel.org/pub/linux/utils/util-linux/v2.41/util-linux-2.41.3.tar.xz
+https://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.47.3/e2fsprogs-1.47.3.tar.gz
+https://www.infodrom.org/projects/sysklogd/download/sysklogd-2.7.2.tar.gz
+https://github.com/slicer69/sysvinit/releases/download/3.14/sysvinit-3.14.tar.xz
+
+# ============================================================================
+# BLFS 13.0 CORE PACKAGES
+# ============================================================================
+
+# GLib 2.84.0
+https://download.gnome.org/sources/glib/2.84/glib-2.84.0.tar.xz
+
+# Xorg Utility Macros 1.20.3
+https://xorg.org/pub/individual/util/util-macros-1.20.3.tar.xz
+
+# GTK+ 4.18.0
+https://download.gnome.org/sources/gtk/4.18/gtk-4.18.0.tar.xz
+
+# X11 Libraries
 https://gitlab.freedesktop.org/xorg/lib/libxcb/-/archive/libxcb-1.17.0/libxcb-1.17.0.tar.gz
-https://www.x.org/pub/individual/lib/libX11-1.8.10.tar.xz
+https://www.x.org/pub/individual/lib/libX11-1.8.12.tar.xz
 
-# Desktop
+# ============================================================================
+# DESKTOP ENVIRONMENTS
+# ============================================================================
+
+# XFCE 4.20
 https://archive.xfce.org/xfce/4.20/fat_tarballs/xfce-4.20.tar.bz2
-https://github.com/canonical/lightdm/archive/refs/tags/1.32.0.tar.gz
 
-# Applications
-https://ftp.mozilla.org/pub/firefox/releases/128.4.0esr/source/firefox-128.4.0esr.source.tar.xz
-https://download.documentfoundation.org/libreoffice/stable/26.2.3/deb/x86_64/LibreOffice_26.2.3_Linux_x86-64_deb.tar.gz
-https://get.videolan.org/vlc/3.0.21/vlc-3.0.21.tar.xz
-https://download.gimp.org/pub/gimp/v2.10/gimp-2.10.38.tar.bz2
-https://github.com/obsproject/obs-studio/archive/31.0.2.tar.gz
+# LightDM 1.34.0
+https://github.com/canonical/lightdm/archive/refs/tags/1.34.0.tar.gz
 
-# Java Dev
-https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.8%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.8_9.tar.gz
-https://dlcdn.apache.org/maven/maven-3/3.9.15/binaries/apache-maven-3.9.15-bin.tar.gz
-https://services.gradle.org/distributions/gradle-8.13-bin.zip
-https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.54/bin/apache-tomcat-10.1.54.tar.gz
-https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.xz
-https://download.docker.com/linux/static/stable/x86_64/docker-27.4.1.tgz
-https://dl.k8s.io/release/v1.32.3/bin/linux/amd64/kubectl
-https://get.jenkins.io/war-stable/2.492.2/jenkins.war
-https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
-https://github.com/allure-framework/allure2/releases/download/2.32.0/allure-2.32.0.tgz
+# ============================================================================
+# APPLICATIONS
+# ============================================================================
 
-# Security
-https://github.com/fail2ban/fail2ban/archive/1.1.0.tar.gz
-https://github.com/CISOfy/lynis/archive/3.1.3.tar.gz
-https://downloads.sourceforge.net/project/rkhunter/rkhunter/1.4.6/rkhunter-1.4.6.tar.gz
+# Firefox 128.8.0esr
+https://ftp.mozilla.org/pub/firefox/releases/128.8.0esr/source/firefox-128.8.0esr.source.tar.xz
+
+# LibreOffice 25.8.1
+https://download.documentfoundation.org/libreoffice/stable/25.8.1/deb/x86_64/LibreOffice_25.8.1_Linux_x86-64_deb.tar.gz
+
+# VLC 3.0.22
+https://get.videolan.org/vlc/3.0.22/vlc-3.0.22.tar.xz
+
+# GIMP 3.0.2
+https://download.gimp.org/pub/gimp/v3.0/gimp-3.0.2.tar.xz
+
+# OBS Studio 32.0.0
+https://github.com/obsproject/obs-studio/archive/32.0.0.tar.gz
+
+# ============================================================================
+# JAVA DEVELOPMENT (JDK 21 LTS)
+# ============================================================================
+
+# Eclipse Temurin JDK 21.0.10
+https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.10_9.tar.gz
+
+# Maven 3.9.9
+https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz
+
+# Gradle 8.15
+https://services.gradle.org/distributions/gradle-8.15-bin.zip
+
+# Tomcat 10.1.39
+https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.39/bin/apache-tomcat-10.1.39.tar.gz
+
+# Node.js 22.15.0 LTS
+https://nodejs.org/dist/v22.15.0/node-v22.15.0-linux-x64.tar.xz
+
+# Docker 28.3.3
+https://download.docker.com/linux/static/stable/x86_64/docker-28.3.3.tgz
+
+# kubectl 1.32.4
+https://dl.k8s.io/release/v1.32.4/bin/linux/amd64/kubectl
+
+# Jenkins 2.500.1 LTS
+https://get.jenkins.io/war-stable/2.500.1/jenkins.war
+
+# Apache JMeter 5.7.0
+https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.7.0.tgz
+
+# Allure 2.33.0
+https://github.com/allure-framework/allure2/releases/download/2.33.0/allure-2.33.0.tgz
+
+# ============================================================================
+# SECURITY TOOLS
+# ============================================================================
+
+# Fail2ban 1.2.0
+https://github.com/fail2ban/fail2ban/archive/1.2.0.tar.gz
+
+# Lynis 3.2.0
+https://github.com/CISOfy/lynis/archive/3.2.0.tar.gz
+
+# rkhunter 1.4.8
+https://downloads.sourceforge.net/project/rkhunter/rkhunter/1.4.8/rkhunter-1.4.8.tar.gz
+
+# OpenSSH 9.9p2
+https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-9.9p2.tar.gz
+
+# OpenSSL 3.6.1
+https://www.openssl.org/source/openssl-3.6.1.tar.gz
