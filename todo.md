@@ -2915,6 +2915,17 @@ sudo ./waf install
 sudo ldconfig
 ```
 
+# 1. Choisir l'init system (interface interactive)
+./lfs/06e-init-selector.sh
+
+# 2. Construire le système (s'adapte automatiquement)
+./lfs/06-build-lfs-system.sh
+
+# 3. Après boot, utiliser la commande unifiée
+svc start network    # fonctionne avec sysvinit OU systemd
+svc status sshd
+svc list
+
 ---
 
 ## Ordre de construction recommandé
