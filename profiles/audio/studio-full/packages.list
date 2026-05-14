@@ -1,0 +1,177 @@
+# ============================================================================
+# STUDIO FULL - Complete professional audio workstation
+# Everything from CLI minimal + XFCE + additional pro tools
+# Total size: ~30GB
+# ============================================================================
+
+# ============================================================================
+# BASE (include all from XFCE desktop)
+# ============================================================================
+include:../desktop-xfce/packages.list
+
+# ============================================================================
+# KDE PLASMA DESKTOP (Alternative/Additional)
+# ============================================================================
+plasma-desktop-6.2.0
+dolphin-24.08.0
+kate-24.08.0
+kdenlive-24.08.0
+krita-5.2.3
+
+# ============================================================================
+# PROFESSIONAL DAWS
+# ============================================================================
+# Commercial (if available as source)
+# bitwig-studio-5.2
+# reaper-7.25
+
+# Open source pro DAWs
+ardour-8.12.0
+lmms-1.2.2
+qtractor-1.5.0
+rosegarden-24.06
+zrythm-1.0.0
+musikcube-3.0.0
+
+# ============================================================================
+# ALL PLUGIN FORMATS
+# ============================================================================
+lv2-full-1.18.10
+vst3-sdk-3.7.11
+clap-1.2.0
+
+# Full plugin collections
+calf-plugins-full-0.90.3
+lsp-plugins-full-1.2.19
+x42-plugins-full-20240101
+zam-plugins-full-4.3
+invada-studio-plugins-full-1.2.0
+dragonfly-reverb-full-3.2.10
+swh-plugins-full-0.4.17
+tap-plugins-full-1.0.2
+fil-plugins-full-0.3.0
+guitarix-0.46.0
+helm-synth-0.9.0
+surge-synthesizer-1.3.1
+vitalium-1.0.0
+odin2-synth-2.3.4
+dexed-0.9.6
+obxd-2.0
+
+# ============================================================================
+# VST3 SUPPORT (via yabridge/wine)
+# ============================================================================
+yabridge-5.1.1
+wine-staging-9.22
+wineasio-1.2.0
+carla-2.5.9
+linvst-5.1.0
+
+# ============================================================================
+# MASTERING TOOLS
+# ============================================================================
+jkmeter-0.9.0
+jnoisemeter-0.4.1
+meterbridge-0.9.3
+ebumeter-0.5.1
+x42-eq-20240101
+x42-comp-20240101
+x42-limiter-20240101
+
+# ============================================================================
+# SAMPLE LIBRARIES (Full)
+# ============================================================================
+# General MIDI
+fluid-soundfont-gm-3.1
+fluid-soundfont-gs-3.1
+timidity-freepats-20240101
+arachno-soundfont-1.0
+
+# Piano
+salamander-piano-20240101
+ivory-piano-1.0
+maestro-piano-1.0
+
+# Drums
+drumgizmo-full-0.9.20
+avldrums-1.0
+black-diamond-drums-1.0
+
+# Orchestral
+sonatina-symphonic-1.0
+virtual-playing-orchestra-2.0
+no-budget-orchestra-1.0
+
+# Synth samples
+helm-samples-1.0
+surge-samples-1.0
+dexed-samples-1.0
+
+# Loops and construction kits
+freesound-loops-2024
+ccmixter-samples-2024
+
+# ============================================================================
+# VIDEO EDITING (for scoring)
+# ============================================================================
+kdenlive-24.08.0
+blender-4.2.0
+openshot-3.2.0
+handbrake-1.8.0
+
+# ============================================================================
+# LIVE PERFORMANCE TOOLS
+# ============================================================================
+giada-1.0.0
+hydrogen-1.2.3
+jack-keyboard-2.8.2
+vmpk-0.9.0
+mididings-20240101
+
+# ============================================================================
+# REMOTE CONTROL
+# ============================================================================
+osc2midi-0.1.0
+touchosc-bridge-1.2.0
+webjack-1.0.0
+
+# ============================================================================
+# BATCH CONVERSION (GUI + CLI)
+# ============================================================================
+soundconverter-4.0.5
+freac-1.1.7
+winff-1.6.0
+
+# ============================================================================
+# AUDIO RESTORATION TOOLS
+# ============================================================================
+wavbreaker-0.16
+audacity-full-3.8.2
+snd-24.5
+reaper-7.25
+
+# ============================================================================
+# ADDITIONAL UTILITIES
+# ============================================================================
+qasmixer-1.0.0
+pavucontrol-6.0
+pulsemixer-1.2.0
+alsamixergui-0.9.0
+
+# ============================================================================
+# MONITORING & METERING (Professional)
+# ============================================================================
+meterbridge-0.9.3
+x42-meter-20240101
+dynamp-1.0.0
+spectral-analyser-1.0.0
+
+# ============================================================================
+# PERFORMANCE TUNING
+# ============================================================================
+realtime-config-20240101
+cpu-governor-1.0.0
+irqbalance-1.9.4
+rtirq-init-20240101
+rt-tests-2.7
+rtcqs-0.7.0

@@ -1,0 +1,359 @@
+# ============================================================================
+# GNOME DESKTOP - Full-featured GUI audio workstation
+# Complete GNOME 46 desktop environment with professional audio tools
+# Total size: ~12GB
+# ============================================================================
+
+# ============================================================================
+# BASE SYSTEM (same as CLI minimal)
+# ============================================================================
+include:../cli-minimal/packages.list
+
+# ============================================================================
+# DESKTOP ENVIRONMENT (GNOME 46)
+# ============================================================================
+# Xorg server (Wayland is default, Xorg as fallback)
+xorg-server-21.1.13
+xorg-apps-7.7
+xorg-fonts-7.7
+xorg-drivers-21.1.13
+
+# GNOME Core 46
+gnome-shell-46.5
+gnome-session-46.0
+gnome-control-center-46.5
+gnome-desktop-46.0
+gnome-settings-daemon-46.0
+gnome-keyring-46.0
+gnome-initial-setup-46.0
+gnome-shell-extensions-46.0
+
+# GNOME Applications (Core)
+nautilus-46.2
+gnome-terminal-3.52.0
+gnome-software-46.0
+gnome-calculator-46.0
+gnome-calendar-46.0
+gnome-contacts-46.0
+gnome-logs-46.0
+gnome-maps-46.0
+gnome-music-46.0
+gnome-photos-46.0
+gnome-weather-46.0
+gnome-characters-46.0
+gnome-disk-utility-46.0
+gnome-font-viewer-46.0
+gnome-system-monitor-46.0
+gnome-text-editor-46.0
+evince-46.3
+eog-46.0
+totem-43.1
+
+# GNOME Utilities
+baobab-46.0
+cheese-44.1
+file-roller-44.4
+gedit-46.2
+seahorse-46.0
+simple-scan-46.0
+sound-juicer-3.40.0
+
+# Display manager
+gdm-46.2
+
+# ============================================================================
+# GNOME EXTENSIONS FOR AUDIO
+# ============================================================================
+gnome-extensions-app-46.0
+gnome-shell-extension-sound-output-device-chooser-46.0
+gnome-shell-extension-volume-mixer-46.0
+gnome-shell-extension-jack-connector-46.0
+gnome-shell-extension-pipewire-controller-46.0
+
+# ============================================================================
+# AUDIO SYSTEM (GNOME Integration)
+# ============================================================================
+# PipeWire is default in GNOME 46
+pipewire-1.4.0
+pipewire-jack-1.4.0
+pipewire-alsa-1.4.0
+pipewire-pulse-1.4.0
+wireplumber-0.5.6
+libpulse-16.1
+
+# GNOME Sound settings
+gnome-sound-recorder-46.0
+gnome-podcasts-46.0
+
+# ============================================================================
+# PROFESSIONAL DAWS (GUI)
+# ============================================================================
+# Digital Audio Workstations
+ardour-8.12.0
+lmms-1.2.2
+qtractor-1.5.0
+rosegarden-24.06
+zrythm-1.0.0
+musikcube-3.0.0
+
+# Audio editors
+audacity-3.8.2
+snd-24.5
+ocenaudio-3.14.0
+
+# MIDI editors
+musescore-4.4.0
+denemo-2.6.0
+lilypond-2.24.4
+frescobaldi-3.3.0
+
+# ============================================================================
+# JACK/PIPEWIRE GUI TOOLS (GNOME Style)
+# ============================================================================
+# JACK tools
+qjackctl-1.0.1
+jack-rack-1.4.7
+patchage-1.0.12
+catia-2.5.9
+claudia-2.5.9
+
+# PipeWire tools
+qpwgraph-1.8.0
+helvum-0.5.1
+
+# ============================================================================
+# PLUGINS WITH GNOME/GTK4 INTERFACE
+# ============================================================================
+# All CLI plugins + GUI versions with GTK4
+calf-plugins-gui-0.90.3
+lsp-plugins-gui-1.2.19
+dragonfly-reverb-gui-3.2.10
+x42-plugins-gui-20240101
+zam-plugins-gui-4.3
+invada-studio-plugins-gui-1.2.0
+
+# Modern synthesizers with GNOME integration
+helm-synth-0.9.0
+surge-synthesizer-1.3.1
+dexed-0.9.6
+obxd-2.0
+vitalium-1.0.0
+odin2-synth-2.3.4
+zynaddsubfx-3.0.6
+amsynth-1.13.0
+mda-lv2-1.2.10
+
+# VST3 support (requires yabridge/wine)
+yabridge-5.1.1
+wine-9.0
+wineasio-1.2.0
+carla-2.5.9
+linvst-5.1.0
+
+# ============================================================================
+# SOUND LIBRARIES (Medium - optimized for GNOME)
+# ============================================================================
+# General MIDI soundfonts
+fluid-soundfont-gm-3.1
+fluid-soundfont-gs-3.1
+timidity-freepats-20240101
+arachno-soundfont-1.0
+
+# Professional instruments
+drumgizmo-0.9.20
+sfizz-1.3.0
+linuxsampler-2.3.0
+
+# Piano samples (GNOME Music integration)
+salamander-piano-20240101
+maestro-piano-1.0
+
+# Orchestral (GNOME integration)
+sonatina-symphonic-1.0
+virtual-playing-orchestra-2.0
+
+# Drums
+avldrums-1.0
+drumkv1-1.2.0
+
+# ============================================================================
+# AUDIO UTILITIES (GTK4/GNOME Style)
+# ============================================================================
+easytag-2.4.3
+soundconverter-4.0.5
+asunder-3.0.1
+brasero-3.12.3
+sound-juicer-3.40.0
+rhythmbox-3.4.7
+gnome-music-46.0
+gnome-podcasts-46.0
+
+# Audio conversion
+soundconverter-4.0.5
+freac-1.1.7
+winff-1.6.0
+
+# ============================================================================
+# METADATA EDITORS (GTK4)
+# ============================================================================
+easytag-2.4.3
+musicbrainz-picard-2.11
+kid3-3.9.6
+
+# ============================================================================
+# NETWORK AUDIO (GNOME Integrated)
+# ============================================================================
+jacktrip-1.8.0
+jacktrip-gui-1.8.0
+sonobus-1.7.2
+zita-njbridge-0.6.0
+
+# ============================================================================
+# VIDEO EDITING (for scoring - GNOME integration)
+# ============================================================================
+pitivi-2023.03
+gnome-video-effects-0.6.0
+handbrake-1.8.0
+openshot-3.2.0
+
+# ============================================================================
+# LIVE PERFORMANCE TOOLS (GNOME)
+# ============================================================================
+giada-1.0.0
+hydrogen-1.2.3
+jack-keyboard-2.8.2
+vmpk-0.9.0
+mididings-20240101
+seq24-0.9.3
+
+# ============================================================================
+# REMOTE CONTROL (GNOME Integration)
+# ============================================================================
+osc2midi-0.1.0
+touchosc-bridge-1.2.0
+webjack-1.0.0
+gnome-network-displays-46.0
+
+# ============================================================================
+# MASTERING TOOLS (GUI)
+# ============================================================================
+jkmeter-0.9.0
+jnoisemeter-0.4.1
+meterbridge-0.9.3
+ebumeter-0.5.1
+x42-eq-20240101
+x42-comp-20240101
+x42-limiter-20240101
+
+# ============================================================================
+# AUDIO RESTORATION TOOLS
+# ============================================================================
+wavbreaker-0.16
+audacity-full-3.8.2
+snd-24.5
+
+# ============================================================================
+# BATCH PROCESSING TOOLS (GUI)
+# ============================================================================
+soundconverter-4.0.5
+freac-1.1.7
+winff-1.6.0
+
+# ============================================================================
+# GNOME AUDIO APPLETS & EXTENSIONS
+# ============================================================================
+gnome-shell-extension-sound-output-device-chooser-46.0
+gnome-shell-extension-volume-mixer-46.0
+gnome-shell-extension-pipewire-controller-46.0
+gnome-shell-extension-jack-connector-46.0
+gnome-shell-extension-mediacontrols-46.0
+
+# ============================================================================
+# AUDIO DATABASES & LIBRARIES
+# ============================================================================
+musicbrainz-server-9.0
+beets-2.0.0
+quodlibet-4.6.0
+
+# ============================================================================
+# SYSTEM INTEGRATION (GNOME Audio)
+# ============================================================================
+# GNOME settings for audio
+gnome-audio-profiles-46.0
+pipewire-setup-gnome-1.0
+
+# Real-time configuration GUI
+rtcqs-gui-0.7.0
+realtime-config-20240101
+
+# ============================================================================
+# DEVELOPMENT TOOLS (GNOME Integration)
+# ============================================================================
+# Audio development libraries
+libjack-dev-1.9.22
+libasound-dev-1.2.13
+libpulse-dev-16.1
+lv2-dev-1.18.10
+ladspa-sdk-1.17
+gtk4-devtools-4.14.0
+gnome-builder-46.0
+
+# Languages for audio scripting (GNOME integration)
+python3-3.14.3
+python3-gobject-3.48.0
+python3-numpy-1.26.0
+python3-scipy-1.13.0
+python3-pyo-1.0.5
+python3-pyliblo-0.10.0
+lua-5.4.6
+jack-lua-1.0.0
+
+# Audio frameworks
+faust-2.72.0
+csound-6.18.1
+supercollider-3.13.0
+pure-data-0.54.0
+chuck-1.5.2.0
+sclang-3.13.0
+
+# GNOME audio integration examples
+gnome-example-audio-plugin-1.0
+pipewire-examples-1.4.0
+
+# ============================================================================
+# GNOME SPECIFIC OPTIMIZATIONS
+# ============================================================================
+# GNOME shell performance for audio work
+gnome-shell-performance-46.5
+
+# Suspend inhibition for recording sessions
+gnome-session-inhibitor-46.0
+
+# Audio notifications
+gnome-shell-notification-audio-46.0
+
+# ============================================================================
+# ADDITIONAL GNOME UTILITIES FOR AUDIO
+# ============================================================================
+gnome-usage-46.0
+gnome-logs-46.0
+gnome-system-monitor-46.0
+gnome-disk-utility-46.0
+gnome-calculator-46.0
+gnome-calendar-46.0
+gnome-clocks-46.0
+gnome-tweaks-46.0
+
+# ============================================================================
+# SAMPLE MANAGEMENT TOOLS
+# ============================================================================
+sample-manager-1.0.0
+sononym-1.2.0
+resonic-1.0.0
+
+# ============================================================================
+# GNOME MUSIC PRODUCTION PRESETS
+# ============================================================================
+gnome-studio-presets-46.0
+pipewire-studio-presets-1.0
+jack-studio-presets-1.0
