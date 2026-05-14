@@ -1,0 +1,396 @@
+# ============================================================================
+# MUSIC PRODUCER PROFILE - Package List
+# CLI-only minimal system for audio production
+# Focus: Low-latency audio, MIDI processing, command-line music tools
+# Total size: ~1.5GB (including audio packages)
+# ============================================================================
+
+# ============================================================================
+# BASE SYSTEM (Required)
+# ============================================================================
+linux-headers
+glibc
+gcc
+binutils
+make
+bash
+coreutils
+util-linux
+procps
+psmisc
+findutils
+grep
+sed
+gawk
+diffutils
+patch
+tar
+gzip
+xz-utils
+bzip2
+zlib
+file
+which
+less
+man-db
+man-pages
+kbd
+e2fsprogs
+
+# ============================================================================
+# INIT SYSTEM (Choice: sysvinit or systemd)
+# ============================================================================
+sysvinit
+# systemd  (alternative - uncomment if preferred)
+
+# ============================================================================
+# BOOTLOADER
+# ============================================================================
+grub
+efibootmgr
+
+# ============================================================================
+# KERNEL WITH RT PATCHES (Real-time for audio)
+# ============================================================================
+linux-rt           # Real-time kernel for low-latency audio
+linux-rt-headers
+linux-firmware
+
+# ============================================================================
+# AUDIO SYSTEM (Core - REQUIRED)
+# ============================================================================
+# ALSA (Advanced Linux Sound Architecture)
+alsa-lib
+alsa-utils
+alsa-tools
+alsa-firmware
+
+# JACK2 (Low-latency audio server)
+jack2
+jack2-dbus
+libjack
+
+# PipeWire (Alternative low-latency audio server)
+pipewire
+pipewire-jack
+pipewire-alsa
+pipewire-pulse
+
+# PulseAudio (Legacy, optional)
+# libpulse
+
+# ============================================================================
+# AUDIO PLUGIN FORMATS
+# ============================================================================
+lv2                       # LV2 plugin format
+lilv                      # LV2 host library
+suil                      # LV2 UI support
+lv2-sdk                   # LV2 development headers
+vst-sdk                   # VST plugin format (legacy)
+vst3-sdk                  # VST3 plugin format
+ladspa                    # LADSPA plugin format (legacy)
+dssi                      # DSSI plugin format
+
+# ============================================================================
+# AUDIO CODECS & FORMATS
+# ============================================================================
+libsndfile               # WAV, AIFF, FLAC, OGG support
+libsamplerate            # Sample rate conversion
+libsoxr                  # High-quality resampling
+libogg                   # Ogg container
+libvorbis                # Vorbis codec
+libflac                  # FLAC codec
+libmp3lame               # MP3 encoding
+libtwolame               # MP2 encoding
+libopus                  # Opus codec
+libspeex                 # Speex codec
+libwavpack               # WavPack codec
+libaacplus               # AAC encoding
+fdk-aac                  # AAC codec
+libmad                   # MP3 decoding
+libid3tag                # ID3 tagging
+taglib                   # Metadata tagging library
+
+# ============================================================================
+# DIGITAL AUDIO WORKSTATIONS (DAW) - CLI-only
+# ============================================================================
+# Ardour (headless mode - can be used via JACK)
+ardour-headless          # CLI version of Ardour
+ardour                   # Full version (may require X11)
+
+# Non-DAW suite (Timeline, Mixer, Sequencer)
+non-timeline             # Non-linear video/audio editor
+non-mixer                # Audio mixer
+non-sequencer            # MIDI sequencer
+
+# MuseScore (headless for score processing)
+# mscore-headless
+
+# ============================================================================
+# AUDIO EDITORS - Command Line
+# ============================================================================
+sox                      # Swiss Army knife of audio processing
+ecasound                 # Multitrack audio processor
+audacity-cli             # Command-line interface for Audacity
+sndfile-tools            # Tools for libsndfile
+sndfile-programs
+shntool                  # WAVE/audio file manipulator
+wavpack-tools
+
+# ============================================================================
+# MIDI TOOLS - Command Line
+# ============================================================================
+amidi                    # ALSA MIDI tools
+aseqdump                 # ALSA MIDI event monitor
+aseqview                 # ALSA MIDI event viewer
+aplaymidi
+arecordmidi
+
+# MIDI processing
+midicsv                  # MIDI to CSV converter
+csvmidi                  # CSV to MIDI converter
+midirip                  # MIDI file ripper
+midish                   # MIDI shell/sequencer
+pmidi                    # PortMidi CLI tools
+
+# Software synthesizers (headless)
+fluidsynth               # SoundFont player
+timidity++               # MIDI to WAVE converter
+wildmidi                 # Lightweight MIDI player
+amsynth                  # Analog modeling synthesizer (CLI)
+zynaddsubfx-headless     # Multi-voice synth (headless)
+
+# MIDI routing
+midid                    # MIDI bridging
+aconnect                 # ALSA sequencer connection manager
+
+# ============================================================================
+# SAMPLERS & SOUNDFONTS
+# ============================================================================
+linuxsampler             # Professional sampler
+libgig                   # Gigasampler file format
+sfizz                    # SFZ sampler implementation
+soundfont-tools          # SoundFont manipulation tools
+sf2utils                 # SoundFont v2 utilities
+
+# SoundFonts (free, for FluidSynth)
+fluid-soundfont-gm       # General MIDI soundfont
+fluid-soundfont-gs
+timidity-freepats        # Free patches for TiMidity++
+
+# ============================================================================
+# AUDIO EFFECTS (Command-line/LV2)
+# ============================================================================
+calf-plugins             # Calf Studio Gear LV2 plugins
+dragonfly-reverb         # Reverb plugin
+lsp-plugins              # Linux Studio Projects plugins
+zam-plugins              # ZAM audio plugins
+x42-plugins              # x42 series plugins
+invada-studio-plugins
+swh-plugins              # Steve Harris LV2 plugins
+tap-plugins              # Tom's Audio Processing plugins
+fil-plugins              # Fons Adriansen plugins
+
+# Command-line effects processors
+sox-effects              # SoX with all effects
+ecasound-effects
+rubberband-cli           # Pitch/tempo changer
+soundstretch             # SoundTouch CLI tool
+
+# ============================================================================
+# AUDIO ANALYSIS TOOLS
+# ============================================================================
+baudline                 # Audio spectrum analyzer (CLI)
+spek-cli                 # Spectrogram generator
+waon                     # Wave to notes transcription
+aubio                   # Audio analysis tools
+vamp-plugin-sdk          # Vamp analysis plugins
+vamp-plugins
+sonic-visualiser-headless
+
+# ============================================================================
+# AUDIO METERING & TESTING
+# ============================================================================
+jnoisemeter             # Audio drift measurement
+jkmeter                 # K-system metering
+jmeters                 # Collection of meters
+meterbridge             # Audio metering tool
+jack-meter              # JACK metering utility
+
+# ============================================================================
+# COMMAND-LINE UTILITIES
+# ============================================================================
+aumix                    # Audio mixer (text UI)
+alsamixer                # ALSA mixer (ncurses)
+amixer                   # ALSA CLI mixer
+jack-utils               # Various JACK utilities
+jack-select              # JACK connection tool
+jack-plumbing           # JACK autoconnect rules
+jack-thump               # Bass thump generator
+
+# ============================================================================
+# SESSION MANAGEMENT (Headless)
+# ============================================================================
+jack-session             # JACK session management
+ladish                   # LADI session handler
+non-session-manager      # NSM for headless
+jack-smf-utils           # Standard MIDI file utilities
+
+# ============================================================================
+# NETWORK AUDIO
+# ============================================================================
+jack-net                 # JACK over network
+netjack                  # Network JACK transport
+zita-njbridge           # Jack multi-channel streaming
+jacktrip                # Low-latency multi-machine audio
+audio-thumbnailer       # Audio preview generator
+
+# ============================================================================
+# BATCH PROCESSING TOOLS
+# ============================================================================
+ffmpeg                   # Audio conversion and processing
+avconv                   # Libav tools (alternative)
+mp3gain                  # MP3 volume normalization
+vorbisgain               # Ogg Vorbis volume normalization
+normalize-audio          # Audio file normalization
+replaygain-tools
+
+# ============================================================================
+# CD RIPPING & ENCODING (Headless)
+# ============================================================================
+cdparanoia               # CD ripper with error correction
+cdda2wav                 # CDDA extraction tool
+abcde                    # CLI CD ripper and encoder
+whipper                  # Accurate CD ripper
+morituri                 # Another accurate CD ripper
+cuetools                 # CUE sheet utilities
+shntool                  # WAVE/audio file splitter
+
+# ============================================================================
+# METADATA EDITORS (CLI)
+# ============================================================================
+id3v2                    # ID3v2 tag editor
+mid3v2                   # ID3v2 editor with Python
+eyed3                    # Python ID3 tagger
+vorbiscomment            # Ogg Vorbis comment editor
+opuscomment              # Opus comment editor
+flac-metadata            # FLAC metadata tool
+metaflac                 # FLAC metadata editor
+exiftool                 # Metadata reader/editor
+kid3-cli                 # CLI tag editor
+
+# ============================================================================
+# REAL-TIME KERNEL CONFIGURATION
+# ============================================================================
+rtirq-init               # RT IRQ configuration
+rt-tests                 # Real-time kernel tests
+cyclictest               # RT latency test utility
+rtcqs                    # Real-time system checker
+
+# ============================================================================
+# DEVELOPMENT TOOLS (Audio-specific)
+# ============================================================================
+# Build tools
+gcc
+g++
+make
+cmake
+ninja
+meson
+pkg-config
+autoconf
+automake
+libtool
+m4
+bison
+flex
+patch
+git
+svn
+
+# Audio development libraries
+libjack-dev              # JACK development headers
+libasound-dev            # ALSA development headers
+libpulse-dev             # PulseAudio headers (optional)
+lv2-dev                  # LV2 plugin development
+ladspa-sdk               # LADSPA development
+vst-sdk-dev
+vst3-sdk-dev
+
+# Languages for audio scripting
+python3
+python3-pip
+python3-numpy
+python3-scipy            # DSP in Python
+python3-pyo              # Python DSP toolkit
+lua                      # Lightweight scripting
+jack-lua                 # JACK bindings for Lua
+
+# Audio frameworks
+faust                    # Functional audio stream language
+csound                   # Csound synthesis language
+supercollider            # Real-time audio synthesis
+pure-data-headless       # Pd for patching (CLI)
+chuck                    # Strong-timed audio programming
+sclang                   # SuperCollider language
+
+# ============================================================================
+# NETWORKING (Minimal for audio)
+# ============================================================================
+iproute2
+iputils
+openssh-server
+openssh-client
+curl
+wget
+rsync
+openssl
+ca-certificates
+
+# ============================================================================
+# SHELL AND UTILITIES
+# ============================================================================
+bash
+bash-completion
+tmux                     # Terminal multiplexer (great for audio sessions)
+screen                   # Alternative multiplexer
+vim
+nano
+tree
+htop
+iotop
+ncdu
+lsof
+strace
+
+# ============================================================================
+# SYSTEM ADMINISTRATION
+# ============================================================================
+sudo
+dbus                     # Required for JACK2-DBUS
+logrotate
+rsyslog
+cronie
+
+# ============================================================================
+# COMPRESSION TOOLS
+# ============================================================================
+tar
+gzip
+bzip2
+xz-utils
+zip
+unzip
+
+# ============================================================================
+# PACKAGE MANAGEMENT
+# ============================================================================
+lpm
+lpm-repo
+lpm-build
+
+# ============================================================================
+# REAL-TIME AUDIO SYSTEM CONFIGURATION
+# ============================================================================
+/etc/security/limits.d/audio.conf  (configuration, not package)
+/etc/sysctl.d/rt-audio.conf        (kernel tuning)
