@@ -2782,6 +2782,156 @@ clean:
 	rm -rf var/tmp/* var/logs/* data/cache/*
 ```
 
+```bash
+Voici une liste de logiciels audio orientés création musicale, compatibles avec votre **LFS 13.0 / BLFS 13.0**. Vous pouvez les ajouter directement à la fin de votre fichier `packages/sources.list`.
+
+D'après l'annonce officielle de BLFS 13.0, cette version inclut la prise en charge de **SDL3** (qui remplace SDL2 avec un bien meilleur support audio et Wayland) ainsi que des codecs modernes comme **libheif**, **libde265** et **SVT-AV1** - des dépendances importantes pour les logiciels audio professionnels récents.
+
+---
+
+## Ajoutez ces lignes à votre `packages/sources.list` :
+
+```bash
+# ============================================================================
+# AUDIO CREATION SOFTWARE (Music Production)
+# ============================================================================
+
+# Ardour - Professional DAW (Digital Audio Workstation)
+# https://ardour.org/
+https://community.ardour.org/download/ardour-8.12.0.tar.bz2
+
+# Audacity - Audio Editor and Recorder
+# https://www.audacityteam.org/
+https://github.com/audacity/audacity/releases/download/Audacity-3.8.2/audacity-3.8.2.tar.xz
+
+# LMMS - Music Production Suite (alternative to FL Studio)
+# https://lmms.io/
+https://github.com/LMMS/lmms/releases/download/v1.2.2/lmms-1.2.2.tar.xz
+
+# Audacious - Lightweight Audio Player (useful for playback/monitoring)
+# Version 4.5.1 is known to build and work properly with LFS 13.0 platform 
+https://distfiles.audacious-media-player.org/audacious-4.5.1.tar.bz2
+https://distfiles.audacious-media-player.org/audacious-plugins-4.5.1.tar.bz2
+
+# ============================================================================
+# AUDIO PLUGINS & FORMATS
+# ============================================================================
+
+# LV2 Plugin SDK
+https://lv2plug.in/spec/lv2-1.18.10.tar.xz
+
+# Carla Plugin Host (runs LV2, VST, VST3, AU plugins)
+https://github.com/falkTX/Carla/releases/download/v2.5.9/Carla-2.5.9.tar.gz
+
+# SFZero - SFZ sampler plugin
+# Allows playing SoundFont and SFZ sample libraries
+https://github.com/mikeoliphant/sfzero/releases/download/v0.8.5/sfzero-0.8.5.tar.gz
+
+# Audio-Bridge: Bridges audio from JACK to ALSA and vice-versa
+# Essential for low-latency audio routing on LFS systems 
+https://github.com/falkTX/audio-bridge/archive/refs/tags/v0.9.3.tar.gz
+
+# ============================================================================
+# JACK AUDIO CONNECTION KIT
+# ============================================================================
+
+# JACK2 (JACK Audio Connection Kit) - Low-latency audio server
+# Required for real-time professional audio workflows
+https://github.com/jackaudio/jack2/releases/download/v1.9.22/jack2-1.9.22.tar.gz
+
+# QjackCtl - GUI control for JACK daemon
+https://github.com/jackaudio/qjackctl/releases/download/v1.0.1/qjackctl-1.0.1.tar.gz
+
+# ============================================================================
+# MIDI TOOLS
+# ============================================================================
+
+# FluidSynth - Software synthesizer (SoundFont player)
+# Essential for MIDI playback and rendering
+https://github.com/FluidSynth/fluidsynth/releases/download/v2.5.0/fluidsynth-2.5.0.tar.gz
+
+# TiMidity++ - MIDI to WAVE converter/player
+https://sourceforge.net/projects/timidity/files/TiMidity%2B%2B/TiMidity%2B%2B-2.15.0/TiMidity%2B%2B-2.15.0.tar.gz
+
+# WildMIDI - Lightweight MIDI player
+https://github.com/Mindwerks/wildmidi/archive/wildmidi-0.4.6.tar.gz
+
+# ============================================================================
+# AUDIO UTILITIES
+# ============================================================================
+
+# SoX - Sound eXchange: Swiss Army knife of audio processing
+https://sourceforge.net/projects/sox/files/sox/14.4.2/sox-14.4.2.tar.gz
+
+# JACK Rack - LV2/JACK plugin rack
+# Host multiple audio plugins in a single JACK client
+https://github.com/jackaudio/jack-rack/releases/download/v1.4.7/jack-rack-1.4.7.tar.gz
+```
+
+---
+
+## Notes d'installation pour LFS 13.0
+
+Avant de compiler ces logiciels audio, assurez-vous que les dépendances suivantes sont présentes (elles devraient l'être dans un BLFS complet) :
+
+| Dépendance | Rôle | Présente dans votre liste |
+|------------|------|---------------------------|
+| **ALSA library** | Audio système | Non (à ajouter) |
+| **JACK2** | Serveur audio faible latence | Ajoutée ci-dessus |
+| **LV2 SDK** | Format de plugins audio | Ajoutée ci-dessus |
+| **libsndfile** | Lecture/écriture fichiers audio (WAV, AIFF, etc.) | Non (à ajouter) |
+| **ffmpeg/libav** | Support codecs audio/vidéo | Partiellement (via BLFS) |
+| **Qt5/Qt6** | Interfaces graphiques | Non (typiquement BLFS) |
+
+### Compilation typique pour Ardour :
+
+```bash
+tar -xf ardour-8.12.0.tar.bz2
+cd ardour-8.12.0
+./waf configure --prefix=/usr --with-backends=alsa,jack
+./waf build
+sudo ./waf install
+```
+
+### Compilation typique pour Audacity :
+
+```bash
+tar -xf audacity-3.8.2.tar.xz
+cd audacity-3.8.2
+mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=/usr ..
+make
+sudo make install
+```
+
+### Compilation pour JACK2 (en premier) :
+
+```bash
+tar -xf jack2-1.9.22.tar.gz
+cd jack2-1.9.22
+./waf configure --prefix=/usr
+./waf build
+sudo ./waf install
+sudo ldconfig
+```
+
+---
+
+## Ordre de construction recommandé
+
+Pour un système audio fonctionnel sur LFS, voici l'ordre logique :
+
+1. **ALSA** (si non présent - noyau Linux inclus, userland à compiler)
+2. **JACK2** (serveur audio pro)
+3. **LV2 SDK** (base des plugins)
+4. **libsndfile** + **ffmpeg** (codecs)
+5. **FluidSynth** (MIDI)
+6. **Ardour** ou **Audacity**
+7. **Plugins** (Carla, SFZero, etc.)
+
+> 💡 **Note importante** : Sur un LFS pur, vous devrez compiler **ALSA** (alsa-lib, alsa-utils) avant JACK si vous voulez utiliser des périphériques audio réels. L'alternative Audio-Bridge peut être utilisée pour connecter JACK à ALSA une fois les deux installés.
+```
+
 Cette organisation te permet de :
 1. **Ajouter des features sans tout casser** (modularité)
 2. **Tester chaque composant indépendamment**

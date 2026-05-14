@@ -200,3 +200,88 @@ https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-9.9p2.tar.gz
 
 # OpenSSL 3.6.1
 https://www.openssl.org/source/openssl-3.6.1.tar.gz
+
+# ============================================================================
+# PACKAGE MANAGERS
+# ============================================================================
+
+# GNU Guix (Package manager)
+# Il est généralement installé via son script binaire ou construit depuis Git
+https://git.savannah.gnu.org/git/guix.git
+# Alternative : Script d'installation officiel
+https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh
+
+# ============================================================================
+# AUDIO CREATION SOFTWARE (Music Production)
+# ============================================================================
+
+# Ardour - Professional DAW (Digital Audio Workstation)
+# https://ardour.org/
+https://community.ardour.org/download/ardour-8.12.0.tar.bz2
+
+# Audacity - Audio Editor and Recorder
+# https://www.audacityteam.org/
+https://github.com/audacity/audacity/releases/download/Audacity-3.8.2/audacity-3.8.2.tar.xz
+
+# LMMS - Music Production Suite (alternative to FL Studio)
+# https://lmms.io/
+https://github.com/LMMS/lmms/releases/download/v1.2.2/lmms-1.2.2.tar.xz
+
+# Audacious - Lightweight Audio Player (useful for playback/monitoring)
+# Version 4.5.1 is known to build and work properly with LFS 13.0 platform [citation:1]
+https://distfiles.audacious-media-player.org/audacious-4.5.1.tar.bz2
+https://distfiles.audacious-media-player.org/audacious-plugins-4.5.1.tar.bz2
+
+# ============================================================================
+# AUDIO PLUGINS & FORMATS
+# ============================================================================
+
+# LV2 Plugin SDK
+https://lv2plug.in/spec/lv2-1.18.10.tar.xz
+
+# Carla Plugin Host (runs LV2, VST, VST3, AU plugins)
+https://github.com/falkTX/Carla/releases/download/v2.5.9/Carla-2.5.9.tar.gz
+
+# SFZero - SFZ sampler plugin
+# Allows playing SoundFont and SFZ sample libraries
+https://github.com/mikeoliphant/sfzero/releases/download/v0.8.5/sfzero-0.8.5.tar.gz
+
+# Audio-Bridge: Bridges audio from JACK to ALSA and vice-versa
+# Essential for low-latency audio routing on LFS systems [citation:2]
+https://github.com/falkTX/audio-bridge/archive/refs/tags/v0.9.3.tar.gz
+
+# ============================================================================
+# JACK AUDIO CONNECTION KIT
+# ============================================================================
+
+# JACK2 (JACK Audio Connection Kit) - Low-latency audio server
+# Required for real-time professional audio workflows
+https://github.com/jackaudio/jack2/releases/download/v1.9.22/jack2-1.9.22.tar.gz
+
+# QjackCtl - GUI control for JACK daemon
+https://github.com/jackaudio/qjackctl/releases/download/v1.0.1/qjackctl-1.0.1.tar.gz
+
+# ============================================================================
+# MIDI TOOLS
+# ============================================================================
+
+# FluidSynth - Software synthesizer (SoundFont player)
+# Essential for MIDI playback and rendering
+https://github.com/FluidSynth/fluidsynth/releases/download/v2.5.0/fluidsynth-2.5.0.tar.gz
+
+# TiMidity++ - MIDI to WAVE converter/player
+https://sourceforge.net/projects/timidity/files/TiMidity%2B%2B/TiMidity%2B%2B-2.15.0/TiMidity%2B%2B-2.15.0.tar.gz
+
+# WildMIDI - Lightweight MIDI player
+https://github.com/Mindwerks/wildmidi/archive/wildmidi-0.4.6.tar.gz
+
+# ============================================================================
+# AUDIO UTILITIES
+# ============================================================================
+
+# SoX - Sound eXchange: Swiss Army knife of audio processing
+https://sourceforge.net/projects/sox/files/sox/14.4.2/sox-14.4.2.tar.gz
+
+# JACK Rack - LV2/JACK plugin rack
+# Host multiple audio plugins in a single JACK client
+https://github.com/jackaudio/jack-rack/releases/download/v1.4.7/jack-rack-1.4.7.tar.gz
