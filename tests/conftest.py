@@ -196,3 +196,30 @@ def builder(temp_dir, mock_config_file):
         output_dir=output_dir,
         config_file=mock_config_file
     )
+
+@pytest.fixture
+def test_env(temp_dir):
+    """Environment variables for testing"""
+    return {
+        'LFS': str(temp_dir / 'lfs'),
+        'TEST_MODE': '1',
+        'PATH': os.environ.get('PATH', ''),
+        'HOME': str(temp_dir),
+    }
+
+
+@pytest.fixture
+def downloader(temp_dir, mock_logger):
+    """SourceDownloader instance for tests"""
+    sources_dir = temp_dir / "sources"
+    sources_dir.mkdir(exist_ok=True)
+    return SourceDownloader(sources_dir, mock_logger)
+
+
+@pytest.fixture
+def real_sources_list():
+    """Path to real sources.list"""
+    sources_list = Path("packages/sources.list")
+    if not sources_list.exists():
+        pytest.skip("sources.list not found")
+    return sources_list

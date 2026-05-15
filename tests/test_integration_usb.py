@@ -10,7 +10,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 import platform
-
+# tests/test_integration_usb.py - Ajouter l'import en haut du fichier
+from unittest.mock import patch, MagicMock
 from builder import USBWriter
 
 

@@ -24,6 +24,14 @@ class TestRealNetworkDownloads:
 
     @pytest.fixture
     def downloader(self, temp_dir, mock_logger):
+        """Create downloader fixture"""
+        from builder import SourceDownloader
+        sources_dir = temp_dir / "sources"
+        sources_dir.mkdir(exist_ok=True)
+        return SourceDownloader(sources_dir, mock_logger)
+
+    @pytest.fixture
+    def downloader(self, temp_dir, mock_logger):
         """Create downloader for tests"""
         sources_dir = temp_dir / "sources"
         sources_dir.mkdir()

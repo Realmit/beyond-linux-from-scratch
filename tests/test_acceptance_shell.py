@@ -18,6 +18,16 @@ class TestRealShellScripts:
 
     @pytest.fixture
     def test_env(self, temp_dir):
+        """Create test environment fixture"""
+        return {
+            'LFS': str(temp_dir / 'lfs'),
+            'TEST_MODE': '1',
+            'PATH': os.environ.get('PATH', ''),
+            'HOME': str(temp_dir),
+        }
+
+    @pytest.fixture
+    def test_env(self, temp_dir):
         """Create test environment"""
         return {
             'LFS': str(temp_dir / 'lfs'),
