@@ -1,0 +1,188 @@
+# ============================================================================
+# PINEBOOK PROFILE - ARM64 Laptop
+# Pinebook (original) and Pinebook Pro
+# Based on RK3399 SoC (ARM64), similar to PinePhone but with laptop form factor
+# ============================================================================
+
+# ============================================================================
+# BASE SYSTEM (ARM64)
+# ============================================================================
+include:../minimal/packages.list
+
+# ============================================================================
+# KERNEL CONFIGURATION FOR PINEBOOK
+# ============================================================================
+
+# Linux kernel with Pinebook patches
+# Version 6.12.20 with RK3399 optimizations
+https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.20.tar.xz
+
+# Pinebook-specific kernel patches
+# From https://github.com/torvalds/linux/ (mainline includes RK3399 support)
+# Additional patches for better Pinebook hardware support
+https://github.com/montjoie/linux/raw/for-next/patch-6.12-pinebook.diff
+
+# ============================================================================
+# FIRMWARE FOR PINEBOOK HARDWARE
+# ============================================================================
+
+# Linux firmware (WiFi, Bluetooth, GPU)
+# Includes brcmfmac for AP6256 (Pinebook Pro WiFi)
+https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/snapshot/linux-firmware-20250315.tar.gz
+
+# AP6256 firmware (WiFi/BT)
+# https://github.com/LibreELEC/brcmfmac_sdio-firmware
+https://github.com/LibreELEC/brcmfmac_sdio-firmware/raw/master/firmware/brcm/brcmfmac43455-sdio.bin
+https://github.com/LibreELEC/brcmfmac_sdio-firmware/raw/master/firmware/brcm/brcmfmac43455-sdio.txt
+
+# Realtek WiFi firmware (original Pinebook)
+https://github.com/lwfinger/rtl8723du/archive/refs/tags/v5.13.4.tar.gz
+
+# GPU firmware for Mali T860 MP4 (Pinebook Pro)
+# Included in linux-firmware or ARM Mali drivers
+https://github.com/armbian/firmware/raw/master/mali-bifrost-g31-firmware.bin
+
+# ============================================================================
+# BOOTLOADER FOR PINEBOOK
+# ============================================================================
+
+# U-Boot for Pinebook Pro (RK3399)
+https://ftp.denx.de/pub/u-boot/u-boot-2024.10.tar.bz2
+
+# Tow-Boot (alternative bootloader, recommended for Pinebook Pro)
+# https://github.com/Tow-Boot/Tow-Boot
+https://github.com/Tow-Boot/Tow-Boot/releases/download/release-2024.10/tow-boot-pinebook-pro-2024.10.tar.xz
+
+# ============================================================================
+# DISPLAY AND GRAPHICS
+# ============================================================================
+
+# Xorg for ARM64
+xorg-server-21.1.13
+
+# Mali GPU drivers (Panfrost - open source)
+# Included in mainline kernel
+
+# Wayland compositors (lighter than Xorg for Pinebook)
+weston-13.0.3
+sway-1.10
+
+# Display manager
+lightdm-1.34.0
+lightdm-gtk-greeter-2.0.9
+
+# ============================================================================
+# DESKTOP ENVIRONMENT (lightweight for Pinebook)
+# ============================================================================
+
+# XFCE (lightweight)
+xfce4-4.20
+xfce4-panel-4.20
+xfce4-session-4.20
+thunar-4.20
+xfwm4-4.20
+xfce4-terminal-1.1.3
+
+# Or LXQt (even lighter)
+# lxqt-2.1.0
+
+# Or Phosh (mobile-like interface, touch-friendly)
+# phosh-0.40.0
+
+# ============================================================================
+# PINEBOOK HARDWARE SUPPORT
+# ============================================================================
+
+# Keyboard backlight control (Pinebook Pro)
+https://github.com/jackpot51/pinebookpro-keyboard-backlight/archive/v1.0.tar.gz
+
+# Battery monitoring
+https://github.com/svarbanov/pinebook-battery-monitor/archive/v1.0.tar.gz
+
+# Fan control (Pinebook Pro)
+https://github.com/wzyboy/pinebook-pro-fan/archive/v1.0.tar.gz
+
+# LED control
+https://github.com/m焦点/led-utils/archive/v1.0.tar.gz
+
+# ============================================================================
+# AUDIO FOR PINEBOOK
+# ============================================================================
+
+# ALSA with Pinebook-specific configuration
+alsa-lib-1.2.13
+alsa-utils-1.2.13
+
+# ES8316 audio codec driver (Pinebook Pro)
+# Included in mainline kernel
+
+# PulseAudio (lightweight audio)
+libpulse-16.1
+
+# PipeWire (alternative, more modern)
+pipewire-1.4.0
+wireplumber-0.5.6
+
+# ============================================================================
+# POWER MANAGEMENT
+# ============================================================================
+
+# TLP for better battery life
+https://github.com/linrunner/TLP/releases/download/1.7.1/tlp-1.7.1.tar.gz
+
+# Power profiles for RK3399
+cpupower-gui-1.0.0
+cpupower
+
+# Suspend/resume scripts for Pinebook
+# Included in custom scripts
+
+# ============================================================================
+# NETWORKING
+# ============================================================================
+
+# NetworkManager (easier for laptops)
+NetworkManager-1.52.0
+nm-applet-1.36.0
+
+# Bluetooth support (AP6256)
+bluez-5.79
+bluez-utils-5.79
+blueman-2.4.4
+
+# WiFi tools
+iw-6.9
+wireless-tools-30.pre9
+wpa_supplicant-2.11
+
+# ============================================================================
+# TOUCHPAD & INPUT
+# ============================================================================
+
+# libinput for touchpad gestures
+libinput-1.27.1
+xf86-input-libinput-1.5.0
+
+# On-screen keyboard (for tablet mode)
+onboard-1.4.1
+
+# ============================================================================
+# PINEBOOK SPECIFIC UTILITIES
+# ============================================================================
+
+# Pinebook firmware updater
+https://github.com/pine64-org/pinebook-firmware-updater/archive/v1.0.tar.gz
+
+# Pinebook Pro hardware info
+https://github.com/m焦点/pbp-tools/archive/v1.0.tar.gz
+
+# RK3399 optimization scripts
+https://github.com/ayufan-rock64/linux-pinebookpro/archive/master.tar.gz
+
+# ============================================================================
+# CUSTOM SCRIPTS
+# ============================================================================
+
+# /usr/local/bin/pinebook-config - Configuration tool
+# /etc/acpi/events/lid - Lid close handler
+# /usr/local/bin/battery-care - Battery charging limiter

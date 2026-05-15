@@ -392,6 +392,22 @@ class ProfileManager:
             'privacy_tools': False,
             'live_system': False,
             'system_updater': True
+        },'pinebook': {
+            'description': 'Pinebook / Pinebook Pro ARM64 laptop',
+            'size_gb': 4,
+            'build_time_hours': 4,
+            'packages': ['base', 'network', 'xorg', 'xfce', 'pinebook'],
+            'desktop': 'xfce',
+            'init_system': 'sysvinit',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': True,
+            'privacy_tools': False,
+            'live_system': False,
+            'system_updater': True,
+            'cross_compile': True,
+            'architecture': 'aarch64',
+            'bootloader': 'uboot'
         },
         'audio-studio': {
             'description': 'Full audio production studio with XFCE',
