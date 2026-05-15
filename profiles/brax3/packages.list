@@ -1,0 +1,220 @@
+# ============================================================================
+# BRAX3 PROFILE - Linux Smartphone
+# Qualcomm-based mobile phone with 4G/5G modem support
+# ============================================================================
+
+# ============================================================================
+# BASE SYSTEM (ARM64)
+# ============================================================================
+include:../minimal/packages.list
+
+# ============================================================================
+# KERNEL FOR BRAX3 (Qualcomm mainline support)
+# ============================================================================
+
+# Linux kernel with Qualcomm Snapdragon support
+# Version 6.12.20 with Qcom patches
+https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.20.tar.xz
+
+# Qualcomm-specific kernel patches
+# https://github.com/msm8953-mainline/linux
+https://github.com/msm8953-mainline/linux/raw/msm8953-mainline-v6.12/patches/0001-msm8953.patch
+
+# ============================================================================
+# MODEM SUPPORT (Qualcomm)
+# ============================================================================
+
+# ModemManager for Qualcomm modems
+https://gitlab.freedesktop.org/mobile-broadband/ModemManager/-/archive/1.22.0/ModemManager-1.22.0.tar.xz
+
+# libqmi (Qualcomm MSM Interface)
+https://www.freedesktop.org/software/libqmi/libqmi-1.34.0.tar.xz
+
+# libmbim (MBIM protocol)
+https://www.freedesktop.org/software/libmbim/libmbim-1.28.0.tar.xz
+
+# oFono (alternative telephony stack)
+https://www.kernel.org/pub/linux/network/ofono/ofono-2.12.tar.xz
+
+# qbootctl (Qualcomm boot control)
+https://github.com/msm8953-mainline/qbootctl/archive/v0.1.tar.gz
+
+# ============================================================================
+# AUDIO FOR VOICE CALLS
+# ============================================================================
+
+# ALSA with Qualcomm DSP support
+alsa-lib-1.2.13
+alsa-utils-1.2.13
+alsa-ucm-conf-1.2.13
+
+# PulseAudio with modem routing
+libpulse-16.1
+pulseaudio-modules-bt-1.4
+
+# Audio call manager
+https://gitlab.com/megous/audio-call-manager/-/archive/v0.3/audio-call-manager-v0.3.tar.gz
+
+# ============================================================================
+# DISPLAY AND GRAPHICS (Qualcomm Adreno GPU)
+# ============================================================================
+
+# Freedreno (open source Qualcomm GPU driver)
+mesa-24.3.4 (with freedreno)
+
+# DRM panel driver for Brax3 display
+# Included in kernel
+
+# Wayland compositors (better for touch)
+phosh-0.40.0
+phoc-0.40.0
+squeekboard-1.22.0
+
+# Xorg fallback
+xorg-server-21.1.13
+
+# ============================================================================
+# MOBILE INTERFACE
+# ============================================================================
+
+# Phosh (Phone Shell - GNOME mobile)
+https://gitlab.gnome.org/World/Phosh/phosh/-/archive/v0.40.0/phosh-v0.40.0.tar.gz
+https://gitlab.gnome.org/World/Phosh/phoc/-/archive/v0.40.0/phoc-v0.40.0.tar.gz
+https://gitlab.gnome.org/World/Phosh/squeekboard/-/archive/v1.22.0/squeekboard-v1.22.0.tar.gz
+
+# Calls (phone app)
+https://gitlab.gnome.org/World/Phosh/calls/-/archive/v46.0/calls-v46.0.tar.gz
+
+# Chatty (SMS/MMS, XMPP)
+https://gitlab.gnome.org/World/Chatty/-/archive/v0.8.0/chatty-v0.8.0.tar.gz
+
+# GNOME Contacts
+https://download.gnome.org/sources/gnome-contacts/46/gnome-contacts-46.0.tar.xz
+
+# GNOME Calendar
+https://download.gnome.org/sources/gnome-calendar/46/gnome-calendar-46.0.tar.xz
+
+# ============================================================================
+# TELEPHONY APPLICATIONS
+# ============================================================================
+
+# Dialer (alternative to Calls)
+https://github.com/ubports/dialer-app/archive/v1.0.0.tar.gz
+
+# Messaging app
+https://github.com/ubports/messaging-app/archive/v1.0.0.tar.gz
+
+# Contacts app
+https://github.com/ubports/contacts-app/archive/v1.0.0.tar.gz
+
+# Settings (mobile-oriented)
+https://gitlab.gnome.org/World/Phosh/phosh-mobile-settings/-/archive/v0.40.0/phosh-mobile-settings-v0.40.0.tar.gz
+
+# ============================================================================
+# SENSORS AND HARDWARE
+# ============================================================================
+
+# Accelerometer (for screen rotation)
+https://gitlab.freedesktop.org/hadess/iio-sensor-proxy/-/archive/v3.5/iio-sensor-proxy-v3.5.tar.xz
+
+# Proximity sensor
+https://github.com/msm8953-mainline/proximity-tools/archive/v1.0.tar.gz
+
+# Ambient light sensor
+# Kernel driver included
+
+# Vibrator feedback
+https://gitlab.gnome.org/World/feedbackd/-/archive/v0.2.0/feedbackd-v0.2.0.tar.gz
+
+# ============================================================================
+# BLUETOOTH
+# ============================================================================
+
+# BlueZ (Bluetooth stack)
+https://www.kernel.org/pub/linux/bluetooth/bluez-5.79.tar.xz
+
+# Bluetooth audio support
+pulseaudio-modules-bt-1.4
+
+# Bluetooth pairing UI
+blueman-2.4.4
+
+# ============================================================================
+# GPS / GNSS
+# ============================================================================
+
+# GPS daemon
+https://gitlab.com/gpsd/gpsd/-/archive/3.25/gpsd-3.25.tar.gz
+
+# Geoclue (location service)
+https://gitlab.freedesktop.org/geoclue/geoclue/-/archive/2.7.0/geoclue-2.7.0.tar.xz
+
+# ============================================================================
+# POWER MANAGEMENT
+# ============================================================================
+
+# Power profiles (Qualcomm)
+https://github.com/msm8953-mainline/power-profiles-daemon/archive/v1.0.tar.gz
+
+# Battery monitoring
+https://github.com/syssi/battery-monitor/archive/v1.0.tar.gz
+
+# Suspend/resume scripts
+# Included in custom scripts
+
+# Thermal daemon (Qualcomm)
+https://github.com/msm8953-mainline/thermal-engine/archive/v1.0.tar.gz
+
+# ============================================================================
+# CAMERA
+# ============================================================================
+
+# libcamera (modern camera stack)
+https://git.libcamera.org/libcamera/libcamera.git/snapshot/libcamera-0.3.2.tar.xz
+
+# Camera apps for mobile
+https://gitlab.gnome.org/World/Phosh/megapixels/-/archive/v1.7.0/megapixels-v1.7.0.tar.gz
+
+# Video recording
+# Included in megapixels
+
+# ============================================================================
+# NETWORKING (4G/5G, WiFi)
+# ============================================================================
+
+# NetworkManager with mobile support
+NetworkManager-1.52.0
+NetworkManager-wwan-1.52.0
+modem-manager-gui-0.0.20
+
+# WiFi for Brax3 (Qualcomm Wi-Fi)
+wpa_supplicant-2.11
+iw-6.9
+hostapd-2.11
+
+# Mobile data configuration
+# Included in custom scripts
+
+# ============================================================================
+# UTILITIES
+# ============================================================================
+
+# Flash tool for Brax3
+https://github.com/brax3/flash-tool/archive/v1.0.tar.gz
+
+# Bootloader unlock tool
+https://github.com/brax3/bootloader-utils/archive/v1.0.tar.gz
+
+# Firmware updater
+https://github.com/brax3/firmware-updater/archive/v1.0.tar.gz
+
+# Diagnostic tools
+https://github.com/brax3/diag-tools/archive/v1.0.tar.gz
+
+# ============================================================================
+# CUSTOM SCRIPTS
+# ============================================================================
+
+# /usr/local/bin/brax3-config
+# /usr/local/bin/brax3-modem
+# /etc/NetworkManager/dispatcher.d/90-modem

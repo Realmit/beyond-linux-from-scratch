@@ -1,0 +1,189 @@
+# ============================================================================
+# LINUX KERNEL CONFIGURATION FOR BRAX3 (Qualcomm Snapdragon)
+# Based on ARM64 defconfig + Qualcomm/MSM drivers
+# ============================================================================
+
+# ============================================================================
+# ARCHITECTURE
+# ============================================================================
+CONFIG_ARM64=y
+CONFIG_ARM64_SW_TTBR0_PAN=y
+CONFIG_ARM64_VA_BITS_48=y
+CONFIG_ARM64_4K_PAGES=y
+CONFIG_NR_CPUS=8
+CONFIG_HZ=300
+CONFIG_PREEMPT=y
+
+# ============================================================================
+# QUALCOMM SOC SUPPORT
+# ============================================================================
+CONFIG_ARCH_QCOM=y
+CONFIG_QCOM_SCM=y
+CONFIG_QCOM_SCM_DOWNLOAD_MODE_DEFAULT=y
+CONFIG_QCOM_CPR=y
+CONFIG_QCOM_GSBI=y
+CONFIG_QCOM_RPMH=y
+CONFIG_QCOM_RPMHPD=y
+CONFIG_QCOM_SMEM=y
+CONFIG_QCOM_SMD=y
+CONFIG_QCOM_SMP2P=y
+CONFIG_QCOM_SMSM=y
+CONFIG_QCOM_WDT=y
+CONFIG_QCOM_PDC=y
+CONFIG_QCOM_LLCC=y
+CONFIG_QCOM_RPMH=y
+CONFIG_QCOM_SOCINFO=y
+
+# ============================================================================
+# ADRENO GPU
+# ============================================================================
+CONFIG_DRM_MSM=y
+CONFIG_DRM_MSM_REGISTER_LOGGING=y
+CONFIG_DRM_MSM_DSI=y
+CONFIG_DRM_MSM_DSI_28NM_8960=y
+CONFIG_DRM_MSM_DSI_28NM_8226=y
+CONFIG_DRM_MSM_DSI_14NM=y
+CONFIG_DRM_MSM_DSI_10NM=y
+CONFIG_DRM_MSM_HDMI=y
+CONFIG_DRM_MSM_DP=y
+
+# ============================================================================
+# QUALCOMM AUDIO (Q6DSP)
+# ============================================================================
+CONFIG_SND_SOC_QCOM=y
+CONFIG_SND_SOC_APQ8016=y
+CONFIG_SND_SOC_MSM8996=y
+CONFIG_SND_SOC_SDM845=y
+CONFIG_SND_SOC_QDSP6=y
+CONFIG_SND_SOC_QDSP6_AFE=y
+CONFIG_SND_SOC_QDSP6_ADM=y
+CONFIG_SND_SOC_QDSP6_ROUTING=y
+CONFIG_SND_SOC_QDSP6_ASM=y
+CONFIG_SND_SOC_QDSP6_CORE=y
+
+# ============================================================================
+# MODEM INTERFACE (QMI)
+# ============================================================================
+CONFIG_QCOM_QMI_HELPERS=y
+CONFIG_QCOM_QMI_MSGLEN=y
+CONFIG_QCOM_QMI_GSBI=y
+CONFIG_QCOM_RMNET=y
+CONFIG_QCOM_RMNET_IPC=y
+CONFIG_QCOM_RMNET_IPA=y
+CONFIG_QCOM_RMNET_MAP=y
+
+# ============================================================================
+# WIFI (Qualcomm WiFi)
+# ============================================================================
+CONFIG_WLAN=y
+CONFIG_WLAN_VENDOR_ATH=y
+CONFIG_ATH10K=m
+CONFIG_ATH10K_SDIO=m
+CONFIG_ATH10K_PCI=m
+CONFIG_ATH10K_DEBUG=y
+CONFIG_ATH10K_DEBUGFS=y
+CONFIG_ATH10K_SPECTRAL=y
+
+# QCA6174/QCA9377
+CONFIG_ATH10K_THERMAL=y
+
+# ============================================================================
+# BLUETOOTH
+# ============================================================================
+CONFIG_BT=m
+CONFIG_BT_BREDR=y
+CONFIG_BT_LE=y
+CONFIG_BT_HS=y
+CONFIG_BT_HCIBTUSB=m
+CONFIG_BT_HCIUART=m
+CONFIG_BT_HCIUART_H4=y
+CONFIG_BT_HCIUART_QCA=y
+CONFIG_BT_QCOMSMD=y
+
+# ============================================================================
+# POWER MANAGEMENT FOR BRAX3
+# ============================================================================
+CONFIG_PM=y
+CONFIG_PM_DEBUG=y
+CONFIG_PM_ADVANCED_DEBUG=y
+CONFIG_PM_SLEEP=y
+CONFIG_PM_AUTOSLEEP=y
+CONFIG_PM_WAKELOCKS=y
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y
+CONFIG_CPUFREQ_DT=y
+CONFIG_QCOM_CPUFREQ_HW=y
+
+# ============================================================================
+# BATTERY AND CHARGING
+# ============================================================================
+CONFIG_POWER_SUPPLY=y
+CONFIG_BATTERY_QCOM=y
+CONFIG_CHARGER_QCOM_SMBB=y
+CONFIG_QCOM_FASTRPC=y
+
+# ============================================================================
+# SENSORS (I2C/IIO)
+# ============================================================================
+CONFIG_IIO=y
+CONFIG_IIO_BUFFER=y
+CONFIG_SENSORS_AK8975=y
+CONFIG_SENSORS_LSM6DSX=y
+CONFIG_BMI088_ACCEL=y
+CONFIG_BMI088_GYRO=y
+CONFIG_QCOM_SPMI_IADC=y
+CONFIG_QCOM_SPMI_VADC=y
+CONFIG_QCOM_SPMI_TEMP_ALARM=y
+
+# ============================================================================
+# TOUCHSCREEN
+# ============================================================================
+CONFIG_INPUT_TOUCHSCREEN=y
+CONFIG_TOUCHSCREEN_GOODIX=y
+CONFIG_TOUCHSCREEN_FOCALTECH=y
+CONFIG_TOUCHSCREEN_FTS=y
+
+# ============================================================================
+# CAMERA
+# ============================================================================
+CONFIG_MEDIA_SUPPORT=y
+CONFIG_MEDIA_CONTROLLER=y
+CONFIG_V4L_PLATFORM_DRIVERS=y
+CONFIG_VIDEO_QCOM_CAMSS=y
+CONFIG_VIDEO_QCOM_VENUS=y
+
+# ============================================================================
+# USB (for charging and host mode)
+# ============================================================================
+CONFIG_USB=y
+CONFIG_USB_XHCI_HCD=y
+CONFIG_USB_DWC3=y
+CONFIG_USB_DWC3_HOST=y
+CONFIG_USB_DWC3_GADGET=y
+CONFIG_USB_GADGET=y
+CONFIG_USB_CONFIGFS=y
+
+# ============================================================================
+# CRYPTO (Qualcomm hardware crypto)
+# ============================================================================
+CONFIG_CRYPTO_DEV_QCE=y
+CONFIG_CRYPTO_DEV_QCE_SHA=y
+CONFIG_CRYPTO_DEV_QCE_SKCIPHER=y
+CONFIG_CRYPTO_DEV_QCE_AEAD=y
+
+# ============================================================================
+# FILESYSTEMS
+# ============================================================================
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+CONFIG_F2FS_FS=y
+CONFIG_VFAT_FS=y
+CONFIG_EROFS_FS=y
+
+# ============================================================================
+# DEBUG (minimal pour production)
+# ============================================================================
+# CONFIG_DEBUG_KERNEL is not set
+# CONFIG_DEBUG_INFO is not set
+CONFIG_DYNAMIC_DEBUG=y

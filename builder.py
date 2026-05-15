@@ -465,6 +465,23 @@ class ProfileManager:
             'live_system': False,
             'system_updater': True
         },
+        'brax3': {
+            'description': 'Brax3 Linux smartphone (Qualcomm Snapdragon)',
+            'size_gb': 4,
+            'build_time_hours': 5,
+            'packages': ['base', 'network', 'xorg', 'phosh', 'brax3'],
+            'desktop': 'phosh',
+            'init_system': 'systemd',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': True,
+            'privacy_tools': False,
+            'live_system': False,
+            'system_updater': True,
+            'cross_compile': True,
+            'architecture': 'aarch64',
+            'bootloader': 'aboot'
+        },
         'custom': {
             'description': 'User-defined custom profile template',
             'size_gb': 5,
