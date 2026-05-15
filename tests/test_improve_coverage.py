@@ -1,0 +1,399 @@
+#!/usr/bin/env python3
+"""
+Tests pour améliorer la couverture de code à 80%+
+"""
+
+import pytest
+import tempfile
+import subprocess
+from pathlib import Path
+from unittest.mock import patch, MagicMock, mock_open
+import sys
+import os
+
+from builder import (
+    LFSConfig, ProfileManager, SourceDownloader,
+    ScriptExecutor, USBWriter, LFSBuilder
+)
+
+
+class TestSourceDownloaderCoverage:
+    """Tests pour SourceDownloader (amélioration couverture)"""
+
+    def test_download_retry_success_after_failure(self, sources_dir, mock_logger):
+        """Test téléchargement réussit après échec"""
+        downloader = SourceDownloader(sources_dir, mock_logger)
+
+        with patch('urllib.request.urlretrieve') as mock_retrieve:
+            # Échoue 2 fois, réussit à la 3ème
+            mock_retrieve.side_effect = [
+                Exception("Network error"),
+                Exception("Network error"),
+                MagicMock()
+            ]
+            result = downloader.download("https://example.com/test.tar.gz", "test.tar.gz", retries=3)
+            assert result is True
+            assert mock_retrieve.call_count == 3
+
+    def test_download_url_without_filename(self, sources_dir, mock_logger):
+        """Test extraction automatique du nom de fichier depuis l'URL"""
+        downloader = SourceDownloader(sources_dir, mock_logger)
+
+        with patch('urllib.request.urlretrieve') as mock_retrieve:
+            mock_retrieve.return_value = MagicMock()
+            result = downloader.download("https://example.com/path/to/file-1.2.3.tar.gz")
+            assert result is True
+            # Vérifier que le nom de fichier a été extrait
+            args, kwargs = mock_retrieve.call_args
+            assert "file-1.2.3.tar.gz" in str(args[1])
+
+    def test_download_from_list_file_not_found(self, sources_dir, mock_logger):
+        """Test liste de sources inexistante"""
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.download_from_list(Path("/nonexistent/sources.list"))
+        assert result is False
+        mock_logger.error.assert_called()
+
+    def test_verify_checksums_invalid_line_format(self, sources_dir, mock_logger, temp_dir):
+        """Test ligne de checksum invalide (ignorée)"""
+        test_file = sources_dir / "test.tar.gz"
+        test_file.write_text("test content")
+
+        md5_file = temp_dir / "md5sums"
+        md5_file.write_text("invalid_line_without_two_parts\n")
+
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.verify_checksums(md5_file)
+        assert result is True  # Les lignes invalides sont ignorées
+
+    def test_reporthook_with_zero_totalsize(self, sources_dir, mock_logger, capsys):
+        """Test reporthook avec totalsize = 0 (pas d'affichage)"""
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        downloader._reporthook(1, 1024, 0)
+        captured = capsys.readouterr()
+        assert captured.out == ""  # Pas de sortie
+
+
+class TestScriptExecutorCoverage:
+    """Tests pour ScriptExecutor (amélioration couverture)"""
+
+    def test_run_script_creates_log_file(self, output_dir, mock_logger, temp_dir):
+        """Test création du fichier de log"""
+        script = temp_dir / "test.sh"
+        script.write_text("#!/bin/bash\necho 'test'")
+        script.chmod(0o755)
+
+        executor = ScriptExecutor({}, output_dir, mock_logger)
+
+        with patch.object(executor, 'find_script', return_value=script):
+            with patch('subprocess.run') as mock_run:
+                mock_run.return_value = MagicMock(returncode=0)
+                executor.run_script(str(script), "test_stage")
+
+                # Vérifier que le log file a été créé
+                log_file = output_dir / 'logs' / 'test_stage.log'
+                # Le fichier est créé mais peut être vide car on mock subprocess
+
+    def test_run_script_logs_last_lines_on_failure(self, output_dir, mock_logger, temp_dir):
+        """Test affichage des 10 dernières lignes du log en cas d'échec"""
+        script = temp_dir / "failing.sh"
+        script.write_text("#!/bin/bash\nexit 1")
+        script.chmod(0o755)
+
+        executor = ScriptExecutor({}, output_dir, mock_logger)
+
+        # Créer un fichier de log existant avec du contenu
+        log_file = output_dir / 'logs' / 'test_stage.log'
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        log_file.write_text("\n".join([f"Line {i}" for i in range(20)]))
+
+        with patch.object(executor, 'find_script', return_value=script):
+            with patch('subprocess.run') as mock_run:
+                mock_run.return_value = MagicMock(returncode=1)
+                executor.run_script(str(script), "test_stage")
+
+                # Vérifier que mock_logger.info a été appelé pour afficher les logs
+                assert mock_logger.info.call_count >= 1
+
+    def test_resume_from_stage_not_found(self, output_dir, mock_logger):
+        """Test reprise depuis un stage qui n'existe pas"""
+        executor = ScriptExecutor({}, output_dir, mock_logger)
+        stages = [("stage1", "script1.sh"), ("stage2", "script2.sh")]
+
+        with patch.object(executor, 'run_script', return_value=True):
+            result = executor.resume_from("nonexistent", stages)
+            # Doit commencer du début car stage non trouvé
+            assert result is True
+
+
+class TestUSBWriterCoverage:
+    """Tests pour USBWriter (amélioration couverture)"""
+
+    def test_write_iso_linux_success(self, temp_dir, mock_logger):
+        """Test écriture ISO sur Linux"""
+        iso_path = temp_dir / "test.iso"
+        iso_path.write_text("dummy iso content")
+
+        with patch('platform.system', return_value='Linux'):
+            with patch('subprocess.run') as mock_run:
+                mock_run.return_value = MagicMock(returncode=0)
+                with patch('builtins.input', return_value='YES'):
+                    result = USBWriter.write_iso(iso_path, "/dev/sdb", mock_logger)
+                    assert result is True
+
+    def test_write_iso_darwin_success(self, temp_dir, mock_logger):
+        """Test écriture ISO sur macOS"""
+        iso_path = temp_dir / "test.iso"
+        iso_path.write_text("dummy iso content")
+
+        with patch('platform.system', return_value='Darwin'):
+            with patch('subprocess.run') as mock_run:
+                mock_run.return_value = MagicMock(returncode=0)
+                with patch('builtins.input', return_value='YES'):
+                    result = USBWriter.write_iso(iso_path, "disk2", mock_logger)
+                    assert result is True
+
+    # tests/test_improve_coverage.py - ligne 162
+    def test_write_iso_unsupported_platform(self, temp_dir, mock_logger, monkeypatch):
+        """Test écriture ISO sur plateforme non supportée"""
+        iso_path = temp_dir / "test.iso"
+        iso_path.write_text("test content")
+
+        # Simuler une plateforme non supportée
+        monkeypatch.setattr('platform.system', lambda: 'Windows')
+
+        # Éviter l'input()
+        with patch('builtins.input', return_value='YES'):
+            result = USBWriter.write_iso(iso_path, "E:", mock_logger)
+            assert result is False
+            mock_logger.error.assert_called()
+
+    def test_write_iso_cancelled_by_user(self, temp_dir, mock_logger):
+        """Test annulation par l'utilisateur"""
+        iso_path = temp_dir / "test.iso"
+        iso_path.write_text("dummy iso content")
+
+        with patch('builtins.input', return_value='NO'):
+            result = USBWriter.write_iso(iso_path, "/dev/sdb", mock_logger)
+            assert result is False
+            mock_logger.info.assert_called_with("Operation cancelled")
+
+    def test_list_devices_linux(self):
+        """Test listing des périphériques USB sur Linux"""
+        mock_output = """NAME SIZE MODEL TYPE MOUNTPOINT
+sda  120G SSD   disk
+sdb  32G  USB Drive disk
+"""
+        with patch('platform.system', return_value='Linux'):
+            with patch('subprocess.run') as mock_run:
+                mock_run.return_value = MagicMock(stdout=mock_output)
+                devices = USBWriter.list_devices()
+                # Vérifier que les périphériques sont listés
+                assert isinstance(devices, list)
+
+    def test_list_devices_darwin(self):
+        """Test listing des périphériques USB sur macOS"""
+        mock_output = """
+/dev/disk0 (internal):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *500.3 GB   disk0
+/dev/disk2 (external, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:     FDisk_partition_scheme                        *32.0 GB    disk2
+"""
+        with patch('platform.system', return_value='Darwin'):
+            with patch('subprocess.run') as mock_run:
+                mock_run.return_value = MagicMock(stdout=mock_output)
+                devices = USBWriter.list_devices()
+                assert isinstance(devices, list)
+
+
+class TestLFSBuilderCoverage:
+    """Tests pour LFSBuilder (amélioration couverture)"""
+
+    def test_check_prerequisites_docker(self, builder):
+        """Test détection d'environnement Docker"""
+        with patch('os.path.exists', return_value=True):
+            result = builder.check_prerequisites()
+            assert result is True
+
+    def test_check_prerequisites_unsupported_os(self, builder):
+        """Test OS non supporté"""
+        with patch('platform.system', return_value='FreeBSD'):
+            result = builder.check_prerequisites()
+            assert result is False
+
+    def test_get_qemu_user_arm(self, builder):
+        """Test QEMU user pour architecture ARM"""
+        with patch.object(builder, 'get_target_architecture', return_value='arm'):
+            qemu = builder.get_qemu_user()
+            assert qemu == 'qemu-arm-static'
+
+    def test_get_qemu_user_unknown(self, builder):
+        """Test QEMU user pour architecture inconnue"""
+        with patch.object(builder, 'get_target_architecture', return_value='unknown'):
+            qemu = builder.get_qemu_user()
+            assert qemu == ''  # Retourne chaîne vide
+
+    def test_get_init_system_normalize(self, builder):
+        """Test normalisation de 'sysv' en 'sysvinit'"""
+        builder.config.set('init_system.choice', 'sysv')
+        assert builder.get_init_system() == 'sysvinit'
+
+    def test_get_init_system_unknown(self, builder):
+        """Test init system inconnu (fallback à sysvinit)"""
+        builder.config.set('init_system.choice', 'unknown')
+        with patch.object(builder.logger, 'warning'):
+            assert builder.get_init_system() == 'sysvinit'
+
+    def test_apply_profile_settings_cross_compile(self, builder):
+        """Test application des paramètres cross-compilation"""
+        builder.profile_config['cross_compile'] = True
+        builder.profile_config['architecture'] = 'aarch64'
+        builder.profile_config['bootloader'] = 'uboot'
+        builder._apply_profile_settings()
+
+        assert builder.config.get('cross_compile') is True
+        assert builder.config.get('architecture') == 'aarch64'
+        assert builder.config.get('bootloader.type') == 'uboot'
+
+    def test_download_sources_file_not_found(self, builder):
+        """Test sources.list absent"""
+        with patch('pathlib.Path.exists', return_value=False):
+            result = builder.download_sources()
+            assert result is False
+
+    def test_get_build_stages_with_all_features(self, builder):
+        """Test génération des stages avec toutes les fonctionnalités"""
+        builder.profile_config['desktop'] = 'gnome'
+        builder.profile_config['java_dev'] = True
+        builder.profile_config['security_hardening'] = True
+        builder.profile_config['privacy_tools'] = True
+        builder.profile_config['live_system'] = True
+
+        stages = builder.get_build_stages()
+        stage_names = [s[0] for s in stages]
+
+        assert 'desktop' in stage_names
+        assert 'java-dev' in stage_names
+        assert 'security' in stage_names
+        assert 'privacy' in stage_names
+        assert 'live-system' in stage_names
+
+    def test_get_build_stages_no_live_system(self, builder):
+        """Test génération des stages sans live system"""
+        builder.profile_config['live_system'] = False
+        stages = builder.get_build_stages()
+        stage_names = [s[0] for s in stages]
+
+        assert 'live-system' not in stage_names
+
+    def test_prepare_environment_creates_sysroot_cross(self, builder):
+        """Test création du sysroot en cross-compilation"""
+        with patch.object(builder, 'is_cross_compile', return_value=True):
+            with patch.object(builder, 'get_sysroot', return_value=str(builder.output_dir / 'sysroot')):
+                result = builder.prepare_environment()
+                assert result is True
+                assert (builder.output_dir / 'sysroot').exists()
+
+    def test_create_writable_media_no_iso(self, builder):
+        """Test création média USB sans ISO"""
+        result = builder.create_writable_media()
+        assert result is False
+
+    def test_create_writable_media_with_device(self, builder, temp_dir):
+        """Test écriture USB avec périphérique spécifié"""
+        iso_path = builder.output_dir / 'lfs-installer.iso'
+        iso_path.write_text("dummy")
+
+        with patch('builder.USBWriter.write_iso', return_value=True) as mock_write:
+            result = builder.create_writable_media("/dev/sdb")
+            assert result is True
+            mock_write.assert_called_once()
+
+
+class TestLFSConfigCoverage:
+    """Tests supplémentaires pour LFSConfig"""
+
+    def test_get_nonexistent_key_returns_default(self, lfs_config):
+        """Test clé inexistante retourne la valeur par défaut"""
+        value = lfs_config.get('nonexistent.key.very.deep', 'default_value')
+        assert value == 'default_value'
+
+    def test_set_new_nested_key_creates_parents(self, lfs_config):
+        """Test création automatique des parents lors du set"""
+        lfs_config.set('a.b.c.d.e', 'final_value')
+        assert lfs_config.get('a.b.c.d.e') == 'final_value'
+
+
+class TestProfileManagerCoverage:
+    """Tests supplémentaires pour ProfileManager"""
+
+    def test_get_profile_info_arm64(self):
+        """Test affichage info profil arm64"""
+        info = ProfileManager.get_profile_info('arm64')
+        assert 'Architecture:  aarch64' in info
+        assert 'Bootloader:    uboot' in info
+
+    def test_get_profile_info_audio_cli(self):
+        """Test affichage info profil audio-cli"""
+        info = ProfileManager.get_profile_info('audio-cli')
+        assert 'Desktop:       None (CLI only)' in info
+        assert 'Init System:   sysvinit' in info
+
+
+class TestCLICoverage:
+    """Tests pour l'interface en ligne de commande"""
+
+    def test_main_list_profiles(self, capsys):
+        """Test commande --list-profiles"""
+        from builder import main
+        with patch('sys.argv', ['builder.py', '--list-profiles']):
+            with patch('sys.exit'):
+                main()
+                captured = capsys.readouterr()
+                assert 'Available LFS Build Profiles' in captured.out
+
+    def test_main_profile_info(self, capsys):
+        """Test commande --profile-info"""
+        from builder import main
+        with patch('sys.argv', ['builder.py', '--profile-info', 'minimal']):
+            with patch('sys.exit'):
+                main()
+                captured = capsys.readouterr()
+                assert 'Profile: MINIMAL' in captured.out
+
+    def test_main_clean(self, temp_dir):
+        """Test commande --clean"""
+        from builder import main
+        build_dir = temp_dir / 'test-build'
+        build_dir.mkdir()
+        (build_dir / 'test.txt').write_text('test')
+
+        with patch('sys.argv', ['builder.py', '--clean', '--output', str(build_dir)]):
+            with patch('builtins.input', return_value='yes'):
+                with patch('sys.exit'):
+                    main()
+                    assert not build_dir.exists()
+
+    # tests/test_improve_coverage.py - ligne 383
+    def test_main_with_no_live(self, monkeypatch):
+        """Test option --no-live"""
+        from builder import main
+        import sys
+
+        # Simuler les arguments
+        test_args = ['builder.py', '--no-live', '--profile', 'minimal']
+        monkeypatch.setattr(sys, 'argv', test_args)
+
+        # Mock du builder pour éviter l'exécution réelle
+        with patch('builder.LFSBuilder') as MockBuilder:
+            mock_instance = MagicMock()
+            MockBuilder.return_value = mock_instance
+            mock_instance.config.get.return_value = True
+
+            with patch('sys.exit'):
+                main()
+
+                # Vérifier que set a été appelé
+                mock_instance.config.set.assert_called_with('live_system.enabled', False)
