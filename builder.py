@@ -406,6 +406,62 @@ class ProfileManager:
             'privacy_tools': False,
             'live_system': True,
             'system_updater': True
+        },
+        'kde': {
+            'description': 'KDE Plasma full-featured desktop environment',
+            'size_gb': 10,
+            'build_time_hours': 12,
+            'packages': ['base', 'network', 'ssh', 'xorg', 'kde', 'apps', 'multimedia'],
+            'desktop': 'kde',
+            'init_system': 'systemd',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': True,
+            'privacy_tools': False,
+            'live_system': True,
+            'system_updater': True
+        },
+        'lxqt': {
+            'description': 'LXQt extremely lightweight Qt desktop environment',
+            'size_gb': 2,
+            'build_time_hours': 3,
+            'packages': ['base', 'network', 'ssh', 'xorg', 'lxqt', 'apps'],
+            'desktop': 'lxqt',
+            'init_system': 'systemd',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': False,
+            'privacy_tools': False,
+            'live_system': True,
+            'system_updater': True
+        },
+        'server': {
+            'description': 'Production-optimized server configuration',
+            'size_gb': 2,
+            'build_time_hours': 3,
+            'packages': ['base', 'network', 'ssh', 'server-tools'],
+            'desktop': None,
+            'init_system': 'sysvinit',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': True,
+            'privacy_tools': False,
+            'live_system': False,
+            'system_updater': True
+        },
+        'custom': {
+            'description': 'User-defined custom profile template',
+            'size_gb': 5,
+            'build_time_hours': 5,
+            'packages': ['base', 'network', 'ssh'],
+            'desktop': None,
+            'init_system': 'sysvinit',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': False,
+            'privacy_tools': False,
+            'live_system': False,
+            'system_updater': True
         }
     }
 
