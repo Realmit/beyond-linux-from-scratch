@@ -2618,4 +2618,13 @@ python -m pytest tests/ -v
 
 # Quitter l'environnement virtuel
 deactivate
+
+# Exécuter un test spécifique
+python -m pytest tests/test_config.py -v  
+
+# Exécuter un tests avec coverage
+python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html
+
+# Pour les tests USB (avec une vraie clé USB - DANGEREUX)
+python -m pytest tests/test_integration_usb.py -v --usb-device=/dev/sdb --dangerous
 ```
