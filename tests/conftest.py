@@ -223,3 +223,9 @@ def real_sources_list():
     if not sources_list.exists():
         pytest.skip("sources.list not found")
     return sources_list
+
+def pytest_addoption(parser):
+    parser.addoption("--usb-device", action="store", default=None,
+                     help="USB device to test (e.g., /dev/sdb)")
+    parser.addoption("--dangerous", action="store_true", default=False,
+                     help="Allow destructive USB tests")

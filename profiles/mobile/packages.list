@@ -1,0 +1,129 @@
+# ============================================================================
+# LINUX PHONE PROFILE - PinePhone, Librem 5, Brax3
+# Téléphonie native sous Linux (appels, SMS, données mobiles)
+# ============================================================================
+
+# ============================================================================
+# BASE SYSTEM (ARM64)
+# ============================================================================
+include:../minimal/packages.list
+
+# ============================================================================
+# TELEPHONY STACK - ModemManager (recommandé)
+# ============================================================================
+
+# ModemManager - Gestion du modem Quectel EG25-G
+# https://www.freedesktop.org/wiki/Software/ModemManager/
+https://gitlab.freedesktop.org/mobile-broadband/ModemManager/-/archive/1.22.0/ModemManager-1.22.0.tar.xz
+
+# libmbim - MBIM protocol support
+https://www.freedesktop.org/software/libmbim/libmbim-1.28.0.tar.xz
+
+# libqmi - QMI protocol support (Quectel EG25-G)
+https://www.freedesktop.org/software/libqmi/libqmi-1.34.0.tar.xz
+
+# ============================================================================
+# ALTERNATIVE: oFono (stack téléphonie plus légère)
+# ============================================================================
+
+# oFono - Open Source Telephony
+# Utilisé par certaines distributions pour la flexibilité
+https://www.kernel.org/pub/linux/network/ofono/ofono-2.12.tar.xz
+
+# oFono-phonesim - Simulateur de modem (pour test)
+https://www.kernel.org/pub/linux/network/ofono/phonesim-1.21.tar.gz
+
+# ============================================================================
+# AUDIO POUR APPELS (I2S entre CPU et modem)
+# ============================================================================
+
+# ALSA avec support I2S
+alsa-lib-1.2.13
+alsa-utils-1.2.13
+
+# PipeWire (audio unifié)
+pipewire-1.4.0
+wireplumber-0.5.6
+
+# Call Audio Manager (gère routage audio pendant les appels)
+# https://gitlab.com/megi/audio-call-manager
+git://git.code.sf.net/p/audio-call-manager/code
+
+# ============================================================================
+# GESTION DE L'ALIMENTATION DU MODEM
+# ============================================================================
+
+# eg25-manager - Gestion spécifique pour Quectel EG25-G
+# https://source.puri.sm/Librem5/eg25-manager
+https://source.puri.sm/Librem5/eg25-manager/-/archive/v0.4.0/eg25-manager-v0.4.0.tar.gz
+
+# Modem power management kernel module (driver spécifique)
+# Inclus dans les kernels mainline récents
+
+# ============================================================================
+# INTERFACE UTILISATEUR TÉLÉPHONIQUE
+# ============================================================================
+
+# Calls - Application d'appels pour Phosh (GTK)
+# https://gitlab.gnome.org/World/Phosh/calls
+https://gitlab.gnome.org/World/Phosh/calls/-/archive/v46.0/calls-v46.0.tar.gz
+
+# Spacebar - Client SMS/MMS
+# https://gitlab.com/mobian1/spacebar
+https://gitlab.com/mobian1/spacebar/-/archive/v0.1.0/spacebar-v0.1.0.tar.gz
+
+# Chatty - Messagerie (SMS, XMPP, Matrix)
+# https://gitlab.gnome.org/World/Chatty
+https://gitlab.gnome.org/World/Chatty/-/archive/v0.8.0/chatty-v0.8.0.tar.gz
+
+# ============================================================================
+# INTERFACE DE BUREAU POUR TÉLÉPHONE
+# ============================================================================
+
+# Phosh - Phone Shell (environnement GNOME adapté téléphone)
+# https://gitlab.gnome.org/World/Phosh/phosh
+https://gitlab.gnome.org/World/Phosh/phosh/-/archive/v0.40.0/phosh-v0.40.0.tar.gz
+
+# Phoc - Wayland compositor pour Phosh
+https://gitlab.gnome.org/World/Phosh/phoc/-/archive/v0.40.0/phoc-v0.40.0.tar.gz
+
+# squeekboard - Clavier virtuel pour Phosh
+https://gitlab.gnome.org/World/Phosh/squeekboard/-/archive/v1.22.0/squeekboard-v1.22.0.tar.gz
+
+# Feedbackd - Vibration et retour haptique
+https://gitlab.gnome.org/World/Phosh/feedbackd/-/archive/v0.2.0/feedbackd-v0.2.0.tar.gz
+
+# ============================================================================
+# NOTIFICATIONS ET SYSTÈME
+# ============================================================================
+
+# phosh-mobile-settings - Paramètres mobile
+https://gitlab.gnome.org/World/Phosh/phosh-mobile-settings/-/archive/v0.40.0/phosh-mobile-settings-v0.40.0.tar.gz
+
+# GNOME Calls (alternative plus simple)
+https://download.gnome.org/sources/gnome-calls/46/gnome-calls-46.0.tar.xz
+
+# ============================================================================
+# PILOTES ET FIRMWARE
+# ============================================================================
+
+# Firmware EG25-G (nécessaire pour certaines fonctionnalités)
+# https://github.com/Biktorgj/quectel_eg25_firmware
+git://github.com/Biktorgj/quectel_eg25_firmware
+
+# Crust - Firmware libre pour le coprocesseur AR100
+# https://github.com/crust-firmware/crust
+https://github.com/crust-firmware/crust/archive/v0.6/crust-0.6.tar.gz
+
+# ============================================================================
+# UTILITAIRES DE DIAGNOSTIC
+# ============================================================================
+
+# mmcli - Interface ligne de commande pour ModemManager
+# Inclus avec ModemManager
+
+# ofonoctl - Contrôle oFono
+https://www.kernel.org/pub/linux/network/ofono/ofono-2.12.tar.xz
+
+# Modem diagnostic tools
+https://github.com/mborgerson/quectel_tools
