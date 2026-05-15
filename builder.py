@@ -275,7 +275,12 @@ class LFSConfig:
 # ============================================================================
 
 class ProfileManager:
-    """Manage build profiles (minimal, xfce, gnome, java-dev, security, full, arm64, etc.)"""
+    """Manage build profiles with flexible desktop, init system, and audio options"""
+
+    # Available choices for configuration
+    AVAILABLE_DESKTOPS = ['none', 'xfce', 'gnome', 'kde', 'lxqt']
+    AVAILABLE_INIT_SYSTEMS = ['sysvinit', 'systemd', 'openrc', 'runit', 's6']
+    AVAILABLE_AUDIO = ['none', 'cli', 'studio']
 
     PROFILES = {
         'minimal': {
@@ -283,14 +288,18 @@ class ProfileManager:
             'size_gb': 1,
             'build_time_hours': 2,
             'packages': ['base', 'network', 'ssh'],
-            'desktop': None,
+            'desktop': 'none',
             'init_system': 'sysvinit',
+            'audio': 'none',
             'java_dev': False,
             'package_manager': True,
             'security_hardening': False,
             'privacy_tools': False,
             'live_system': False,
-            'system_updater': False
+            'system_updater': False,
+            'desktop_options': ['none'],
+            'init_options': ['sysvinit', 'systemd', 'openrc'],
+            'audio_options': ['none']
         },
         'xfce': {
             'description': 'XFCE desktop environment',
