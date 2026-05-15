@@ -1,0 +1,141 @@
+#!/usr/bin/env python3
+"""
+Tests for SourceDownloader class
+"""
+
+import pytest
+import hashlib
+from unittest.mock import patch, MagicMock
+from pathlib import Path
+from builder import SourceDownloader
+
+
+class TestSourceDownloader:
+    """Test SourceDownloader class"""
+
+    def test_init(self, sources_dir, mock_logger):
+        """Test initialization"""
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        assert downloader.sources_dir == sources_dir
+        assert downloader.logger == mock_logger
+
+    def test_download_file_already_exists(self, sources_dir, mock_logger):
+        """Test downloading file that already exists"""
+        # Create existing file
+        test_file = sources_dir / "test.tar.gz"
+        test_file.write_text("existing content")
+
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.download("https://example.com/test.tar.gz", "test.tar.gz")
+
+        assert result is True
+        mock_logger.info.assert_called_with("Already exists: test.tar.gz")
+
+    @patch('urllib.request.urlretrieve')
+    def test_download_success(self, mock_urlretrieve, sources_dir, mock_logger):
+        """Test successful download"""
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.download("https://example.com/newfile.tar.gz", "newfile.tar.gz")
+
+        assert result is True
+        mock_urlretrieve.assert_called_once()
+
+    @patch('urllib.request.urlretrieve')
+    def test_download_retry_on_failure(self, mock_urlretrieve, sources_dir, mock_logger):
+        """Test retry on download failure"""
+        mock_urlretrieve.side_effect = [Exception("Network error"), Exception("Network error"), MagicMock()]
+
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.download("https://example.com/retry.tar.gz", "retry.tar.gz", retries=3)
+
+        assert result is True
+        assert mock_urlretrieve.call_count == 3
+
+    @patch('urllib.request.urlretrieve')
+    def test_download_all_retries_fail(self, mock_urlretrieve, sources_dir, mock_logger):
+        """Test all retries fail"""
+        mock_urlretrieve.side_effect = Exception("Network error")
+
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.download("https://example.com/fail.tar.gz", "fail.tar.gz", retries=2)
+
+        assert result is False
+        assert mock_urlretrieve.call_count == 2
+
+    def test_download_from_list(self, sources_dir, mock_logger, sample_sources_list):
+        """Test downloading from sources list"""
+        downloader = SourceDownloader(sources_dir, mock_logger)
+
+        with patch.object(downloader, 'download', return_value=True) as mock_download:
+            result = downloader.download_from_list(sample_sources_list, parallel=2)
+
+            assert result is True
+            # Should download 4 files (2 real + 2 audio)
+            assert mock_download.call_count == 4
+
+    def test_download_from_list_skips_git_urls(self, sources_dir, mock_logger, temp_dir):
+        """Test that Git URLs are skipped"""
+        sources_list = temp_dir / "sources.list"
+        sources_list.write_text("""
+https://normal.com/file.tar.gz
+git://github.com/repo.git
+https://git.savannah.gnu.org/git/guix.git
+""")
+
+        downloader = SourceDownloader(sources_dir, mock_logger)
+
+        with patch.object(downloader, 'download', return_value=True) as mock_download:
+            downloader.download_from_list(sources_list)
+
+            # Only the non-Git URL should be downloaded
+            assert mock_download.call_count == 1
+
+    def test_verify_checksums_valid(self, sources_dir, mock_logger, sample_md5sums):
+        """Test checksum verification with valid files"""
+        # Create test file with matching MD5
+        test_file = sources_dir / "linux-6.12.20.tar.xz"
+        test_content = b"test content"
+        test_file.write_bytes(test_content)
+        expected_md5 = hashlib.md5(test_content).hexdigest()
+
+        # Update md5sums with correct hash
+        md5_file = sources_dir.parent / "md5sums"
+        md5_file.write_text(f"{expected_md5} linux-6.12.20.tar.xz\n")
+
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.verify_checksums(md5_file)
+
+        assert result is True
+
+    def test_verify_checksums_invalid(self, sources_dir, mock_logger, temp_dir):
+        """Test checksum verification with invalid checksum"""
+        test_file = sources_dir / "test.tar.gz"
+        test_file.write_text("test content")
+
+        md5_file = temp_dir / "md5sums"
+        md5_file.write_text("wrongmd5hash123 test.tar.gz\n")
+
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.verify_checksums(md5_file)
+
+        assert result is False
+        mock_logger.error.assert_called()
+
+    def test_verify_checksums_missing_file(self, sources_dir, mock_logger, temp_dir):
+        """Test checksum verification with missing file"""
+        md5_file = temp_dir / "md5sums"
+        md5_file.write_text("abc123 missing.tar.gz\n")
+
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.verify_checksums(md5_file)
+
+        assert result is False
+        mock_logger.warning.assert_called()
+
+    def test_verify_checksums_no_file(self, sources_dir, mock_logger):
+        """Test checksum verification with no checksum file"""
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        result = downloader.verify_checksums(Path("/nonexistent/md5sums"))
+
+        assert result is True
+        mock_logger.warning.assert_called()

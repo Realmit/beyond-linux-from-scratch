@@ -2,7 +2,7 @@
 """
 LFS/BLFS Builder - Main orchestrator
 Works on Linux, macOS, and Windows (WSL2)
-Version: 4.2.0 - Added U-Boot Support, Cross-Compilation, ARM64
+Version: 4.3.0 - Fixed script paths and config loading
 """
 
 import os
@@ -17,25 +17,68 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 import logging
-import tempfile
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 # ============================================================================
 # VERSION INFO
 # ============================================================================
-__version__ = "4.2.0"
-__build_date__ = "2026-04-30"
+__version__ = "4.3.0"
+__build_date__ = "2026-05-14"
+
+# ============================================================================
+# CONSTANTS
+# ============================================================================
+
+# Script directories (based on your actual structure)
+SCRIPT_DIRS = {
+    'host': 'host',
+    'lfs': 'lfs',
+    'blfs': 'blfs',
+    'final': 'final',
+    'common': 'common'
+}
+
+# Build stages with correct paths
+BUILD_STAGES = [
+    ('host-check', 'host/01-check-host.sh'),
+    ('host-prepare', 'host/02-prepare-host.sh'),
+    ('disk-image', 'host/03-create-disk-image.sh'),
+    ('toolchain', 'host/04-build-toolchain.sh'),
+    ('qemu-setup', 'host/00-setup-qemu.sh'),  # Optional, for cross-compile
+    ('uboot', 'host/05-build-uboot.sh'),      # Optional, for ARM
+    ('lfs-basic', 'lfs/05-build-lfs-basic.sh'),
+    ('lfs-system', 'lfs/06-build-lfs-system.sh'),
+    ('init-system', 'lfs/06a-init-system.sh'),
+    ('service-mgmt', 'lfs/06b-service-management.sh'),
+    ('configure-lfs', 'lfs/07-configure-lfs.sh'),
+    ('blfs-base', 'lfs/08-build-blfs-base.sh'),
+    ('desktop', 'blfs/09-build-desktop.sh'),
+    ('applications', 'blfs/10-build-applications.sh'),
+    ('configure-desktop', 'blfs/11-configure-desktop.sh'),
+    ('java-dev', 'blfs/12-install-java-dev.sh'),
+    ('package-manager', 'blfs/13-create-package-manager.sh'),
+    ('base-packages', 'blfs/14-create-base-packages.sh'),
+    ('security', 'blfs/15-security-hardening.sh'),
+    ('privacy', 'blfs/16-privacy-tools.sh'),
+    ('first-boot', 'blfs/17-first-boot-service.sh'),
+    ('system-updater', 'blfs/18-system-updater.sh'),
+    ('package-updater', 'blfs/19-package-updater.sh'),
+    ('lpm-advanced', 'blfs/20-lpm-advanced.sh'),
+    ('initramfs', 'final/12-create-initramfs.sh'),
+    ('bootloader', 'final/13-create-bootloader.sh'),
+    ('installer', 'final/14-create-installer.sh'),
+    ('live-system', 'final/15-create-live-system.sh'),
+]
 
 # ============================================================================
 # CONFIGURATION CLASSES
 # ============================================================================
 
 class LFSConfig:
-    """LFS Builder Configuration Manager"""
+    """LFS Builder Configuration Manager - Updated for LFS 13.0"""
 
     def __init__(self, config_file: Path):
-        # CORRECTION: Convertir en Path si c'est une string
         if isinstance(config_file, str):
             config_file = Path(config_file)
         self.config_file = config_file
@@ -57,10 +100,10 @@ class LFSConfig:
             json.dump(self.data, f, indent=2)
 
     def get_default_config(self) -> Dict:
-        """Return default configuration"""
+        """Return default configuration for LFS 13.0"""
         return {
-            "lfs_version": "12.2",
-            "blfs_version": "12.2",
+            "lfs_version": "13.0",
+            "blfs_version": "13.0",
             "architecture": "x86_64",
             "target_triplet": "x86_64-lfs-linux-gnu",
             "build_threads": os.cpu_count(),
@@ -70,13 +113,13 @@ class LFSConfig:
             "qemu_user": "",
 
             "init_system": {
-                "choice": "systemd",
-                "service_style": "classic",
-                "parallel_startup": True,
+                "choice": "sysvinit",  # Changed to sysvinit as default (LFS classic)
+                "service_style": "lfs-classic",
+                "parallel_startup": False,  # sysvinit doesn't have parallel
                 "auto_restart": True,
-                "default_runlevel": 5,
+                "default_runlevel": 3,
                 "service_timeout": 5,
-                "max_parallel": 4
+                "max_parallel": 1
             },
 
             "package_manager": {
@@ -106,7 +149,7 @@ class LFSConfig:
 
             "java_dev": {
                 "enabled": False,
-                "version": "21.0.8",
+                "version": "21.0.10",
                 "distribution": "temurin",
                 "tools": ["maven", "gradle", "tomcat", "jenkins", "docker", "kubectl"],
                 "optimizations": True,
@@ -152,14 +195,14 @@ class LFSConfig:
             },
 
             "kernel": {
-                "version": "6.12.10",
+                "version": "6.12.20",
                 "config": "config/kernel-config",
                 "modules": ["ext4", "xfs", "nvme", "virtio", "usb_storage", "overlay", "vfat", "ntfs"],
                 "custom_patches": []
             },
 
             "locale": "en_US.UTF-8",
-            "timezone": "America/New_York",
+            "timezone": "UTC",
             "hostname": "lfs-desktop",
             "keyboard_layout": "us",
 
@@ -183,8 +226,7 @@ class LFSConfig:
 
             "repositories": [
                 "https://www.linuxfromscratch.org/lfs/view/stable/wget-list",
-                "https://www.linuxfromscratch.org/blfs/view/stable/wget-list",
-                "https://raw.githubusercontent.com/lfs-builder/repo/main/packages.list"
+                "https://www.linuxfromscratch.org/blfs/view/stable/wget-list"
             ],
 
             "build_options": {
@@ -229,7 +271,7 @@ class LFSConfig:
 
 
 # ============================================================================
-# PROFILE MANAGER
+# PROFILE MANAGER - Updated with LFS 13.0 compatibility
 # ============================================================================
 
 class ProfileManager:
@@ -242,6 +284,7 @@ class ProfileManager:
             'build_time_hours': 2,
             'packages': ['base', 'network', 'ssh'],
             'desktop': None,
+            'init_system': 'sysvinit',
             'java_dev': False,
             'package_manager': True,
             'security_hardening': False,
@@ -255,6 +298,7 @@ class ProfileManager:
             'build_time_hours': 4,
             'packages': ['base', 'network', 'ssh', 'xorg', 'xfce', 'apps'],
             'desktop': 'xfce',
+            'init_system': 'systemd',
             'java_dev': False,
             'package_manager': True,
             'security_hardening': True,
@@ -268,6 +312,7 @@ class ProfileManager:
             'build_time_hours': 8,
             'packages': ['base', 'network', 'ssh', 'xorg', 'gnome', 'apps'],
             'desktop': 'gnome',
+            'init_system': 'systemd',
             'java_dev': False,
             'package_manager': True,
             'security_hardening': True,
@@ -281,6 +326,7 @@ class ProfileManager:
             'build_time_hours': 6,
             'packages': ['base', 'network', 'ssh', 'xorg', 'xfce', 'apps', 'java', 'maven', 'gradle', 'tomcat', 'jenkins', 'docker'],
             'desktop': 'xfce',
+            'init_system': 'systemd',
             'java_dev': True,
             'package_manager': True,
             'security_hardening': True,
@@ -294,6 +340,7 @@ class ProfileManager:
             'build_time_hours': 5,
             'packages': ['base', 'network', 'ssh', 'xorg', 'xfce', 'security', 'privacy'],
             'desktop': 'xfce',
+            'init_system': 'sysvinit',
             'java_dev': False,
             'package_manager': True,
             'security_hardening': True,
@@ -307,6 +354,7 @@ class ProfileManager:
             'build_time_hours': 12,
             'packages': ['all'],
             'desktop': 'gnome',
+            'init_system': 'systemd',
             'java_dev': True,
             'package_manager': True,
             'security_hardening': True,
@@ -320,6 +368,7 @@ class ProfileManager:
             'build_time_hours': 3,
             'packages': ['base', 'network', 'ssh'],
             'desktop': None,
+            'init_system': 'sysvinit',
             'java_dev': False,
             'package_manager': True,
             'security_hardening': True,
@@ -329,6 +378,34 @@ class ProfileManager:
             'cross_compile': True,
             'architecture': 'aarch64',
             'bootloader': 'uboot'
+        },
+        'audio-cli': {
+            'description': 'CLI-only audio production system',
+            'size_gb': 2,
+            'build_time_hours': 3,
+            'packages': ['base', 'network', 'audio-core', 'audio-midi'],
+            'desktop': None,
+            'init_system': 'sysvinit',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': True,
+            'privacy_tools': False,
+            'live_system': False,
+            'system_updater': True
+        },
+        'audio-studio': {
+            'description': 'Full audio production studio with XFCE',
+            'size_gb': 8,
+            'build_time_hours': 6,
+            'packages': ['base', 'network', 'xorg', 'xfce', 'audio-core', 'audio-daw', 'audio-plugins', 'audio-midi'],
+            'desktop': 'xfce',
+            'init_system': 'systemd',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': True,
+            'privacy_tools': False,
+            'live_system': True,
+            'system_updater': True
         }
     }
 
@@ -356,6 +433,7 @@ class ProfileManager:
 ║ Size:          ~{profile['size_gb']} GB
 ║ Build time:    ~{profile['build_time_hours']} hours
 ║ Desktop:       {profile['desktop'] or 'None (CLI only)'}
+║ Init System:   {profile.get('init_system', 'sysvinit')}
 ║ Architecture:  {profile.get('architecture', 'x86_64')}
 ║ Bootloader:    {profile.get('bootloader', 'grub')}
 ║ Java Dev:      {'✓' if profile['java_dev'] else '✗'}
@@ -431,6 +509,10 @@ class SourceDownloader:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith('#'):
+                    # Handle potential Git URLs
+                    if line.startswith('git://') or line.startswith('https://git.'):
+                        self.logger.info(f"Skipping Git repository (use git clone): {line}")
+                        continue
                     urls.append(line)
 
         self.logger.info(f"Downloading {len(urls)} sources with {parallel} threads")
@@ -493,22 +575,41 @@ class ScriptExecutor:
         self.logger = logger
         self.completed_stages = []
 
-    def run_script(self, script_path: Path, stage_name: str, timeout: int = 7200) -> bool:
+    def find_script(self, script_path: str) -> Optional[Path]:
+        """Find script in various possible locations"""
+        # Direct path
+        if Path(script_path).exists():
+            return Path(script_path)
+
+        # With scripts/ prefix
+        if Path(f"scripts/{script_path}").exists():
+            return Path(f"scripts/{script_path}")
+
+        # With no prefix (if already in scripts)
+        base = Path(script_path).name
+        if Path(base).exists():
+            return Path(base)
+
+        return None
+
+    def run_script(self, script_path: str, stage_name: str, timeout: int = 7200) -> bool:
         """Run a single build script"""
         self.logger.info(f"Running stage: {stage_name}")
 
-        if not script_path.exists():
+        script = self.find_script(script_path)
+        if not script:
             self.logger.error(f"Script not found: {script_path}")
             return False
 
-        script_path.chmod(0o755)
+        script.chmod(0o755)
 
         log_file = self.output_dir / 'logs' / f"{stage_name}.log"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
 
         try:
             with open(log_file, 'w') as log:
                 result = subprocess.run(
-                    [str(script_path)],
+                    [str(script)],
                     env={**os.environ, **self.env},
                     stdout=log,
                     stderr=subprocess.STDOUT,
@@ -517,22 +618,30 @@ class ScriptExecutor:
                 )
 
             if result.returncode == 0:
-                self.logger.info(f"Stage completed: {stage_name}")
+                self.logger.info(f"✓ Stage completed: {stage_name}")
                 self.completed_stages.append(stage_name)
                 return True
             else:
-                self.logger.error(f"Stage failed: {stage_name} (exit code: {result.returncode})")
-                self.logger.info(f"Check log: {log_file}")
+                self.logger.error(f"✗ Stage failed: {stage_name} (exit code: {result.returncode})")
+                self.logger.info(f"  Check log: {log_file}")
+
+                # Show last 10 lines of log for quick debugging
+                if log_file.exists():
+                    with open(log_file, 'r') as f:
+                        lines = f.readlines()[-10:]
+                    self.logger.info("  Last 10 log lines:")
+                    for line in lines:
+                        self.logger.info(f"    {line.rstrip()}")
                 return False
 
         except subprocess.TimeoutExpired:
-            self.logger.error(f"Stage timed out after {timeout} seconds: {stage_name}")
+            self.logger.error(f"✗ Stage timed out after {timeout} seconds: {stage_name}")
             return False
         except Exception as e:
-            self.logger.error(f"Exception running stage {stage_name}: {e}")
+            self.logger.error(f"✗ Exception running stage {stage_name}: {e}")
             return False
 
-    def resume_from(self, resume_stage: str, stages: List[Tuple[str, Path]]) -> bool:
+    def resume_from(self, resume_stage: str, stages: List[Tuple[str, str]]) -> bool:
         """Resume build from a specific stage"""
         start_index = 0
         for i, (stage_name, _) in enumerate(stages):
@@ -590,7 +699,7 @@ class USBWriter:
         if not device.startswith('/dev/'):
             device = f"/dev/{device}"
 
-        logger.warning(f"This will overwrite ALL data on {device}")
+        logger.warning(f"⚠️ This will overwrite ALL data on {device}")
         response = input("Type 'YES' to continue: ")
 
         if response != 'YES':
@@ -612,7 +721,7 @@ class USBWriter:
         try:
             logger.info(f"Writing ISO to {device}...")
             subprocess.run(cmd, check=True)
-            logger.info(f"Successfully written to {device}")
+            logger.info(f"✓ Successfully written to {device}")
 
             subprocess.run(['sync'], check=False)
             if system == "Linux":
@@ -634,7 +743,6 @@ class LFSBuilder:
     def __init__(self, profile: str, output_dir: Path, config_file: Path):
         self.profile = profile
         self.output_dir = Path(output_dir)
-        # CORRECTION: S'assurer que config_file est un Path
         if isinstance(config_file, str):
             config_file = Path(config_file)
         self.config = LFSConfig(config_file)
@@ -653,6 +761,9 @@ class LFSBuilder:
         """Apply profile-specific settings to configuration"""
         if self.profile_config.get('desktop'):
             self.config.set('desktop.type', self.profile_config['desktop'])
+
+        if self.profile_config.get('init_system'):
+            self.config.set('init_system.choice', self.profile_config['init_system'])
 
         # Apply cross-compilation settings from profile
         if self.profile_config.get('cross_compile', False):
@@ -702,16 +813,20 @@ class LFSBuilder:
 
     def get_sysroot(self) -> str:
         """Get sysroot path for cross-compilation"""
-        return self.config.get('sysroot', f"/sysroots/{self.get_target_architecture()}-lfs")
+        return self.config.get('sysroot', f"{self.output_dir}/sysroot/{self.get_target_architecture()}")
 
     def get_init_system(self) -> str:
         """Get init system choice from config"""
-        init_choices = ['systemd', 'sysv', 'openrc', 'runit', 's6']
-        init = self.config.get('init_system.choice', 'systemd')
+        init_choices = ['systemd', 'sysvinit', 'sysv', 'openrc', 'runit', 's6']
+        init = self.config.get('init_system.choice', 'sysvinit')
+
+        # Normalize sysv to sysvinit
+        if init == 'sysv':
+            init = 'sysvinit'
 
         if init not in init_choices:
-            self.logger.warning(f"Unknown init system: {init}, using systemd")
-            init = 'systemd'
+            self.logger.warning(f"Unknown init system: {init}, using sysvinit")
+            init = 'sysvinit'
 
         return init
 
@@ -723,8 +838,8 @@ class LFSBuilder:
             'MAKEFLAGS': f"-j{self.config.get('build_threads', os.cpu_count())}",
             'PROFILE': self.profile,
             'INIT_SYSTEM': self.get_init_system(),
-            'SERVICE_STYLE': self.config.get('init_system.service_style', 'classic'),
-            'PARALLEL_STARTUP': str(self.config.get('init_system.parallel_startup', True)).lower(),
+            'SYSVINIT_STYLE': self.config.get('init_system.service_style', 'lfs-classic'),
+            'PARALLEL_STARTUP': str(self.config.get('init_system.parallel_startup', False)).lower(),
             'AUTO_RESTART': str(self.config.get('init_system.auto_restart', True)).lower(),
             'JAVA_DEV': str(self.profile_config.get('java_dev', False)).lower(),
             'LPM_ENABLED': str(self.profile_config.get('package_manager', True)).lower(),
@@ -744,9 +859,9 @@ class LFSBuilder:
             env['SYSROOT'] = self.get_sysroot()
             env['ARCH'] = self.get_target_architecture()
             self.logger.info(f"Cross-compilation enabled for architecture: {self.get_target_architecture()}")
-            self.logger.info(f"Cross prefix: {self.get_cross_prefix()}")
-            self.logger.info(f"QEMU user: {self.get_qemu_user()}")
-            self.logger.info(f"Sysroot: {self.get_sysroot()}")
+            self.logger.info(f"  Cross prefix: {self.get_cross_prefix()}")
+            self.logger.info(f"  QEMU user: {self.get_qemu_user()}")
+            self.logger.info(f"  Sysroot: {self.get_sysroot()}")
 
         return env
 
@@ -771,6 +886,7 @@ class LFSBuilder:
         """Check system prerequisites based on platform"""
         self.logger.info(f"Checking prerequisites on {self.system}")
         self.logger.info(f"LFS Builder Version: {__version__}")
+
         # Skip if running in Docker (container already has all tools)
         if os.path.exists('/.dockerenv'):
             self.logger.info("Docker container detected - skipping host prerequisites check")
@@ -786,7 +902,7 @@ class LFSBuilder:
                 cross_gcc = f"{self.get_target_architecture()}-linux-gnu-gcc"
                 if not shutil.which(cross_gcc):
                     self.logger.warning(f"Cross-compiler not found: {cross_gcc}")
-                    self.logger.info("Install with: apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu")
+                    self.logger.info(f"Install with: apt install gcc-{self.get_target_architecture()}-linux-gnu binutils-{self.get_target_architecture()}-linux-gnu")
 
         elif self.system == "Darwin":
             required_cmds = ['bash', 'docker', 'make', 'gawk', 'm4']
@@ -891,62 +1007,80 @@ class LFSBuilder:
 
         return True
 
-    def get_build_stages(self) -> List[Tuple[str, Path]]:
-        """Get ordered list of build stages"""
-        stages = [
-            ('host-check', Path('scripts/host/01-check-host.sh')),
-            ('host-prepare', Path('scripts/host/02-prepare-host.sh')),
-            ('disk-image', Path('scripts/host/03-create-disk-image.sh')),
-            ('toolchain', Path('scripts/host/04-build-toolchain.sh')),
-            ('lfs-basic', Path('scripts/lfs/05-build-lfs-basic.sh')),
-            ('lfs-system', Path('scripts/lfs/06-build-lfs-system.sh')),
-            ('init-system', Path('scripts/lfs/06a-init-system.sh')),
-            ('service-abstraction', Path('scripts/lfs/06b-service-management.sh')),
-            ('configure-lfs', Path('scripts/lfs/07-configure-lfs.sh')),
-            ('blfs-base', Path('scripts/blfs/08-build-blfs-base.sh')),
-            ('desktop', Path('scripts/blfs/09-build-desktop.sh')),
-            ('applications', Path('scripts/blfs/10-build-applications.sh')),
-            ('configure-desktop', Path('scripts/blfs/11-configure-desktop.sh')),
-        ]
+    def get_build_stages(self) -> List[Tuple[str, str]]:
+        """Get ordered list of build stages with correct script paths"""
+        stages = []
 
-        # Add QEMU setup stage for cross-compilation
+        # Host preparation (always needed)
+        stages.append(('host-check', 'host/01-check-host.sh'))
+        stages.append(('host-prepare', 'host/02-prepare-host.sh'))
+
+        # QEMU setup for cross-compilation
         if self.is_cross_compile():
-            stages.insert(1, ('qemu-setup', Path('scripts/host/00-setup-qemu.sh')))
+            stages.append(('qemu-setup', 'host/00-setup-qemu.sh'))
 
-        # Add U-Boot stage if bootloader type is uboot
+        stages.append(('disk-image', 'host/03-create-disk-image.sh'))
+        stages.append(('toolchain', 'host/04-build-toolchain.sh'))
+
+        # U-Boot for ARM boards
         bootloader_type = self.config.get('bootloader.type', 'grub')
         if bootloader_type == 'uboot':
-            stages.append(('uboot', Path('scripts/host/05-build-uboot.sh')))
-            self.logger.info(f"U-Boot bootloader will be built for board: {self.config.get('bootloader.uboot_board', 'rpi_4')}")
+            stages.append(('uboot', 'host/05-build-uboot.sh'))
 
-        # Add Java Dev if enabled
+        # LFS core
+        stages.append(('lfs-basic', 'lfs/05-build-lfs-basic.sh'))
+        stages.append(('lfs-system', 'lfs/06-build-lfs-system.sh'))
+
+        # Init system (sysvinit or systemd)
+        stages.append(('init-system', 'lfs/06a-init-system.sh'))
+        stages.append(('service-abstraction', 'lfs/06b-service-management.sh'))
+
+        # Configure LFS
+        stages.append(('configure-lfs', 'lfs/07-configure-lfs.sh'))
+
+        # BLFS base
+        stages.append(('blfs-base', 'lfs/08-build-blfs-base.sh'))
+
+        # Desktop (if enabled)
+        if self.profile_config.get('desktop'):
+            stages.append(('desktop', 'blfs/09-build-desktop.sh'))
+            stages.append(('applications', 'blfs/10-build-applications.sh'))
+            stages.append(('configure-desktop', 'blfs/11-configure-desktop.sh'))
+
+        # Java development
         if self.profile_config.get('java_dev', False):
-            stages.append(('java-dev', Path('scripts/blfs/12-install-java-dev.sh')))
+            stages.append(('java-dev', 'blfs/12-install-java-dev.sh'))
 
-        # Add Package Manager if enabled
+        # Package manager
         if self.profile_config.get('package_manager', True):
-            stages.append(('package-manager', Path('scripts/blfs/13-create-package-manager.sh')))
-            stages.append(('base-packages', Path('scripts/blfs/14-create-base-packages.sh')))
+            stages.append(('package-manager', 'blfs/13-create-package-manager.sh'))
+            stages.append(('base-packages', 'blfs/14-create-base-packages.sh'))
 
-        # Add Security Hardening if enabled
+        # Security hardening
         if self.profile_config.get('security_hardening', False):
-            stages.append(('security', Path('scripts/blfs/15-security-hardening.sh')))
+            stages.append(('security', 'blfs/15-security-hardening.sh'))
 
-        # Add Privacy Tools if enabled
+        # Privacy tools
         if self.profile_config.get('privacy_tools', False):
-            stages.append(('privacy', Path('scripts/blfs/16-privacy-tools.sh')))
+            stages.append(('privacy', 'blfs/16-privacy-tools.sh'))
 
-        # Add System Updater if enabled
+        # First boot service
+        stages.append(('first-boot', 'blfs/17-first-boot-service.sh'))
+
+        # System updater
         if self.profile_config.get('system_updater', True):
-            stages.append(('system-updater', Path('scripts/blfs/18-system-updater.sh')))
-            stages.append(('package-updater', Path('scripts/blfs/19-package-updater.sh')))
+            stages.append(('system-updater', 'blfs/18-system-updater.sh'))
+            stages.append(('package-updater', 'blfs/19-package-updater.sh'))
+            stages.append(('lpm-advanced', 'blfs/20-lpm-advanced.sh'))
 
-        # Final stages (installer creates live system if enabled)
-        stages.extend([
-            ('initramfs', Path('scripts/final/12-create-initramfs.sh')),
-            ('bootloader', Path('scripts/final/13-create-bootloader.sh')),
-            ('installer', Path('scripts/final/14-create-installer.sh'))
-        ])
+        # Final stages
+        stages.append(('initramfs', 'final/12-create-initramfs.sh'))
+        stages.append(('bootloader', 'final/13-create-bootloader.sh'))
+        stages.append(('installer', 'final/14-create-installer.sh'))
+
+        # Live system
+        if self.profile_config.get('live_system', True):
+            stages.append(('live-system', 'final/15-create-live-system.sh'))
 
         return stages
 
@@ -956,6 +1090,7 @@ class LFSBuilder:
         self.logger.info(f"LFS Builder v{__version__}")
         self.logger.info(f"Profile: {self.profile}")
         self.logger.info(f"Init system: {self.get_init_system()}")
+        self.logger.info(f"Desktop: {self.profile_config.get('desktop', 'None (CLI only)')}")
         self.logger.info(f"Live system: {self.profile_config.get('live_system', True)}")
         self.logger.info(f"Output directory: {self.output_dir}")
 
@@ -979,7 +1114,7 @@ class LFSBuilder:
                 return False
 
         self.logger.info("=" * 70)
-        self.logger.info("BUILD COMPLETED SUCCESSFULLY!")
+        self.logger.info("✅ BUILD COMPLETED SUCCESSFULLY!")
         self.logger.info("=" * 70)
 
         iso_path = self.output_dir / 'lfs-installer.iso'
@@ -990,10 +1125,6 @@ class LFSBuilder:
 
             sha256 = hashlib.sha256(iso_path.read_bytes()).hexdigest()
             self.logger.info(f"SHA256: {sha256[:32]}...")
-
-        if self.is_cross_compile():
-            self.logger.info(f"\nCross-compilation completed for {self.get_target_architecture()}")
-            self.logger.info(f"Flash to SD card: dd if={self.output_dir}/lfs-installer.img of=/dev/sdb bs=4M")
 
         return True
 
@@ -1039,6 +1170,9 @@ Examples:
   # Build with default profile (XFCE + Live USB)
   python3 builder.py
 
+  # Build CLI minimal system (no GUI)
+  python3 builder.py --profile minimal
+
   # Build for ARM64 (Raspberry Pi)
   python3 builder.py --profile arm64 --config config/build-cross.conf
 
@@ -1046,10 +1180,13 @@ Examples:
   python3 builder.py --profile java-dev --output ./lfs-java
 
   # Build security-hardened system
-  python3 builder.py --profile secure --init sysv
+  python3 builder.py --profile secure --init sysvinit
 
   # Build full system with everything
   python3 builder.py --profile full --output ./lfs-full
+
+  # Build with sysvinit (LFS classic) instead of systemd
+  python3 builder.py --init sysvinit
 
   # Resume from failed stage
   python3 builder.py --resume-from desktop
@@ -1093,7 +1230,7 @@ Examples:
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Enable verbose output (DEBUG level)')
 
-    parser.add_argument('--init', choices=['systemd', 'sysv', 'openrc', 'runit', 's6'],
+    parser.add_argument('--init', choices=['systemd', 'sysvinit', 'openrc', 'runit', 's6'],
                         help='Override init system choice')
 
     parser.add_argument('--no-live', action='store_true',
@@ -1142,6 +1279,7 @@ def main():
             print(f"    Size: ~{info['size_gb']} GB")
             print(f"    Build time: ~{info['build_time_hours']} hours")
             print(f"    Desktop: {info['desktop'] or 'CLI only'}")
+            print(f"    Init System: {info.get('init_system', 'sysvinit')}")
             print(f"    Architecture: {info.get('architecture', 'x86_64')}")
             print(f"    Security: {'Yes' if info.get('security_hardening', False) else 'No'}")
             print(f"    Live USB: {'Yes' if info.get('live_system', True) else 'No'}")

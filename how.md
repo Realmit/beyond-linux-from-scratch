@@ -2582,3 +2582,23 @@ cd lfs-builder
 # OU
 sudo python3 builder.py --profile xfce  # Sur Linux
 ```
+
+```bash
+# Installer les dépendances de test
+pip install -r requirements-test.txt
+
+# Exécuter tous les tests
+./run_tests.sh
+
+# Exécuter des tests spécifiques
+./run_tests.sh -k "test_config"
+
+# Exécuter avec verbose
+./run_tests.sh -v
+
+# Exécuter sans coverage
+./run_tests.sh --no-cov
+
+# Générer seulement le rapport coverage
+./run_tests.sh --cov-report=html --cov-report=term
+```

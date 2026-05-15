@@ -5,6 +5,160 @@ All notable changes to the LFS/BLFS Builder project will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-05-14
+
+### Added
+- **Audio Production Support**
+  - Complete audio production profiles:
+    - `audio-cli` - Terminal-only audio production (headless, low-latency)
+    - `audio-studio` - Full audio production studio with XFCE desktop
+  - Real-time kernel (PREEMPT_RT) support for low-latency audio
+  - JACK2, PipeWire, ALSA audio servers
+  - Professional DAWs: Ardour 8.12.0, LMMS 1.2.2, Audacity 3.8.2
+  - MIDI tools: FluidSynth 2.5.0, TiMidity++ 2.15.0, LinuxSampler 2.3.0
+  - LV2/LADSPA plugins: Calf Studio Gear, LSP Plugins, Dragonfly Reverb
+  - SoundFonts: FluidR3 GM/GS, Timidity Freepats
+  - Jack GUI tools: QjackCtl 1.0.1, Patchage 1.0.12, Qpwgraph 1.8.0
+  - Network audio: JackTrip, Sonobus, Zita-NJbridge
+  - Real-time system tuning (rtirq-init, rt-tests, cyclictest)
+
+- **Init System Flexibility**
+  - Full support for **sysvinit** (LFS classic) alongside systemd
+  - Boot script styles: LFS Classic (`/etc/rc.d/rc0.d...rc6.d`) and BSD-style (`/etc/rc.d/rcS.d`)
+  - Unified `svc` command abstraction layer for both init systems
+  - Service management aliases (`sv-start`, `sv-stop`, `sv-restart`, `sv-status`)
+  - Automatic detection of active init system at runtime
+  - Complete service management for sysvinit (start/stop/restart/status/enable/disable)
+  - Systemd service files for all daemons
+  - Default runlevel configuration (3 for CLI, 5 for GUI)
+
+- **Network Stack Enhancement**
+  - Web browsers: Firefox 128.8.0esr, Brave 1.76.82, Chromium 133.0.6943.98
+  - Email clients: Thunderbird 140.8.0esr, Claws Mail 4.3.0, Mutt 2.2.15, NeoMutt 20241212
+  - Terminal browsers: Lynx 2.9.2, Links 2.30, w3m 0.5.3
+  - Download managers: Wget2 2.2.0, Aria2 1.37.0
+  - Network libraries: libevent 2.1.12, nss 3.107, nspr 4.37, libvpx 1.15.0, dav1d 1.5.1
+  - Network configuration system (`config/network.conf`)
+  - DHCP and static IP configuration
+  - DNS resolver selection (systemd-resolved, dnsmasq, resolvconf)
+  - Wi-Fi support with WPA_Supplicant
+  - Proxy settings for corporate networks
+  - TCP BBR congestion control optimization
+
+- **Enhanced Configuration System**
+  - `config/audio-profile.conf` - Complete audio production configuration
+    - Sample rate (44.1k/48k/96k/192k)
+    - Buffer size (64/128/256/512/1024 frames)
+    - Real-time priority (0-99)
+    - CPU governor selection (performance/ondemand/conservative)
+    - DAW and plugin selection
+    - SoundFont library level (none/minimal/medium/full)
+  - `config/network.conf` - Network configuration
+    - Interface configuration (DHCP/static)
+    - DNS servers and search domains
+    - Wi-Fi SSID/PSK settings
+    - Firewall rules
+    - Proxy settings
+  - `config/init.conf` - Init system configuration
+    - sysvinit vs systemd choice
+    - Boot script style (lfs-classic/bsd-style)
+    - Default runlevel/target
+    - Service management style
+  - `packages.conf.json` - Updated to LFS 13.0 versions
+    - Linux 6.12.20, GCC 15.2.0, Glibc 2.43
+    - Python 3.14.3, Bash 5.3, Binutils 2.46.0
+    - Systemd 259.1, Sysvinit 3.14
+
+- **New Scripts**
+  - `lfs/06a-init-system.sh` - Init system installer (sysvinit/systemd/openrc/runit/s6)
+  - `lfs/06b-service-management.sh` - Unified service abstraction (`svc` command)
+  - `lfs/06c-boot-scripts.sh` - SysVinit boot scripts (both styles)
+  - `lfs/06d-systemd-config.sh` - Systemd configuration
+  - `lfs/06e-init-selector.sh` - Interactive init system selection wizard
+  - `profiles/select-audio-profile.sh` - Audio profile selector (CLI/Desktop/Studio)
+  - `profiles/audio/build.sh` - Unified audio profile builder
+  - `profiles/audio/cli-minimal/packages.list` - CLI audio packages
+  - `profiles/audio/desktop-xfce/packages.list` - XFCE audio workstation
+  - `profiles/audio/desktop-gnome/packages.list` - GNOME audio workstation
+  - `profiles/audio/studio-full/packages.list` - Complete professional studio
+
+- **Configuration Files**
+  - `config/audio-profile.conf` - Audio-specific settings
+  - `config/network.conf` - Network configuration
+  - `config/init.conf` - Init system selection
+  - `config/build-cross.conf` - Cross-compilation for ARM64
+  - `config/build-java.conf` - Java development environment
+  - `config/desktop.conf` - Desktop environment settings
+  - `config/security.conf` - Security hardening
+  - `config/lpm.conf` - Package manager configuration
+
+- **Command Line Options**
+  - `--init` - Override init system (sysvinit/systemd/openrc/runit/s6)
+  - `--profile` now includes `audio-cli`, `audio-studio`, `arm64`
+  - Profile info now shows init system and audio features
+
+### Changed
+- **builder.py** upgraded to v4.2.0
+  - Added audio profile support with real-time kernel configuration
+  - Init system selection with `sysvinit` as default (LFS classic)
+  - Network configuration integration
+  - Extended environment variables: `INIT_SYSTEM`, `SYSVINIT_STYLE`, `AUDIO_PROFILE`
+  - Better cross-compilation detection for ARM64
+  - Added QEMU user emulation for foreign architectures
+
+- **Profile Manager** Enhanced
+  - Added `audio-cli` and `audio-studio` profiles
+  - All profiles now include `init_system` property
+  - Profile info displays init system choice
+  - Audio profiles include real-time kernel configuration
+
+- **Updated Versions** (LFS 13.0 / BLFS 13.0)
+  - Linux Kernel: 6.6.14 → **6.12.20**
+  - GCC: 13.2.0 → **15.2.0**
+  - Glibc: 2.38 → **2.43**
+  - Binutils: 2.41 → **2.46.0**
+  - Python: 3.12.1 → **3.14.3**
+  - Bash: 5.2.21 → **5.3**
+  - Systemd: 255 → **259.1**
+  - Sysvinit: 3.08 → **3.14**
+  - GRUB: 2.12 → **2.14**
+  - OpenSSL: 3.1.4 → **3.6.1**
+  - Firefox: 128.4.0esr → **128.8.0esr**
+  - Thunderbird: 128.4.0esr → **140.8.0esr**
+  - LibreOffice: 24.8.4 → **25.8.1**
+  - JDK: 21.0.8 → **21.0.10**
+  - Maven: 3.9.9 → **3.9.9** (current)
+  - Gradle: 8.13 → **8.15**
+  - Docker: 27.4.1 → **28.3.3**
+
+- **Package Sources** (`packages/sources.list`)
+  - Added sysvinit 3.14
+  - Added LFS bootscripts 20240825
+  - Added ALSA, JACK2, PipeWire packages
+  - Added audio DAWs: Ardour, LMMS, Audacity
+  - Added MIDI tools: FluidSynth, TiMidity++, WildMIDI
+  - Added audio plugins: Calf, LSP, Dragonfly Reverb
+  - Added browsers: Firefox, Brave, Chromium
+  - Added email clients: Thunderbird, Claws Mail, Mutt
+  - Added network libraries: nss, nspr, libevent, libvpx, dav1d
+
+### Fixed
+- Init system detection across all scripts
+- Cross-compilation QEMU user emulation registration
+- Sysroot directory creation for ARM64 builds
+- U-Boot build for Raspberry Pi boards
+- Audio real-time priority limits in `/etc/security/limits.conf`
+- JACK2 D-Bus integration
+- PipeWire ALSA compatibility
+- Firefox build with Python 3.14 and glibc 2.43 (patches added)
+- Thunderbird build dependencies
+
+### Security
+- Real-time audio processes have rtprio 95 and memlock unlimited
+- Daily security scans include audio system components
+- Firewall rules for network audio (ports 9988, 9999, 4444, 4445)
+- SSH hardening for remote audio collaboration
+
 ## [4.1.0] - 2026-04-30
 
 ### Added
@@ -135,11 +289,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Default profile now uses live boot by default
 
 - **Configuration Defaults**
-  - LFS version: 12.2
-  - BLFS version: 12.2
-  - Kernel version: 6.12.10
-  - Java version: 21.0.8
-  - Updated package versions throughout
+  - LFS version: 12.2 → **13.0** (partial, completed in 4.2.0)
+  - BLFS version: 12.2 → **13.0** (partial)
+  - Kernel version: 6.12.10 → **6.12.20** (partial)
+  - Java version: 21.0.8 → **21.0.10** (partial)
 
 ### Fixed
 - Squashfs compression now properly excludes temporary directories
@@ -182,9 +335,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - History sanitization for root user
   - /tmp clearing on boot
 
-- **Init System Support** (`06a-init-system.sh`)
+- **Init System Support** (`06a-init-system.sh`) - Enhanced in 4.2.0
   - **systemd** - Modern init with full service management
-  - **SysV init** - Traditional UNIX init scripts
+  - **SysV init** - Traditional UNIX init scripts (LFS classic)
   - **OpenRC** - Dependency-based init (Gentoo style)
   - **runit** - Simple service supervision
   - **s6** - Small supervision suite
@@ -192,7 +345,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Auto-restart on failure capability
   - Configurable runlevels/targets
 
-- **Service Management Abstraction** (`06b-service-management.sh`)
+- **Service Management Abstraction** (`06b-service-management.sh`) - Enhanced in 4.2.0
   - Unified `svc` command for all init systems
   - Service aliases for consistent UX
   - Cross-platform service detection
@@ -213,10 +366,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `build-cross.conf` - Cross-compilation configuration for ARM, ARM64, RISC-V
   - `build-java.conf` - Java-optimized build configuration
   - `build.conf.minimal` - Lightweight server configuration
-  - `init.conf` - Init system selection and tuning
+  - `init.conf` - Init system selection and tuning (enhanced in 4.2.0)
   - `lpm.conf` - Package manager configuration
   - `packages.conf` - Package definitions with categories
-  - `packages.conf.json` - JSON format package definitions
+  - `packages.conf.json` - JSON format package definitions (updated to LFS 13.0 in 4.2.0)
   - `security.conf` - Comprehensive security settings
 
 - **Profile Variants**
@@ -227,7 +380,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `custom` - User-defined profile template
 
 - **Command Line Options**
-  - `--init` - Override init system choice at build time
+  - `--init` - Override init system choice at build time (enhanced in 4.2.0)
   - `--list-profiles` - Show all available build profiles
   - `--profile-info` - Display detailed profile information
   - `--clean` - Remove build directory
@@ -370,37 +523,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimum RAM: 8GB
 - Required disk: 50GB
 
-## [Unreleased]
-
-### Planned Features
-- Graphical package manager frontend (GTK/Qt)
-- Binary repository with pre-built packages
-- Full disk encryption with LUKS
-- Secure boot support (Shim + GRUB)
-- Flatpak/Snap support
-- Wayland compositor support (Sway, Hyprland)
-- Automated testing framework (pytest)
-- Build cache for faster rebuilds (ccache)
-- System backup and restore utilities
-- GUI system configuration tool (LFS Control Center)
-- Network manager with VPN support
-- Printing system (CUPS) integration
-- Gaming optimizations (Wine, Proton, Steam)
-- Real-time kernel option (PREEMPT_RT)
-- RISC-V architecture support
-- ZFS filesystem support
-- Btrfs snapshots and rollback
-- System monitoring dashboard (Cockpit)
-- Container (Docker/Podman) optimizations
-- Kubernetes deployment support
-
 ---
 
 ## Version History
 
 | Version | Date | Status | Key Features |
 |---------|------|--------|--------------|
-| 4.1.0 | 2026-04-30 | ✅ Current | Cross-Compilation, U-Boot, ARM64 Support |
+| 4.2.0 | 2026-05-14 | ✅ Current | Audio Production, SysVinit/systemd Choice, Network Stack |
+| 4.1.0 | 2026-04-30 | ✅ Stable | Cross-Compilation, U-Boot, ARM64 Support |
 | 4.0.0 | 2026-04-30 | ✅ Stable | Live USB, System Updater, Package Updater |
 | 3.0.0 | 2026-04-15 | ✅ Stable | Security Hardening, Privacy Tools, Init Systems |
 | 2.0.0 | 2026-04-15 | ✅ Stable | Java Dev Environment, LPM Package Manager |
@@ -409,6 +539,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## Upgrade Notes
+
+### From 4.1.0 to 4.2.0
+1. Update `builder.py` to v4.2.0
+2. Add audio profile sections to `packages.conf.json`
+3. Create `config/audio-profile.conf` and `config/network.conf`
+4. For audio production: `python3 builder.py --profile audio-studio`
+5. For CLI audio (headless): `python3 builder.py --profile audio-cli`
+6. To choose init system: `python3 builder.py --init sysvinit` or `--init systemd`
 
 ### From 4.0.0 to 4.1.0
 1. Update `builder.py` to v4.1.0
@@ -434,8 +572,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 git clone https://github.com/lfs-builder/lfs-builder.git
 cd lfs-builder
 
-# For x86_64 desktop with live USB
+# For x86_64 desktop with live USB (systemd)
 python3 builder.py --profile full
+
+# For x86_64 desktop with sysvinit (LFS classic)
+python3 builder.py --profile full --init sysvinit
+
+# For audio production studio (XFCE + systemd)
+python3 builder.py --profile audio-studio
+
+# For headless audio production (CLI + sysvinit)
+python3 builder.py --profile audio-cli --init sysvinit
 
 # For ARM64 (Raspberry Pi)
 python3 builder.py --profile arm64 --config config/build-cross.conf
