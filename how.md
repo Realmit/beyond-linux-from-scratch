@@ -2602,3 +2602,20 @@ pip install -r requirements-test.txt
 # Générer seulement le rapport coverage
 ./run_tests.sh --cov-report=html --cov-report=term
 ```
+mac
+```bash
+# Créer un environnement virtuel
+python3 -m venv venv
+
+# Activer l'environnement virtuel
+source venv/bin/activate
+
+# Installer les dépendances
+pip install -r requirements-test.txt
+
+# Exécuter les tests
+python -m pytest tests/ -v
+
+# Quitter l'environnement virtuel
+deactivate
+```

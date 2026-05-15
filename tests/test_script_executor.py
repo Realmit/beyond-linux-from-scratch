@@ -101,22 +101,43 @@ class TestScriptExecutor:
         assert result is False
         mock_logger.error.assert_called()
 
-    @patch('subprocess.run')
-    def test_resume_from_stage(self, mock_run, output_dir, mock_logger):
+    # tests/test_script_executor.py - ligne ~110
+
+    def test_resume_from_stage(self, output_dir, mock_logger, temp_dir):
         """Test resuming build from specific stage"""
-        mock_run.return_value = MagicMock(returncode=0)
+        import subprocess
+
+        # Créer de vrais scripts temporaires
+        scripts_dir = temp_dir / "scripts"
+        scripts_dir.mkdir(exist_ok=True)
+
+        script1 = scripts_dir / "stage1.sh"
+        script1.write_text("#!/bin/bash\nexit 0")
+        script1.chmod(0o755)
+
+        script2 = scripts_dir / "stage2.sh"
+        script2.write_text("#!/bin/bash\nexit 0")
+        script2.chmod(0o755)
+
+        script3 = scripts_dir / "stage3.sh"
+        script3.write_text("#!/bin/bash\nexit 0")
+        script3.chmod(0o755)
 
         stages = [
-            ("stage1", "script1.sh"),
-            ("stage2", "script2.sh"),
-            ("stage3", "script3.sh"),
+            ("stage1", str(script1)),
+            ("stage2", str(script2)),
+            ("stage3", str(script3)),
         ]
 
         executor = ScriptExecutor({}, output_dir, mock_logger)
 
-        with patch.object(executor, 'find_script', return_value=Path("script.sh")):
-            result = executor.resume_from("stage2", stages)
-
-            assert result is True
-            # Should only run stage2 and stage3
-            assert mock_run.call_count == 2
+        # Simuler l'exécution des scripts
+        with patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+            # Simuler find_script pour retourner les chemins corrects
+            with patch.object(executor, 'find_script', side_effect=lambda x: Path(x) if Path(x).exists() else None):
+                result = executor.resume_from("stage2", stages)
+                assert result is True
+                # Vérifier que run_script a été appelé pour stage2 et stage3
+                # mais pas pour stage1
+                assert mock_run.call_count == 2

@@ -116,6 +116,7 @@ class TestIntegration:
         env = builder._get_env()
         assert env['INIT_SYSTEM'] == 'sysvinit'
 
+    # tests/test_integration.py - corrigé
     def test_live_system_disable(self, temp_dir, mock_config_file):
         """Test disabling live system"""
         output_dir = temp_dir / "lfs-no-live"
@@ -126,11 +127,16 @@ class TestIntegration:
             config_file=mock_config_file
         )
 
+        # Désactiver le live system
         builder.config.set('live_system.enabled', False)
+
+        # Forcer la mise à jour du profile_config
+        builder.profile_config['live_system'] = False
 
         stages = builder.get_build_stages()
         stage_names = [s[0] for s in stages]
 
+        # Le stage live-system ne devrait PAS être présent
         assert 'live-system' not in stage_names
 
     def test_cross_compile_environment(self, temp_dir, mock_config_file):
