@@ -1,73 +1,27 @@
-{
-  "lfs_version": "12.1",
-  "architecture": "x86_64",
-  "target_triplet": "x86_64-lfs-linux-gnu",
-  "build_threads": 4,
+# ============================================================================
+# MINIMAL BUILD CONFIGURATION
+# For headless servers and embedded systems
+# ============================================================================
 
-  "init_system": {
-    "choice": "sysv",
-    "parallel_startup": false,
-    "default_runlevel": 3
-  },
+# Build only LFS core + minimal tools
+BUILD_TYPE="lfs-only"
+BUILD_STAGE="all"
 
-  "package_manager": {
-    "enabled": true,
-    "name": "lpm"
-  },
+# Minimal optimizations (size over speed)
+CFLAGS="-Os -pipe"
+CXXFLAGS="-Os -pipe"
 
-  "java_dev": {
-    "enabled": false
-  },
+# Strip everything (minimize size)
+STRIP_BINARIES="true"
 
-  "desktop": {
-    "type": "none",
-    "extras": []
-  },
+# No tests (saves time)
+RUN_TESTS="none"
 
-  "filesystem": {
-    "type": "ext4",
-    "size_mb": 4096,
-    "swap_mb": 1024,
-    "boot_mb": 256
-  },
+# No docs (saves space)
+INSTALL_DOCS="false"
+INSTALL_MAN_PAGES="false"
+INSTALL_INFO_PAGES="false"
 
-  "kernel": {
-    "version": "6.6.14",
-    "config": "config/kernel-config-server",
-    "modules": ["ext4", "xfs", "nvme", "virtio"]
-  },
-
-  "network": {
-    "hostname": "lfs-server",
-    "dhcp": true,
-    "enable_ipv6": false
-  },
-
-  "locale": "en_US.UTF-8",
-  "timezone": "UTC",
-  "hostname": "lfs-server",
-
-  "users": [
-    {
-      "name": "admin",
-      "groups": ["wheel"],
-      "sudo": true
-    }
-  ],
-
-  "security": {
-    "sshd": {
-      "enabled": true,
-      "port": 22,
-      "disable_root_login": true
-    }
-  },
-
-  "custom_scripts": [],
-  "repositories": [],
-  "build_options": {
-    "parallel_build": true,
-    "strip_binaries": true,
-    "checksum_verification": true
-  }
-}
+# Minimal logging
+LOG_LEVEL="WARNING"
+SAVE_BUILD_LOGS="false"

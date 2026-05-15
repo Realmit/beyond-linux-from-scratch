@@ -378,3 +378,139 @@ https://web.mit.edu/kerberos/dist/krb5/1.21/krb5-1.21.4.tar.gz
 
 # c-ares 1.36.1 - Asynchronous DNS resolver
 https://c-ares.org/download/c-ares-1.36.1.tar.gz
+# ============================================================================
+# WEB BROWSERS
+# ============================================================================
+
+# Firefox - Modern web browser (ESR version)
+# Based on Mozilla codebase, uses Gecko rendering engine [citation:5][citation:9]
+# BLFS 13.0: firefox-128.8.0esr
+# Note: Uses 8+ GB RAM during link, requires Python 3.14 patch [citation:2]
+https://ftp.mozilla.org/pub/firefox/releases/128.8.0esr/source/firefox-128.8.0esr.source.tar.xz
+
+# Firefox Dependencies (required for build) [citation:2]
+# cbindgen - Rust bindings generator
+https://github.com/eqrion/cbindgen/archive/v0.29.2/cbindgen-0.29.2.tar.gz
+# nodejs - JavaScript runtime (required for build)
+https://nodejs.org/dist/v22.22.0/node-v22.22.0.tar.xz
+# llvm/clang - Alternative compiler for faster builds
+https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.8/llvm-project-21.1.8.src.tar.xz
+
+# Firefox patches for LFS 13.0
+# Python 3.14 compatibility fix [citation:2]
+https://www.linuxfromscratch.org/patches/blfs/13.0/firefox-128.8.0esr-python_3.14_fixes-1.patch
+# glibc 2.43 compatibility fix [citation:2]
+https://www.linuxfromscratch.org/patches/blfs/13.0/firefox-128.8.0esr-glibc-2.43.patch
+
+# Brave Browser - Privacy-focused browser (built from source)
+# Note: Building Brave requires significant resources (>16GB RAM)
+# BLFS does not officially include Brave, but can be built from Chromium source
+https://github.com/brave/brave-browser/releases/download/v1.76.82/brave-browser-1.76.82.tar.gz
+
+# Chromium - Base for many browsers (alternative to Firefox)
+# BLFS 13.0: chromium-133.0.6943.98
+https://www.chromium.org/getting-involved/download-chromium/chromium-133.0.6943.98.tar.xz
+
+# ============================================================================
+# EMAIL CLIENTS
+# ============================================================================
+
+# Thunderbird - Full-featured email client (Mozilla-based) [citation:2]
+# BLFS 13.0: thunderbird-140.8.0esr
+# Build requirements similar to Firefox
+# Estimated: 724 MB download, 8.9 GB disk space, 14 SBU build time [citation:2]
+https://ftp.mozilla.org/pub/thunderbird/releases/140.8.0esr/source/thunderbird-140.8.0esr.source.tar.xz
+
+# Thunderbird patches for LFS 13.0 [citation:2]
+https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-python_3.14_fixes-1.patch
+https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-glibc-2.43.patch
+
+# Claws Mail - Lightweight GTK-based email client
+# Good alternative for minimal systems or XFCE desktop
+https://www.claws-mail.org/releases/claws-mail-4.3.0.tar.xz
+
+# Balsa - Lightweight GTK+ mail client [citation:3]
+# BLFS 13.0 compatible, requires MTA (sendmail command) at runtime [citation:3]
+https://pulsesoftware.info/balsa/download/balsa-2.6.5.tar.xz
+
+# Mutt - Terminal-based email client (CLI)
+# Perfect for headless/minimal systems
+https://ftp.mutt.org/pub/mutt/mutt-2.2.15.tar.gz
+
+# NeoMutt - Modern terminal email client (Mutt with patches)
+https://github.com/neomutt/neomutt/releases/download/20241212/neomutt-20241212.tar.gz
+
+# Evolution - GNOME integrated email/calendar suite [citation:7]
+# BLFS 11.3: evolution-3.46.4, newer version in BLFS 13.0
+# Requires GNOME desktop environment [citation:7]
+https://download.gnome.org/sources/evolution/3.52/evolution-3.52.0.tar.xz
+https://download.gnome.org/sources/evolution-data-server/3.52/evolution-data-server-3.52.0.tar.xz
+
+# ============================================================================
+# NETWORK UTILITIES (Enhanced)
+# ============================================================================
+
+# Lynx - Text-based web browser (CLI)
+# Perfect for terminal-only systems
+https://invisible-island.net/archives/lynx/tarballs/lynx2.9.2.tar.bz2
+
+# Links - Graphics and text mode browser
+http://links.twibright.com/download/links-2.30.tar.gz
+
+# w3m - Terminal web browser with tables/frames support
+https://github.com/tats/w3m/archive/v0.5.3.tar.gz
+
+# ============================================================================
+# DOWNLOAD MANAGERS
+# ============================================================================
+
+# wget2 - Improved version of wget with better performance
+https://ftp.gnu.org/gnu/wget/wget2-2.2.0.tar.gz
+
+# curl (already in core packages, included for completeness)
+https://curl.se/download/curl-8.16.0.tar.xz
+
+# aria2 - High-speed download utility with BitTorrent support
+https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0.tar.xz
+
+# ============================================================================
+# NETWORK LIBRARIES (For browser/email builds)
+# ============================================================================
+
+# libevent - Event notification library (required by some browsers)
+https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
+
+# nss - Network Security Services (Mozilla) [citation:2]
+# Required for Firefox and Thunderbird builds
+https://archive.mozilla.org/pub/security/nss/releases/NSS_3_107_RTM/src/nss-3.107.tar.gz
+
+# nspr - Netscape Portable Runtime [citation:2]
+https://archive.mozilla.org/pub/nspr/releases/v4.37/src/nspr-4.37.tar.gz
+
+# libvpx - VP8/VP9 codec (required by Firefox/Chromium) [citation:2]
+https://github.com/webmproject/libvpx/archive/v1.15.0/libvpx-1.15.0.tar.gz
+
+# dav1d - AV1 decoder (required by modern browsers) [citation:1][citation:6][citation:8]
+# New in BLFS 13.0
+https://code.videolan.org/videolan/dav1d/-/archive/1.5.1/dav1d-1.5.1.tar.gz
+
+# av1 - AV1 encoder/decoder support [citation:1][citation:6]
+https://aomediacodec.github.io/av1-spec/av1-spec.pdf
+
+# libwebp - WebP image format support [citation:2]
+https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.5.0.tar.gz
+
+# startup-notification - Application startup feedback (required by Firefox) [citation:2]
+https://www.freedesktop.org/software/startup-notification/releases/startup-notification-0.12.tar.gz
+
+# ============================================================================
+# REMOTE ACCESS TOOLS
+# ============================================================================
+
+# TigerVNC - VNC server and client [citation:4]
+# BLFS 11.3: tigervnc-1.13.0
+# Requires CMake, FLTK, GnuTLS, libgcrypt, libjpeg-turbo [citation:4]
+https://github.com/TigerVNC/tigervnc/archive/v1.15.0/tigervnc-1.15.0.tar.gz
+
+# xrdp - Remote desktop protocol server
+https://github.com/neutrinolabs/xrdp/releases/download/v0.10.2/xrdp-0.10.2.tar.gz

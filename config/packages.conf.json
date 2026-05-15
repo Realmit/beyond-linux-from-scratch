@@ -1,87 +1,445 @@
 {
-  "version": "1.0",
+  "version": "13.0",
+  "description": "LFS/BLFS 13.0 Package Configuration Database",
+  "last_updated": "2025-01-15",
+
   "categories": {
     "lfs_core": {
       "required": true,
-      "description": "LFS core packages",
+      "description": "LFS 13.0 core packages",
       "packages": [
-        {"name": "linux", "version": "6.6.14", "url": "https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.6.14.tar.xz"},
-        {"name": "gcc", "version": "13.2.0", "url": "https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz"},
-        {"name": "binutils", "version": "2.41", "url": "https://ftp.gnu.org/gnu/binutils/binutils-2.41.tar.xz"},
-        {"name": "glibc", "version": "2.38", "url": "https://ftp.gnu.org/gnu/glibc/glibc-2.38.tar.xz"},
-        {"name": "make", "version": "4.4.1", "url": "https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz"},
-        {"name": "bash", "version": "5.2.21", "url": "https://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz"},
-        {"name": "python", "version": "3.12.1", "url": "https://www.python.org/ftp/python/3.12.1/Python-3.12.1.tar.xz"},
-        {"name": "systemd", "version": "255", "url": "https://github.com/systemd/systemd/archive/v255/systemd-255.tar.gz"},
-        {"name": "grub", "version": "2.12", "url": "https://ftp.gnu.org/gnu/grub/grub-2.12.tar.xz"}
+        {"name": "linux", "version": "6.12.20", "url": "https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.12.20.tar.xz", "type": "kernel"},
+        {"name": "gcc", "version": "15.2.0", "url": "https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz", "type": "compiler"},
+        {"name": "binutils", "version": "2.46.0", "url": "https://ftp.gnu.org/gnu/binutils/binutils-2.46.0.tar.xz", "type": "toolchain"},
+        {"name": "glibc", "version": "2.43", "url": "https://ftp.gnu.org/gnu/glibc/glibc-2.43.tar.xz", "type": "libc"},
+        {"name": "make", "version": "4.4.1", "url": "https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz", "type": "build"},
+        {"name": "bash", "version": "5.3", "url": "https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz", "type": "shell"},
+        {"name": "python", "version": "3.14.3", "url": "https://www.python.org/ftp/python/3.14.3/Python-3.14.3.tar.xz", "type": "language"},
+        {"name": "systemd", "version": "259.1", "url": "https://github.com/systemd/systemd/archive/v259.1/systemd-259.1.tar.gz", "type": "init", "enabled": false},
+        {"name": "sysvinit", "version": "3.14", "url": "https://github.com/slicer69/sysvinit/releases/download/3.14/sysvinit-3.14.tar.xz", "type": "init", "enabled": true},
+        {"name": "grub", "version": "2.14", "url": "https://ftp.gnu.org/gnu/grub/grub-2.14.tar.xz", "type": "bootloader"}
       ]
     },
+
     "blfs_core": {
       "required": true,
-      "description": "BLFS core packages for desktop",
+      "description": "BLFS 13.0 core packages for desktop",
       "packages": [
-        {"name": "xorg-server", "version": "21.1.10", "group": "x11"},
-        {"name": "mesa", "version": "23.3.5", "group": "graphics"},
-        {"name": "gtk", "version": "3.24.39", "group": "toolkit"},
-        {"name": "glib", "version": "2.78.3", "group": "core"},
-        {"name": "dbus", "version": "1.14.10", "group": "system"}
+        {"name": "xorg-server", "version": "21.1.13", "group": "x11", "url": "https://www.x.org/pub/individual/xserver/xorg-server-21.1.13.tar.xz"},
+        {"name": "mesa", "version": "24.3.4", "group": "graphics", "url": "https://mesa.freedesktop.org/archive/mesa-24.3.4.tar.xz"},
+        {"name": "gtk", "version": "4.18.0", "group": "toolkit", "url": "https://download.gnome.org/sources/gtk/4.18/gtk-4.18.0.tar.xz"},
+        {"name": "glib", "version": "2.84.0", "group": "core", "url": "https://download.gnome.org/sources/glib/2.84/glib-2.84.0.tar.xz"},
+        {"name": "dbus", "version": "1.16.2", "group": "system", "url": "https://dbus.freedesktop.org/releases/dbus/dbus-1.16.2.tar.xz"},
+        {"name": "openssl", "version": "3.6.1", "group": "security", "url": "https://www.openssl.org/source/openssl-3.6.1.tar.gz"},
+        {"name": "curl", "version": "8.16.0", "group": "network", "url": "https://curl.se/download/curl-8.16.0.tar.xz"},
+        {"name": "pipewire", "version": "1.4.0", "group": "audio", "url": "https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/1.4.0/pipewire-1.4.0.tar.gz", "enabled": false}
       ]
     },
-    "desktop": {
-      "xfce": {
-        "enabled": true,
-        "packages": [
-          "libxfce4util", "xfconf", "libxfce4ui", "exo", "garcon",
-          "xfce4-panel", "thunar", "xfwm4", "xfce4-session",
-          "xfce4-settings", "xfdesktop", "xfce4-appfinder"
-        ]
-      },
-      "gnome": {
-        "enabled": false,
-        "packages": [
-          "gdm", "gnome-shell", "mutter", "nautilus",
-          "gnome-control-center", "gnome-terminal", "gnome-settings-daemon"
-        ]
-      },
-      "kde": {
-        "enabled": false,
-        "packages": [
-          "plasma-desktop", "kwin", "dolphin", "konsole",
-          "systemsettings", "discover"
-        ]
+
+    "init_systems": {
+      "description": "Init system selection (mutually exclusive)",
+      "selection": "sysvinit",
+      "options": {
+        "sysvinit": {
+          "enabled": true,
+          "description": "Traditional UNIX init - LFS classic",
+          "packages": ["sysvinit-3.14"],
+          "config": "/etc/inittab",
+          "scripts": "lfs-bootscripts-20240825"
+        },
+        "systemd": {
+          "enabled": false,
+          "description": "Modern init system",
+          "packages": ["systemd-259.1"],
+          "config": "/etc/systemd",
+          "units": "/usr/lib/systemd/system"
+        },
+        "openrc": {
+          "enabled": false,
+          "description": "Gentoo-style dependency-based init",
+          "packages": ["openrc-0.54"]
+        },
+        "runit": {
+          "enabled": false,
+          "description": "Simple supervision suite",
+          "packages": ["runit-2.1.2"]
+        },
+        "s6": {
+          "enabled": false,
+          "description": "Small supervision suite",
+          "packages": ["s6-2.13.0"]
+        }
       }
     },
+
+    "desktop": {
+      "description": "Desktop environment selection",
+      "selection": "xfce",
+      "options": {
+        "xfce": {
+          "enabled": true,
+          "version": "4.20",
+          "description": "Lightweight GTK-based desktop",
+          "packages": [
+            "libxfce4util-4.20.0", "xfconf-4.20.0", "libxfce4ui-4.20.0",
+            "exo-4.20.0", "garcon-4.20.0", "xfce4-panel-4.20.0",
+            "thunar-4.20.0", "xfwm4-4.20.0", "xfce4-session-4.20.0",
+            "xfce4-settings-4.20.0", "xfdesktop-4.20.0", "xfce4-appfinder-4.20.0"
+          ],
+          "goodies": ["xfce4-terminal-1.1.3", "xfce4-taskmanager-1.5.7", "ristretto-0.13.2"],
+          "display_manager": "lightdm"
+        },
+        "gnome": {
+          "enabled": false,
+          "version": "46",
+          "description": "Full-featured GNOME desktop",
+          "packages": [
+            "gnome-shell-46.5", "mutter-46.5", "gnome-session-46.0",
+            "nautilus-46.2", "gnome-control-center-46.5", "gnome-terminal-3.52.0",
+            "gnome-settings-daemon-46.0", "gdm-46.2"
+          ],
+          "display_manager": "gdm",
+          "requires": ["pipewire", "wireplumber"]
+        },
+        "kde": {
+          "enabled": false,
+          "version": "6.2",
+          "description": "KDE Plasma desktop",
+          "packages": [
+            "plasma-desktop-6.2.0", "kwin-6.2.0", "dolphin-24.08.0",
+            "konsole-24.08.0", "systemsettings-6.2.0", "discover-6.2.0"
+          ],
+          "display_manager": "sddm"
+        },
+        "lxqt": {
+          "enabled": false,
+          "version": "2.1.0",
+          "description": "Lightweight Qt desktop",
+          "packages": ["lxqt-session-2.1.0", "pcmanfm-qt-2.1.0", "lxqt-panel-2.1.0"],
+          "display_manager": "sddm"
+        },
+        "none": {
+          "enabled": true,
+          "description": "No desktop (CLI only)",
+          "packages": []
+        }
+      }
+    },
+
     "display_managers": {
-      "lightdm": {
-        "enabled": true,
-        "greeter": "lightdm-gtk-greeter",
-        "config": "/etc/lightdm/lightdm.conf"
+      "description": "Display manager selection",
+      "options": {
+        "lightdm": {
+          "enabled": true,
+          "version": "1.34.0",
+          "greeter": "lightdm-gtk-greeter-2.0.9",
+          "config": "/etc/lightdm/lightdm.conf",
+          "session_wrapper": "/usr/share/xsessions"
+        },
+        "gdm": {
+          "enabled": false,
+          "version": "46.2",
+          "config": "/etc/gdm/custom.conf"
+        },
+        "sddm": {
+          "enabled": false,
+          "version": "0.21.0",
+          "config": "/etc/sddm.conf"
+        },
+        "none": {
+          "enabled": true,
+          "description": "No display manager (startx or CLI login)"
+        }
+      }
+    },
+
+    "audio_production": {
+      "description": "Audio production packages",
+      "profiles": {
+        "cli-minimal": {
+          "description": "Terminal-only audio production",
+          "gui_required": false,
+          "packages": {
+            "servers": ["alsa-lib-1.2.13", "alsa-utils-1.2.13", "jack2-1.9.22"],
+            "codecs": ["libsndfile-1.2.2", "libsamplerate-0.2.2", "libogg-1.3.5", "libvorbis-1.3.7", "libflac-1.4.3"],
+            "cli_tools": ["sox-14.4.2", "ecasound-2.9.3", "shntool-3.0.10"],
+            "midi": ["fluidsynth-2.5.0", "timidity++-2.15.0", "wildmidi-0.4.6", "midicsv-1.2.1"],
+            "plugins": ["lv2-1.18.10", "calf-plugins-0.90.3", "swh-plugins-0.4.17"]
+          }
+        },
+        "desktop-xfce": {
+          "description": "XFCE desktop audio workstation",
+          "gui_required": true,
+          "inherit": "cli-minimal",
+          "additional": {
+            "daws": ["ardour-8.12.0", "lmms-1.2.2", "audacity-3.8.2"],
+            "gui_tools": ["qjackctl-1.0.1", "patchage-1.0.12"],
+            "plugins_gui": ["lsp-plugins-1.2.19", "dragonfly-reverb-3.2.10", "x42-plugins-20240101"],
+            "soundfonts": ["fluid-soundfont-gm-3.1", "timidity-freepats-20240101"]
+          }
+        },
+        "desktop-gnome": {
+          "description": "GNOME desktop audio workstation",
+          "gui_required": true,
+          "inherit": "cli-minimal",
+          "additional": {
+            "daws": ["ardour-8.12.0", "lmms-1.2.2", "audacity-3.8.2", "qtractor-1.5.0"],
+            "gui_tools": ["qpwgraph-1.8.0", "helvum-0.5.1"],
+            "plugins_gui": ["calf-plugins-0.90.3", "lsp-plugins-1.2.19", "dragonfly-reverb-3.2.10"],
+            "soundfonts": ["fluid-soundfont-gm-3.1", "fluid-soundfont-gs-3.1", "timidity-freepats-20240101"]
+          }
+        },
+        "studio-full": {
+          "description": "Complete professional audio workstation",
+          "gui_required": true,
+          "inherit": "desktop-gnome",
+          "additional": {
+            "pro_daws": ["zrythm-1.0.0", "rosegarden-24.06"],
+            "all_plugins": ["zam-plugins-4.3", "guitarix-0.46.0", "helm-synth-0.9.0", "surge-synthesizer-1.3.1"],
+            "vst_support": ["yabridge-5.1.1", "wine-9.0", "carla-2.5.9"],
+            "sample_libs": ["drumgizmo-0.9.20", "sfizz-1.3.0", "linuxsampler-2.3.0", "salamander-piano-20240101"],
+            "mastering": ["jkmeter-0.9.0", "ebumeter-0.5.1", "x42-eq-20240101"]
+          }
+        }
       },
-      "gdm": {"enabled": false},
-      "sddm": {"enabled": false}
+      "settings": {
+        "rt_kernel": true,
+        "sample_rate": 48000,
+        "buffer_size": 128,
+        "rt_priority": 95,
+        "memlock": "unlimited"
+      }
     },
+
     "applications": {
-      "web": ["firefox", "chromium"],
-      "office": ["libreoffice"],
-      "multimedia": ["vlc", "gimp"],
-      "development": ["git", "curl", "vim", "htop"]
+      "description": "Desktop applications",
+      "categories": {
+        "web_browsers": {
+          "default": "firefox",
+          "options": {
+            "firefox": {"version": "128.8.0esr", "url": "https://ftp.mozilla.org/pub/firefox/releases/128.8.0esr/source/firefox-128.8.0esr.source.tar.xz"},
+            "chromium": {"version": "133.0.6943.98", "url": "https://www.chromium.org/getting-involved/download-chromium/chromium-133.0.6943.98.tar.xz"},
+            "brave": {"version": "1.76.82", "url": "https://github.com/brave/brave-browser/releases/download/v1.76.82/brave-browser-1.76.82.tar.gz"},
+            "lynx": {"version": "2.9.2", "url": "https://invisible-island.net/archives/lynx/tarballs/lynx2.9.2.tar.bz2"},
+            "none": {}
+          }
+        },
+        "email_clients": {
+          "default": "none",
+          "options": {
+            "thunderbird": {"version": "140.8.0esr", "url": "https://ftp.mozilla.org/pub/thunderbird/releases/140.8.0esr/source/thunderbird-140.8.0esr.source.tar.xz"},
+            "claws-mail": {"version": "4.3.0", "url": "https://www.claws-mail.org/releases/claws-mail-4.3.0.tar.xz"},
+            "mutt": {"version": "2.2.15", "url": "https://ftp.mutt.org/pub/mutt/mutt-2.2.15.tar.gz"},
+            "neomutt": {"version": "20241212", "url": "https://github.com/neomutt/neomutt/releases/download/20241212/neomutt-20241212.tar.gz"},
+            "evolution": {"version": "3.52.0", "url": "https://download.gnome.org/sources/evolution/3.52/evolution-3.52.0.tar.xz"},
+            "none": {}
+          }
+        },
+        "office_suites": {
+          "default": "libreoffice",
+          "options": {
+            "libreoffice": {"version": "25.8.1", "url": "https://download.documentfoundation.org/libreoffice/stable/25.8.1/deb/x86_64/LibreOffice_25.8.1_Linux_x86-64_deb.tar.gz"},
+            "onlyoffice": {"version": "8.3.0", "url": "https://github.com/ONLYOFFICE/DesktopEditors/releases/download/v8.3.0/onlyoffice-desktopeditors_8.3.0_amd64.tar.gz"},
+            "none": {}
+          }
+        },
+        "multimedia": {
+          "vlc": {"version": "3.0.22", "url": "https://get.videolan.org/vlc/3.0.22/vlc-3.0.22.tar.xz"},
+          "gimp": {"version": "3.0.2", "url": "https://download.gimp.org/pub/gimp/v3.0/gimp-3.0.2.tar.xz"},
+          "obs": {"version": "32.0.0", "url": "https://github.com/obsproject/obs-studio/archive/32.0.0.tar.gz"},
+          "blender": {"version": "4.2.0", "url": "https://download.blender.org/source/blender-4.2.0.tar.xz"}
+        },
+        "development": {
+          "git": {"version": "2.46.0", "url": "https://www.kernel.org/pub/software/scm/git/git-2.46.0.tar.xz"},
+          "curl": {"version": "8.16.0", "url": "https://curl.se/download/curl-8.16.0.tar.xz"},
+          "vim": {"version": "9.2.0078", "url": "https://github.com/vim/vim/archive/v9.2.0078/vim-9.2.0078.tar.gz"},
+          "htop": {"version": "3.3.0", "url": "https://github.com/htop-dev/htop/releases/download/3.3.0/htop-3.3.0.tar.xz"},
+          "tmux": {"version": "3.5", "url": "https://github.com/tmux/tmux/releases/download/3.5/tmux-3.5.tar.gz"}
+        }
+      }
     },
+
     "java_dev": {
+      "description": "Java development environment",
       "enabled": true,
-      "packages": ["openjdk", "maven", "gradle", "tomcat", "jenkins"]
+      "jdk": {
+        "distribution": "temurin",
+        "version": "21",
+        "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.10_9.tar.gz",
+        "home": "/usr/lib/jvm/java-21-temurin"
+      },
+      "packages": {
+        "maven": {"version": "3.9.9", "url": "https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz"},
+        "gradle": {"version": "8.15", "url": "https://services.gradle.org/distributions/gradle-8.15-bin.zip"},
+        "tomcat": {"version": "10.1.39", "url": "https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.39/bin/apache-tomcat-10.1.39.tar.gz"},
+        "jenkins": {"version": "2.500.1", "url": "https://get.jenkins.io/war-stable/2.500.1/jenkins.war"},
+        "jmeter": {"version": "5.7.0", "url": "https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.7.0.tgz"},
+        "allure": {"version": "2.33.0", "url": "https://github.com/allure-framework/allure2/releases/download/2.33.0/allure-2.33.0.tgz"}
+      }
+    },
+
+    "security_tools": {
+      "description": "Security hardening tools",
+      "enabled": false,
+      "packages": {
+        "fail2ban": {"version": "1.2.0", "url": "https://github.com/fail2ban/fail2ban/archive/1.2.0.tar.gz"},
+        "lynis": {"version": "3.2.0", "url": "https://github.com/CISOfy/lynis/archive/3.2.0.tar.gz"},
+        "rkhunter": {"version": "1.4.8", "url": "https://downloads.sourceforge.net/project/rkhunter/rkhunter/1.4.8/rkhunter-1.4.8.tar.gz"},
+        "iptables": {"version": "1.8.10", "url": "https://www.netfilter.org/projects/iptables/files/iptables-1.8.10.tar.xz"},
+        "nftables": {"version": "1.1.1", "url": "https://www.netfilter.org/projects/nftables/files/nftables-1.1.1.tar.xz"}
+      },
+      "settings": {
+        "firewall": {
+          "enabled": false,
+          "default_policy": "DROP",
+          "allowed_ports": ["22", "80", "443"]
+        },
+        "ssh_hardening": {
+          "disable_root_login": true,
+          "port": 22,
+          "max_auth_tries": 3
+        }
+      }
+    },
+
+    "virtualization": {
+      "description": "Container and virtualization runtimes",
+      "enabled": false,
+      "packages": {
+        "docker": {"version": "28.3.3", "url": "https://download.docker.com/linux/static/stable/x86_64/docker-28.3.3.tgz"},
+        "podman": {"version": "5.3.0", "url": "https://github.com/containers/podman/archive/v5.3.0/podman-5.3.0.tar.gz"},
+        "kubectl": {"version": "1.32.4", "url": "https://dl.k8s.io/release/v1.32.4/bin/linux/amd64/kubectl"},
+        "containerd": {"version": "2.0.3", "url": "https://github.com/containerd/containerd/releases/download/v2.0.3/containerd-2.0.3-linux-amd64.tar.gz"}
+      }
     }
   },
+
   "build_order": [
-    "lfs_core",
-    "blfs_core",
-    "display_managers",
-    "desktop",
-    "applications",
-    "java_dev"
+    {
+      "stage": "lfs_core",
+      "parallel": false,
+      "description": "LFS core system (toolchain, kernel, libc)"
+    },
+    {
+      "stage": "init_systems",
+      "parallel": false,
+      "description": "Init system (one of: sysvinit/systemd/openrc/runit/s6)"
+    },
+    {
+      "stage": "blfs_core",
+      "parallel": true,
+      "description": "BLFS core libraries (X11, GTK, DBus, OpenSSL)"
+    },
+    {
+      "stage": "display_managers",
+      "parallel": false,
+      "description": "Display manager (lightdm/gdm/sddm)"
+    },
+    {
+      "stage": "desktop",
+      "parallel": true,
+      "description": "Desktop environment (XFCE/GNOME/KDE)"
+    },
+    {
+      "stage": "audio_production",
+      "parallel": true,
+      "description": "Audio production tools (optional)"
+    },
+    {
+      "stage": "applications",
+      "parallel": true,
+      "description": "Desktop applications (browsers, office, multimedia)"
+    },
+    {
+      "stage": "java_dev",
+      "parallel": true,
+      "description": "Java development environment (optional)"
+    },
+    {
+      "stage": "security_tools",
+      "parallel": true,
+      "description": "Security hardening (optional)"
+    },
+    {
+      "stage": "virtualization",
+      "parallel": true,
+      "description": "Virtualization/containers (optional)"
+    }
   ],
+
   "mirrors": {
     "primary": "https://ftp.gnu.org/gnu",
     "secondary": "https://mirror.rackspace.com/gnu",
-    "fallback": "https://ftp.fau.de/gnu"
+    "fallback": "https://ftp.fau.de/gnu",
+    "kernel": "https://www.kernel.org/pub",
+    "xorg": "https://www.x.org/pub",
+    "gnome": "https://download.gnome.org/sources",
+    "kde": "https://download.kde.org/stable",
+    "mozilla": "https://ftp.mozilla.org/pub",
+    "apache": "https://dlcdn.apache.org"
+  },
+
+  "profiles": {
+    "minimal": {
+      "description": "Minimal CLI system",
+      "categories": ["lfs_core", "init_systems"]
+    },
+    "server": {
+      "description": "Headless server",
+      "categories": ["lfs_core", "init_systems", "security_tools"],
+      "init_system": "sysvinit"
+    },
+    "desktop-xfce": {
+      "description": "Lightweight XFCE desktop",
+      "categories": ["lfs_core", "init_systems", "blfs_core", "display_managers", "desktop", "applications"],
+      "desktop": "xfce",
+      "init_system": "systemd"
+    },
+    "desktop-gnome": {
+      "description": "Full GNOME desktop",
+      "categories": ["lfs_core", "init_systems", "blfs_core", "display_managers", "desktop", "applications"],
+      "desktop": "gnome",
+      "init_system": "systemd"
+    },
+    "audio-cli": {
+      "description": "CLI audio production",
+      "categories": ["lfs_core", "init_systems", "audio_production.cli-minimal"],
+      "init_system": "sysvinit"
+    },
+    "audio-studio": {
+      "description": "Full audio production studio",
+      "categories": ["lfs_core", "init_systems", "blfs_core", "display_managers", "desktop", "audio_production.studio-full", "applications.web_browsers.firefox"],
+      "desktop": "xfce",
+      "init_system": "systemd",
+      "audio_profile": "studio-full"
+    },
+    "java-dev": {
+      "description": "Java development workstation",
+      "categories": ["lfs_core", "init_systems", "blfs_core", "display_managers", "desktop", "java_dev", "applications.development"],
+      "desktop": "xfce",
+      "init_system": "systemd"
+    },
+    "full": {
+      "description": "Complete LFS/BLFS system",
+      "categories": ["lfs_core", "init_systems", "blfs_core", "display_managers", "desktop", "audio_production.studio-full", "applications", "java_dev", "security_tools", "virtualization"],
+      "desktop": "gnome",
+      "init_system": "systemd",
+      "audio_profile": "studio-full"
+    }
+  },
+
+  "validation": {
+    "checksums": true,
+    "gpg_signatures": true,
+    "dependency_check": true,
+    "circular_dependency_check": true
+  },
+
+  "environment_variables": {
+    "MAKEFLAGS": "-j$(nproc)",
+    "CFLAGS": "-O2 -pipe",
+    "CXXFLAGS": "-O2 -pipe",
+    "LFS": "/mnt/lfs",
+    "LFS_TARGET": "x86_64-lfs-linux-gnu"
   }
 }
