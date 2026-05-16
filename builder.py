@@ -301,6 +301,38 @@ class ProfileManager:
             'init_options': ['sysvinit', 'systemd', 'openrc'],
             'audio_options': ['none']
         },
+        'gnu-free': {
+            'description': '100% Free Software System (FSF compliant)',
+            'size_gb': 3,
+            'build_time_hours': 4,
+            'packages': ['gnu-core', 'gnu-network', 'gnu-dev', 'gnu-utils'],
+            'desktop': None,
+            'init_system': 'sysvinit',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': True,
+            'privacy_tools': True,
+            'live_system': False,
+            'system_updater': True,
+            'gnu_free': True,
+            'kernel': 'linux-libre'
+        },
+        'gnu-free-full': {
+            'description': 'Full GNU System with all GNU packages',
+            'size_gb': 10,
+            'build_time_hours': 8,
+            'packages': ['gnu-all', 'gnu-emacs', 'gnu-octave', 'icecat'],
+            'desktop': 'xfce',
+            'init_system': 'sysvinit',
+            'java_dev': False,
+            'package_manager': True,
+            'security_hardening': True,
+            'privacy_tools': True,
+            'live_system': True,
+            'system_updater': True,
+            'gnu_free': True,
+            'kernel': 'linux-libre'
+        },
         'xfce': {
             'description': 'XFCE desktop environment',
             'size_gb': 4,

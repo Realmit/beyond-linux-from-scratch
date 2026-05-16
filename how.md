@@ -2672,3 +2672,15 @@ Option	Description
 --no-live	Désactive le live system
 --clean	Nettoie les artefacts
 ```
+
+# Construire le système GNU Free minimal
+python3 builder.py --profile gnu-free
+
+# Construire le système GNU Free complet (avec Emacs, IceCat, Octave)
+python3 builder.py --profile gnu-free-full
+
+# Avec init system alternatif
+python3 builder.py --profile gnu-free --init sysvinit
+
+# Sur ARM64 (libre)
+python3 builder.py --profile gnu-free --config config/build-cross.conf

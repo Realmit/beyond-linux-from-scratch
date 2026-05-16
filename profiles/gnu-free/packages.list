@@ -1,0 +1,262 @@
+# ============================================================================
+# GNU FREE SYSTEM - 100% FSF Compliant
+# Uniquement des logiciels libres, sans blobs propriétaires
+# Basé sur les principes du GNU Project
+# ============================================================================
+
+# ============================================================================
+# BASE SYSTEM (GNU Coreutils + Linux-libre)
+# ============================================================================
+
+# Linux-libre kernel (version sans blobs propriétaires)
+# https://www.fsfla.org/ikiwiki/selibre/linux-libre/
+https://www.fsfla.org/svn/fsfla/software/linux-libre/releases/6.12.20-gnu/linux-libre-6.12.20-gnu.tar.xz
+
+# GNU C Library
+https://ftp.gnu.org/gnu/glibc/glibc-2.43.tar.xz
+
+# GNU GCC (C, C++, Fortran)
+https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz
+
+# GNU Binutils
+https://ftp.gnu.org/gnu/binutils/binutils-2.46.0.tar.xz
+
+# GNU Make
+https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz
+
+# GNU Bash (shell par défaut)
+https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz
+
+# GNU Coreutils (ls, cp, mv, etc.)
+https://ftp.gnu.org/gnu/coreutils/coreutils-9.10.tar.xz
+
+# GNU Findutils (find, xargs)
+https://ftp.gnu.org/gnu/findutils/findutils-4.10.0.tar.xz
+
+# GNU Grep
+https://ftp.gnu.org/gnu/grep/grep-3.12.tar.xz
+
+# GNU Sed
+https://ftp.gnu.org/gnu/sed/sed-4.9.tar.xz
+
+# GNU Awk (gawk)
+https://ftp.gnu.org/gnu/gawk/gawk-5.3.2.tar.xz
+
+# GNU Diffutils (diff, cmp)
+https://ftp.gnu.org/gnu/diffutils/diffutils-3.12.tar.xz
+
+# GNU Patch
+https://ftp.gnu.org/gnu/patch/patch-2.8.tar.xz
+
+# GNU Tar
+https://ftp.gnu.org/gnu/tar/tar-1.35.tar.xz
+
+# GNU Gzip
+https://ftp.gnu.org/gnu/gzip/gzip-1.14.tar.xz
+
+# GNU Xz
+https://tukaani.org/xz/xz-5.8.2.tar.xz
+
+# GNU Bzip2
+https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
+
+# GNU Zip (gzip)
+# Already included
+
+# GNU Unzip (free version)
+https://ftp.gnu.org/gnu/unzip/unzip-6.0.tar.gz
+
+# ============================================================================
+# GNU SYSTEM TOOLS
+# ============================================================================
+
+# GRUB - GNU Bootloader (support BIOS et UEFI)
+https://ftp.gnu.org/gnu/grub/grub-2.14.tar.xz
+
+# GNU Gettext (internationalisation)
+https://ftp.gnu.org/gnu/gettext/gettext-0.24.1.tar.xz
+
+# GNU M4 (macro processor)
+https://ftp.gnu.org/gnu/m4/m4-1.4.21.tar.xz
+
+# GNU Bison (parser generator)
+https://ftp.gnu.org/gnu/bison/bison-3.8.2.tar.xz
+
+# GNU Flex (scanner generator - libre)
+https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
+
+# GNU Readline (ligne de commande améliorée)
+https://ftp.gnu.org/gnu/readline/readline-8.3.tar.gz
+
+# GNU History (historique des commandes)
+# Included in readline
+
+# GNU GDBM (base de données clé-valeur)
+https://ftp.gnu.org/gnu/gdbm/gdbm-1.26.tar.gz
+
+# GNU MPFR (précision multiple)
+https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz
+
+# GNU MPC (complex numbers)
+https://ftp.gnu.org/gnu/mpc/mpc-1.3.1.tar.gz
+
+# GNU GMP (big numbers)
+https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz
+
+# ============================================================================
+# GNU NETWORKING
+# ============================================================================
+
+# GNU Wget (HTTP/FTP downloader)
+https://ftp.gnu.org/gnu/wget/wget-1.25.0.tar.gz
+
+# GNU Inetutils (telnet, ftp, hostname, etc.)
+https://ftp.gnu.org/gnu/inetutils/inetutils-2.7.tar.xz
+
+# GNU TLS (SSL/TLS library - libre)
+https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.9.tar.xz
+
+# GNU Libidn (IDN processing)
+https://ftp.gnu.org/gnu/libidn/libidn-1.42.tar.gz
+
+# GNU Libmicrohttpd (HTTP server library)
+https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-1.0.1.tar.gz
+
+# ============================================================================
+# GNU COMPRESSION
+# ============================================================================
+
+# GNU Gzip (déjà inclus)
+# GNU Tar (déjà inclus)
+
+# GNU Cpio (archiver)
+https://ftp.gnu.org/gnu/cpio/cpio-2.15.tar.gz
+
+# GNU Zip (gzip)
+# Already included
+
+# ============================================================================
+# GNU TEXT EDITORS
+# ============================================================================
+
+# GNU Emacs (éditeur de texte complet)
+https://ftp.gnu.org/gnu/emacs/emacs-29.4.tar.xz
+
+# GNU Nano (éditeur simple)
+https://ftp.gnu.org/gnu/nano/nano-8.3.tar.xz
+
+# GNU Zile (émulateur léger de Emacs)
+https://ftp.gnu.org/gnu/zile/zile-2.6.2.tar.gz
+
+# ============================================================================
+# GNU SHELL UTILITIES
+# ============================================================================
+
+# GNU Screen (terminal multiplexer)
+https://ftp.gnu.org/gnu/screen/screen-5.0.0.tar.gz
+
+# GNU Time (mesure de temps d'exécution)
+https://ftp.gnu.org/gnu/time/time-1.9.tar.gz
+
+# GNU Which (localisation des commandes)
+https://ftp.gnu.org/gnu/which/which-2.21.tar.gz
+
+# GNU Stow (gestion de paquets symboliques)
+https://ftp.gnu.org/gnu/stow/stow-2.4.1.tar.gz
+
+# ============================================================================
+# GNU DEVELOPMENT TOOLS
+# ============================================================================
+
+# GNU Autoconf
+https://ftp.gnu.org/gnu/autoconf/autoconf-2.72.tar.xz
+
+# GNU Automake
+https://ftp.gnu.org/gnu/automake/automake-1.18.1.tar.xz
+
+# GNU Libtool
+https://ftp.gnu.org/gnu/libtool/libtool-2.5.4.tar.xz
+
+# GNU Make (déjà inclus)
+
+# GNU GCC (déjà inclus)
+
+# GNU GDB (debugger)
+https://ftp.gnu.org/gnu/gdb/gdb-15.2.tar.xz
+
+# GNU Binutils (déjà inclus)
+
+# ============================================================================
+# GNU SCIENTIFIC TOOLS
+# ============================================================================
+
+# GNU Octave (matlab-like computation)
+https://ftp.gnu.org/gnu/octave/octave-9.4.0.tar.xz
+
+# GNU R (statistiques)
+https://cran.r-project.org/src/base/R-4/R-4.4.3.tar.gz
+
+# GNU Sci (scientific library)
+https://ftp.gnu.org/gnu/gsl/gsl-2.8.tar.gz
+
+# ============================================================================
+# GNU GRAPHICS
+# ============================================================================
+
+# GNU Plotutils (graphiques 2D)
+https://ftp.gnu.org/gnu/plotutils/plotutils-2.6.tar.gz
+
+# GNU XFig (dessin vectoriel)
+https://sourceforge.net/projects/mcj/files/xfig/3.2.9/xfig-3.2.9.tar.xz
+
+# ============================================================================
+# GNU DATABASE
+# ============================================================================
+
+# GNU SQL (base de données relationnelle)
+# Note: Utiliser PostgreSQL ou MariaDB (libres) à la place
+# PostgreSQL (libre)
+https://ftp.postgresql.org/pub/source/v17.2/postgresql-17.2.tar.bz2
+
+# SQLite (domaine public, libre)
+https://sqlite.org/2025/sqlite-autoconf-3510200.tar.gz
+
+# ============================================================================
+# GNU WEB TOOLS
+# ============================================================================
+
+# GNU IceCat (Firefox sans blobs propriétaires)
+# Version GNU IceCat (basée sur Firefox ESR)
+https://ftp.gnu.org/gnu/gnuzilla/128.8.0/icecat-128.8.0-gnu1.tar.xz
+
+# GNU Mailutils (serveur email)
+https://ftp.gnu.org/gnu/mailutils/mailutils-3.19.tar.xz
+
+# ============================================================================
+# GNU AUDIO
+# ============================================================================
+
+# GNU Sound (traitement audio)
+https://ftp.gnu.org/gnu/gnu-sound/gnu-sound-1.0.2.tar.gz
+
+# GNU Ocrad (reconnaissance optique)
+https://ftp.gnu.org/gnu/ocrad/ocrad-0.29.tar.xz
+
+# ============================================================================
+# GNU SYSTEM REPLACEMENTS
+# ============================================================================
+
+# GNU Hurd (microkernel - alternative à Linux)
+# Note: Optionnel - utiliser Linux-libre par défaut
+
+# GNU Shepherd (init system - alternative à systemd)
+# https://www.gnu.org/software/shepherd/
+https://ftp.gnu.org/gnu/shepherd/shepherd-1.0.0.tar.gz
+
+# ============================================================================
+# CUSTOM GNU CONFIGURATION
+# ============================================================================
+
+# /etc/gnu-free.conf - Configuration GNU Free
+# /usr/local/bin/gnu-status - Vérificateur de conformité
+# /etc/apt/sources.list.d/gnu-free.list - Dépôts logiciels libres
