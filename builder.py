@@ -61,6 +61,7 @@ BUILD_STAGES = [
     ('base-packages', 'blfs/14-create-base-packages.sh'),
     ('security', 'blfs/15-security-hardening.sh'),
     ('privacy', 'blfs/16-privacy-tools.sh'),
+    ('branding', 'blfs/21-branding.sh'),
     ('first-boot', 'blfs/17-first-boot-service.sh'),
     ('system-updater', 'blfs/18-system-updater.sh'),
     ('package-updater', 'blfs/19-package-updater.sh'),
@@ -69,7 +70,6 @@ BUILD_STAGES = [
     ('bootloader', 'final/13-create-bootloader.sh'),
     ('installer', 'final/14-create-installer.sh'),
     ('live-system', 'final/15-create-live-system.sh'),
-    ('branding', 'blfs/21-branding.sh'),
 ]
 
 # ============================================================================
