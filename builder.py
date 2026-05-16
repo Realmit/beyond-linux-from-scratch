@@ -69,6 +69,7 @@ BUILD_STAGES = [
     ('bootloader', 'final/13-create-bootloader.sh'),
     ('installer', 'final/14-create-installer.sh'),
     ('live-system', 'final/15-create-live-system.sh'),
+    ('branding', 'blfs/21-branding.sh'),
 ]
 
 # ============================================================================
@@ -1370,13 +1371,6 @@ Examples:
                         version=f'LFS Builder v{__version__} ({__build_date__})')
 
     return parser
-
-def get_build_stages(self) -> List[Tuple[str, str]]:
-    stages = [
-        # ... autres stages ...
-        ('branding', 'blfs/21-branding.sh'),
-    ]
-    return stages
 
 def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
     """Clean build directory"""
