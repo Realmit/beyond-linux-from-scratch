@@ -185,29 +185,31 @@ setup_logos() {
 setup_gtk_theme() {
     log_info "Configuring GTK theme..."
 
-    mkdir -p /usr/share/themes/LFS
+    # Créer les répertoires du thème
     mkdir -p /usr/share/themes/LFS/gtk-3.0
     mkdir -p /usr/share/themes/LFS/gtk-4.0
+    mkdir -p /usr/share/themes/LFS-dark/gtk-3.0
+    mkdir -p /usr/share/themes/LFS-dark/gtk-4.0
 
-    # GTK 3.0 theme
-    cat > /usr/share/themes/LFS/gtk-3.0/gtk.css << 'EOF'
-/* LFS Branded GTK Theme */
-@define-color lfs_green #2E8B57;
-@define-color lfs_dark #1a1a2e;
-@define-color lfs_light #f0f0f0;
-
+    # Copier les fichiers CSS s'ils existent
+    if [ -f "$BRANDING_DIR/themes/gtk-3.0/gtk.css" ]; then
+        cp "$BRANDING_DIR/themes/gtk-3.0/gtk.css" /usr/share/themes/LFS/gtk-3.0/
+        cp "$BRANDING_DIR/themes/gtk-3.0/gtk.css" /usr/share/themes/LFS-dark/gtk-3.0/
+    else
+        # Créer un thème minimal par défaut
+        cat > /usr/share/themes/LFS/gtk-3.0/gtk.css << 'EOF'
+/* LFS Minimal Theme */
 * {
-    -GtkButton-default-border: 2px solid @lfs_green;
-    -GtkButton-default-outside-border: 2px solid @lfs_green;
+    -GtkButton-default-border: 2px solid #2E8B57;
 }
 
 window {
-    background-color: @lfs_dark;
-    color: @lfs_light;
+    background-color: #1a1a2e;
+    color: #f0f0f0;
 }
 
 button {
-    background-color: @lfs_green;
+    background-color: #2E8B57;
     border-radius: 6px;
     padding: 6px 12px;
 }
@@ -216,73 +218,76 @@ button:hover {
     background-color: #3cb371;
 }
 
-button:active {
-    background-color: #236b43;
-}
-
 entry {
-    background-color: #2a2a3e;
-    border: 1px solid @lfs_green;
+    background-color: #252535;
+    border: 1px solid #2E8B57;
     border-radius: 4px;
     padding: 6px;
 }
 
-menu {
-    background-color: @lfs_dark;
-    border: 1px solid @lfs_green;
-}
-
-menu > menuitem:hover {
-    background-color: @lfs_green;
-}
-
-.notebook header {
-    background-color: #1e1e2e;
-}
-
-.notebook tab {
-    background-color: #252535;
-    padding: 8px;
-}
-
-.notebook tab:checked {
-    background-color: @lfs_green;
-}
-
 scrollbar slider {
-    background-color: @lfs_green;
+    background-color: #2E8B57;
     border-radius: 6px;
-    min-width: 6px;
-    min-height: 6px;
 }
 EOF
-
-    # GTK 4.0 theme (similaire)
-    cp /usr/share/themes/LFS/gtk-3.0/gtk.css /usr/share/themes/LFS/gtk-4.0/
+    fi
 
     # Créer le fichier index.theme
-    cat > /usr/share/themes/LFS/index.theme << EOF
+    cat > /usr/share/themes/LFS/index.theme << 'EOF'
 [Desktop Entry]
 Name=LFS
 Comment=LFS Branded Theme
 Encoding=UTF-8
 Type=X-GNOME-Metatheme
 
-[GTK]
-MoreSpecific=1
-Default=1
-
 [X-GNOME-Metatheme]
 GtkTheme=LFS
-MetacityTheme=LFS
-IconTheme=Adwaita
+MetacityTheme=Adwaita
+IconTheme=Papirus
 CursorTheme=Adwaita
 EOF
 
-    # Définir comme thème par défaut
-    if command -v gsettings &> /dev/null; then
-        gsettings set org.gnome.desktop.interface gtk-theme "LFS" 2>/dev/null || true
-    fi
+    # Version dark
+    cat > /usr/share/themes/LFS-dark/index.theme << 'EOF'
+[Desktop Entry]
+Name=LFS-Dark
+Comment=LFS Branded Dark Theme
+Encoding=UTF-8
+Type=X-GNOME-Metatheme
+
+[X-GNOME-Metatheme]
+GtkTheme=LFS-Dark
+MetacityTheme=Adwaita-dark
+IconTheme=Papirus-Dark
+CursorTheme=Adwaita
+EOF
+
+    # Copier le thème vers GTK 4.0
+    cp /usr/share/themes/LFS/gtk-3.0/gtk.css /usr/share/themes/LFS/gtk-4.0/ 2>/dev/null || true
+
+    # Appliquer le thème si un utilisateur existe
+    for user_home in /home/* /root; do
+        if [ -d "$user_home" ]; then
+            mkdir -p "$user_home/.config/gtk-3.0"
+            mkdir -p "$user_home/.config/gtk-4.0"
+
+            cat > "$user_home/.config/gtk-3.0/settings.ini" << 'EOF'
+[Settings]
+gtk-theme-name=LFS
+gtk-icon-theme-name=Papirus
+gtk-font-name=Noto Sans 10
+gtk-cursor-theme-name=Adwaita
+gtk-application-prefer-dark-theme=0
+EOF
+            cat > "$user_home/.config/gtk-4.0/settings.ini" << 'EOF'
+[Settings]
+gtk-theme-name=LFS
+gtk-icon-theme-name=Papirus
+gtk-font-name=Noto Sans 10
+gtk-cursor-theme-name=Adwaita
+EOF
+        fi
+    done
 
     log_success "GTK theme configured"
 }
