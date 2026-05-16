@@ -2627,4 +2627,48 @@ python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html
 
 # Pour les tests USB (avec une vraie clé USB - DANGEREUX)
 python -m pytest tests/test_integration_usb.py -v --usb-device=/dev/sdb --dangerous
+
+# Rendre le script exécutable
+chmod +x mac-lfs-builder.sh
+
+# Build par défaut (XFCE)
+./mac-lfs-builder.sh
+
+# Build pour Pinebook
+./mac-lfs-builder.sh --pinebook
+
+# Build pour Brax3
+./mac-lfs-builder.sh --brax3
+
+# Build audio studio
+./mac-lfs-builder.sh --audio-studio
+
+# Build ARM64 (Raspberry Pi)
+./mac-lfs-builder.sh --arm64
+
+# Build minimal avec sysvinit
+./mac-lfs-builder.sh --profile minimal --init sysvinit
+
+# Build complet sans live USB
+./mac-lfs-builder.sh --profile full --no-live
+
+# Nettoyer
+./mac-lfs-builder.sh --clean
+
+# Aide
+./mac-lfs-builder.sh --help
+```
+
+## Nouvelles fonctionnalités
+
+Option	Description
+```bash
+--pinebook	Build pour Pinebook/Pinebook Pro
+--brax3	Build pour Brax3 smartphone
+--audio-studio	Build studio audio complet
+--audio-cli	Build audio CLI (headless)
+--arm64, -a	Cross-compilation ARM64
+--init, -i	Choix de l'init system
+--no-live	Désactive le live system
+--clean	Nettoie les artefacts
 ```
