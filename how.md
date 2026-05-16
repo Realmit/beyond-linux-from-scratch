@@ -2684,3 +2684,15 @@ python3 builder.py --profile gnu-free --init sysvinit
 
 # Sur ARM64 (libre)
 python3 builder.py --profile gnu-free --config config/build-cross.conf
+
+# Générer un logo simple
+convert -size 200x200 xc:#2E8B57 -font Arial -pointsize 60 -fill white \
+-annotate +100+120 "LFS" branding/default/logo/logo.png
+
+# Créer un fond d'écran
+convert -size 1920x1080 gradient:#2E8B57-#1a2a3a \
+-font Arial -pointsize 40 -fill white -annotate +100+100 "LFS Linux" \
+branding/default/wallpaper/default.jpg
+
+# Construire avec branding
+BRANDING_DIR="branding/custom" DISTRO_NAME="MyLFS" python3 builder.py --profile full

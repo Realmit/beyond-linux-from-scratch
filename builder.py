@@ -1371,6 +1371,12 @@ Examples:
 
     return parser
 
+def get_build_stages(self) -> List[Tuple[str, str]]:
+    stages = [
+        # ... autres stages ...
+        ('branding', 'blfs/21-branding.sh'),
+    ]
+    return stages
 
 def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
     """Clean build directory"""

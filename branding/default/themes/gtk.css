@@ -1,0 +1,13 @@
+/* LFS Custom Theme */
+@define-color lfs_primary #2E8B57;
+@define-color lfs_secondary #1a2a3a;
+@define-color lfs_accent #90EE90;
+
+window {
+    background-color: @lfs_secondary;
+}
+
+button {
+    background-color: @lfs_primary;
+    border-radius: 8px;
+}
