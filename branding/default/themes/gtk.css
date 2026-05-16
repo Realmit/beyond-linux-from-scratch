@@ -1,13 +1,346 @@
-/* LFS Custom Theme */
-@define-color lfs_primary #2E8B57;
-@define-color lfs_secondary #1a2a3a;
-@define-color lfs_accent #90EE90;
+/* ============================================================================
+   LFS Custom GTK Theme - Version complète
+   ============================================================================ */
 
+/* Définition des couleurs */
+@define-color lfs_primary #2E8B57;      /* Vert LFS */
+@define-color lfs_primary_dark #236B43;
+@define-color lfs_primary_light #3CB371;
+@define-color lfs_secondary #1a1a2e;    /* Bleu nuit */
+@define-color lfs_secondary_light #252535;
+@define-color lfs_accent #90EE90;       /* Vert clair */
+@define-color lfs_text #f0f0f0;
+@define-color lfs_text_dark #cccccc;
+@define-color lfs_error #e74c3c;
+@define-color lfs_warning #f39c12;
+@define-color lfs_success #27ae60;
+
+/* ============================================================================
+   Fenêtre principale
+   ============================================================================ */
 window {
+    background-color: @lfs_secondary;
+    color: @lfs_text;
+}
+
+window.background {
     background-color: @lfs_secondary;
 }
 
+/* ============================================================================
+   Boutons
+   ============================================================================ */
 button {
     background-color: @lfs_primary;
+    color: @lfs_text;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background-color: @lfs_primary_light;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+button:active {
+    background-color: @lfs_primary_dark;
+}
+
+button:disabled {
+    background-color: #555;
+    color: #999;
+    opacity: 0.6;
+}
+
+/* Bouton suggéré (default) */
+button.suggested-action {
+    background-color: @lfs_success;
+    font-weight: bold;
+}
+
+button.suggested-action:hover {
+    background-color: #2ecc71;
+}
+
+/* Bouton destructif */
+button.destructive-action {
+    background-color: @lfs_error;
+}
+
+button.destructive-action:hover {
+    background-color: #c0392b;
+}
+
+/* ============================================================================
+   Entrées de texte
+   ============================================================================ */
+entry {
+    background-color: @lfs_secondary_light;
+    color: @lfs_text;
+    border: 1px solid @lfs_primary;
+    border-radius: 4px;
+    padding: 6px 8px;
+}
+
+entry:focus {
+    border-color: @lfs_primary_light;
+    box-shadow: 0 0 4px @lfs_primary;
+}
+
+entry:disabled {
+    background-color: #333;
+    color: #666;
+}
+
+/* ============================================================================
+   Menus
+   ============================================================================ */
+menu {
+    background-color: @lfs_secondary_light;
+    border: 1px solid @lfs_primary;
+    border-radius: 6px;
+}
+
+menu > menuitem {
+    padding: 6px 12px;
+}
+
+menu > menuitem:hover {
+    background-color: @lfs_primary;
+}
+
+menubar {
+    background-color: @lfs_secondary;
+    border-bottom: 1px solid @lfs_primary;
+}
+
+menubar > menuitem {
+    padding: 8px 12px;
+}
+
+menubar > menuitem:hover {
+    background-color: @lfs_primary;
+}
+
+/* ============================================================================
+   Barres de défilement
+   ============================================================================ */
+scrollbar {
+    background-color: @lfs_secondary_light;
+    border-radius: 6px;
+}
+
+scrollbar slider {
+    background-color: @lfs_primary;
+    border-radius: 6px;
+    min-width: 8px;
+    min-height: 8px;
+}
+
+scrollbar slider:hover {
+    background-color: @lfs_primary_light;
+}
+
+/* ============================================================================
+   Onglets
+   ============================================================================ */
+notebook > header {
+    background-color: @lfs_secondary_light;
+    border-bottom: 1px solid @lfs_primary;
+}
+
+notebook tab {
+    background-color: @lfs_secondary;
+    padding: 8px 16px;
+    margin-right: 2px;
+}
+
+notebook tab:checked {
+    background-color: @lfs_primary;
+    color: @lfs_text;
+    border-radius: 4px 4px 0 0;
+}
+
+notebook tab:hover:not(:checked) {
+    background-color: @lfs_secondary_light;
+}
+
+/* ============================================================================
+   Barres d'outils
+   ============================================================================ */
+toolbar {
+    background-color: @lfs_secondary;
+    border-bottom: 1px solid @lfs_primary;
+    padding: 4px;
+}
+
+toolbar button {
+    padding: 4px 8px;
+}
+
+/* ============================================================================
+   Vues de liste
+   ============================================================================ */
+treeview.view {
+    background-color: @lfs_secondary_light;
+    color: @lfs_text;
+    border: none;
+}
+
+treeview.view:selected {
+    background-color: @lfs_primary;
+}
+
+treeview.view:selected:focus {
+    background-color: @lfs_primary_dark;
+}
+
+treeview.view:hover {
+    background-color: rgba(46, 139, 87, 0.3);
+}
+
+/* ============================================================================
+   Barres de progression
+   ============================================================================ */
+progressbar {
+    background-color: @lfs_secondary_light;
+    border-radius: 4px;
+}
+
+progressbar trough {
+    border-radius: 4px;
+}
+
+progressbar progress {
+    background-color: @lfs_primary;
+    border-radius: 4px;
+}
+
+/* ============================================================================
+   Dialogues
+   ============================================================================ */
+dialog {
+    background-color: @lfs_secondary;
     border-radius: 8px;
+}
+
+dialog .action-area {
+    border-top: 1px solid @lfs_primary;
+}
+
+/* ============================================================================
+   Switches
+   ============================================================================ */
+switch {
+    background-color: @lfs_secondary_light;
+    border-radius: 12px;
+}
+
+switch slider {
+    background-color: @lfs_text;
+    border-radius: 10px;
+}
+
+switch:checked {
+    background-color: @lfs_primary;
+}
+
+/* ============================================================================
+   Spinner
+   ============================================================================ */
+spinner {
+    color: @lfs_primary;
+}
+
+spinner:checked {
+    color: @lfs_primary_light;
+}
+
+/* ============================================================================
+   Infobars
+   ============================================================================ */
+infobar {
+    background-color: @lfs_secondary_light;
+    border-radius: 4px;
+    margin: 4px;
+}
+
+infobar.info {
+    background-color: #1a3a5c;
+}
+
+infobar.warning {
+    background-color: #5c3a1a;
+}
+
+infobar.error {
+    background-color: #5c1a1a;
+}
+
+/* ============================================================================
+   Menus contextuels
+   ============================================================================ */
+.context-menu {
+    background-color: @lfs_secondary_light;
+    border: 1px solid @lfs_primary;
+    border-radius: 6px;
+}
+
+/* ============================================================================
+   En-têtes
+   ============================================================================ */
+.header-bar {
+    background-color: @lfs_secondary;
+    border-bottom: 2px solid @lfs_primary;
+    padding: 8px;
+}
+
+.header-bar title {
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+/* ============================================================================
+   Paned
+   ============================================================================ */
+paned separator {
+    background-color: @lfs_primary;
+    min-width: 2px;
+}
+
+/* ============================================================================
+   Frame
+   ============================================================================ */
+frame {
+    border: 1px solid @lfs_primary;
+    border-radius: 6px;
+}
+
+frame > border {
+    background-color: @lfs_secondary_light;
+}
+
+/* ============================================================================
+   Expander
+   ============================================================================ */
+expander arrow {
+    -GtkExpander-expander-size: 12;
+    color: @lfs_primary;
+}
+
+expander arrow:hover {
+    color: @lfs_primary_light;
+}
+
+/* ============================================================================
+   Liens
+   ============================================================================ */
+link {
+    color: @lfs_accent;
+}
+
+link:hover {
+    color: @lfs_primary_light;
 }

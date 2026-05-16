@@ -1,0 +1,15 @@
+/* Version sombre du thème GTK */
+@import url("gtk.css");
+
+/* Surcharge pour mode sombre */
+@define-color lfs_secondary #0a0a14;
+@define-color lfs_secondary_light #12121e;
+@define-color lfs_text #e0e0e0;
+
+window {
+    background-color: @lfs_secondary;
+}
+
+entry {
+    background-color: @lfs_secondary_light;
+}
