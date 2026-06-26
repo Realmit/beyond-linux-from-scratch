@@ -1136,6 +1136,14 @@ alias tomcat-start='svc start tomcat'
 alias proj='cd ~/projects'
 ```
 
+### Wallpaper
+
+## without Logo
+![LFS Wallpaper](lfs-wallpaper.png)
+
+## with Logo
+![LFS Wallpaper with Logo](lfs-wallpaper-with-logo.png)
+
 ---
 
 **Built with ❤️ for the LFS community**
