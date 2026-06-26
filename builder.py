@@ -1170,7 +1170,7 @@ class LFSBuilder:
         stages.append(('configure-lfs', 'lfs/07-configure-lfs.sh'))
 
         # BLFS base
-        stages.append(('blfs-base', 'lfs/08-build-blfs-base.sh'))
+        stages.append(('blfs-base', 'blfs/08-build-blfs-base.sh'))
 
         # Desktop (if enabled)
         if self.profile_config.get('desktop'):
