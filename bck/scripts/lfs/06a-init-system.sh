@@ -1,116 +1,148 @@
 #!/bin/bash
-# Init System Installation
-# Supports: sysvinit (traditional) and systemd (modern)
+# Install init system - Compatible with Docker and native
 
 set -e
 
-log_info() { echo -e "\033[0;32m[INFO]\033[0m $1"; }
-log_success() { echo -e "\033[0;34m[SUCCESS]\033[0m $1"; }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-INIT_SYSTEM="${INIT_SYSTEM:-sysvinit}"
-SYSVINIT_STYLE="${SYSVINIT_STYLE:-lfs-classic}"
+# Fallback functions
+if [ -f "$SCRIPT_DIR/../common/utils.sh" ]; then
+    source "$SCRIPT_DIR/../common/utils.sh"
+else
+    log_info() { echo "[INFO] $*"; }
+    log_error() { echo "[ERROR] $*" >&2; }
+    log_warning() { echo "[WARNING] $*"; }
+    log_success() { echo "[SUCCESS] $*"; }
+fi
 
-log_info "Installing init system: $INIT_SYSTEM"
+# Detect Docker
+IN_DOCKER=false
+if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
+    IN_DOCKER=true
+    log_info "Running in Docker container"
+fi
+
+# Set LFS
+if [ "$IN_DOCKER" = true ]; then
+    LFS=${LFS:-/output/image}
+else
+    LFS=${LFS:-/mnt/lfs}
+fi
+
+log_info "========================================="
+log_info "Installing init system"
+log_info "========================================="
+
+# IMPORTANT: Chercher init.conf au bon endroit
+INIT_CONF=""
+if [ "$IN_DOCKER" = true ]; then
+    # En Docker, le fichier est dans /lfs-builder/config/
+    if [ -f "/lfs-builder/config/init.conf" ]; then
+        INIT_CONF="/lfs-builder/config/init.conf"
+        log_info "Found init.conf at: $INIT_CONF"
+    fi
+else
+    # En natif, chercher dans le répertoire courant
+    if [ -f "config/init.conf" ]; then
+        INIT_CONF="config/init.conf"
+        log_info "Found init.conf at: $INIT_CONF"
+    fi
+fi
+
+# Si trouvé, charger
+if [ -n "$INIT_CONF" ]; then
+    log_info "Loading init system config from: $INIT_CONF"
+    source "$INIT_CONF"
+else
+    log_warning "init.conf not found, using sysvinit as default"
+    INIT_SYSTEM="sysvinit"
+fi
+
+log_info "Init system selected: $INIT_SYSTEM"
+
+# Si en Docker, ne pas compiler, juste créer les scripts
+if [ "$IN_DOCKER" = true ]; then
+    log_info "Running in Docker mode - creating minimal init system"
+    
+    mkdir -pv $LFS/etc/init.d
+    mkdir -pv $LFS/etc/rc.d
+    
+    cat > $LFS/etc/inittab << 'INITTAB'
+id:3:initdefault:
+si::sysinit:/etc/init.d/rcS
+l0:0:wait:/etc/init.d/rc 0
+l1:1:wait:/etc/init.d/rc 1
+l2:2:wait:/etc/init.d/rc 2
+l3:3:wait:/etc/init.d/rc 3
+l4:4:wait:/etc/init.d/rc 4
+l5:5:wait:/etc/init.d/rc 5
+l6:6:wait:/etc/init.d/rc 6
+ca::ctrlaltdel:/sbin/shutdown -t3 -r now
+pf::powerfail:/sbin/shutdown -f -h +2 "Power Failure; System Shutting Down"
+INITTAB
+
+    cat > $LFS/etc/init.d/rcS << 'RCS'
+#!/bin/sh
+echo "Starting system..."
+mount -o remount,rw /
+mount -a
+echo "System started."
+RCS
+    chmod +x $LFS/etc/init.d/rcS
+
+    cat > $LFS/etc/init.d/rc << 'RC'
+#!/bin/sh
+echo "Runlevel $1"
+RC
+    chmod +x $LFS/etc/init.d/rc
+    
+    log_success "Init system (sysvinit) configured in Docker"
+    exit 0
+fi
+
+# Mode natif - build from sources
+log_info "Building init system from sources"
+
+if [ ! -d "$LFS/sources" ]; then
+    log_error "Sources directory not found: $LFS/sources"
+    exit 1
+fi
+
+cd "$LFS/sources" || exit 1
 
 case "$INIT_SYSTEM" in
-    sysvinit|sysv|sysv-init)
-        # ====================================================================
-        # SYSVINIT - Traditional UNIX init
-        # ====================================================================
-        log_info "Installing sysvinit 3.14 (traditional UNIX init)"
-
-        cd /sources
-        if [ -f sysvinit-3.14.tar.xz ]; then
-            tar -xf sysvinit-3.14.tar.xz
-            cd sysvinit-3.14
-            make -C src
-            make -C src install
+    sysvinit|sysv)
+        log_info "Installing sysvinit"
+        if ls sysvinit-*.tar.xz 1>/dev/null 2>&1; then
+            tar -xf sysvinit-*.tar.xz
+            cd sysvinit-*
+            make -j$(nproc)
+            make install
             cd ..
+            rm -rf sysvinit-*
             log_success "sysvinit installed"
         else
             log_warning "sysvinit source not found"
         fi
-
-        # Créer /etc/inittab de base
-        cat > /etc/inittab << "EOF"
-# /etc/inittab - Base configuration
-
-# Default runlevel (3 = multi-user without X)
-id:3:initdefault:
-
-# System initialization
-si::sysinit:/etc/rc.d/init.d/rc S
-
-# Runlevels
-l0:0:wait:/etc/rc.d/init.d/rc 0
-l1:1:wait:/etc/rc.d/init.d/rc 1
-l2:2:wait:/etc/rc.d/init.d/rc 2
-l3:3:wait:/etc/rc.d/init.d/rc 3
-l4:4:wait:/etc/rc.d/init.d/rc 4
-l5:5:wait:/etc/rc.d/init.d/rc 5
-l6:6:wait:/etc/rc.d/init.d/rc 6
-
-# Ctrl-Alt-Delete
-ca::ctrlaltdel:/sbin/shutdown -t5 -r now
-
-# Virtual terminals
-1:2345:respawn:/sbin/agetty --noclear tty1 38400
-2:2345:respawn:/sbin/agetty tty2 38400
-3:2345:respawn:/sbin/agetty tty3 38400
-4:2345:respawn:/sbin/agetty tty4 38400
-5:2345:respawn:/sbin/agetty tty5 38400
-6:2345:respawn:/sbin/agetty tty6 38400
-EOF
         ;;
-
     systemd)
-        # ====================================================================
-        # SYSTEMD - Modern init
-        # ====================================================================
-        log_info "Installing systemd 259.1 (modern init)"
-
-        cd /sources
-        if [ -f systemd-259.1.tar.gz ]; then
-            tar -xf systemd-259.1.tar.gz
-            cd systemd-259.1
-
-            # Patch pour LFS
-            sed -i 's/GROUP="render"/GROUP="video"/' rules.d/50-udev-default.rules.in
-
-            mkdir -p build
-            cd build
-            meson setup .. \
-                --prefix=/usr \
-                --buildtype=release \
-                -Ddefault-dnssec=no \
-                -Dfirstboot=false \
-                -Dinstall-tests=false \
-                -Dldconfig=false \
-                -Dsysusers=false \
-                -Drpmmacrosdir=no \
-                -Dhomed=false \
-                -Duserdb=false \
-                -Dman=false \
-                -Dmode=release \
-                -Dsystemd-analyze=true \
-                -Dsystemd-journal-upload=true
-
-            meson compile
-            meson install
-            cd ../..
-
-            # Créer machine-id
-            systemd-machine-id-setup 2>/dev/null || true
-
+        log_info "Installing systemd"
+        if ls systemd-*.tar.gz 1>/dev/null 2>&1; then
+            tar -xf systemd-*.tar.gz
+            cd systemd-*
+            meson setup build
+            meson compile -C build
+            meson install -C build
+            cd ..
+            rm -rf systemd-*
             log_success "systemd installed"
         else
             log_warning "systemd source not found"
         fi
         ;;
-
     *)
         log_warning "Unknown init system: $INIT_SYSTEM, using sysvinit"
         ;;
 esac
 
-log_success "Init system installation complete"
+log_success "Init system setup complete!"
