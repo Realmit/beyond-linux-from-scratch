@@ -36,8 +36,6 @@ A complete set of scripts to build a custom Linux From Scratch distribution with
 
 LFS/BLFS Builder is an automated toolchain that builds a complete Linux distribution from source code using the Linux From Scratch (LFS) and Beyond Linux From Scratch (BLFS) methodologies. It creates bootable ISO images with live system capability, multiple desktop environments, professional audio production tools, flexible init systems (sysvinit/systemd), development tools, and security hardening.
 
-**New in v4.2.0:** Audio production profiles, sysvinit/systemd choice, full network stack (browsers, email clients), real-time kernel support.
-
 ## Features
 
 ### Core Features

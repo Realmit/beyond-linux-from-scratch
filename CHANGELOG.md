@@ -5,6 +5,42 @@ All notable changes to the LFS/BLFS Builder project will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] – 2026-06-27
+
+### Added
+- **Wallpaper generator** (`generate_wallpapers.py`)
+  - Generates multiple wallpaper variants using the LFS GTK theme colors.
+  - Preserves the original, well‑liked design (`lfs-wallpaper.png`).
+  - Offers different gradients, glowing circles, triangles, and decorative patterns.
+  - Integrates the SVG logo directly into the image (via `cairosvg`).
+- **Vector logo** (`logo.svg`)
+  - Official LFS logo (green square with "LFS" text and subtitle) added to the project root.
+  - Used in the README header and wallpapers.
+- **README updates**
+  - Added the logo as a header.
+  - Critical clarification: **building under Docker/macOS does NOT produce a real ISO** – it creates a minimal skeleton for validation only.
+  - Added instructions for obtaining a real ISO on a Linux host (or Lima/WSL2).
+  - Added a section for the wallpaper generator.
+- **New scripts**:
+  - `generate_wallpapers.py` – multiple wallpaper generation.
+  - `logo.svg` – vector logo for the project.
+
+### Changed
+- **Environment detection** in all shell and Python scripts.
+  - Automatic detection of Docker, Lima, and WSL2.
+  - In Docker mode, scripts create minimal skeletons (placeholders) and **do not** run actual compilations (to avoid `chroot`, `mount`, etc. errors).
+- **Line endings**: all `.sh` scripts now use LF (Unix) instead of CRLF, resolving `Exec format error` issues.
+- **Directory structure**:
+  - Added optional `wallpaper/` folder for generated images.
+  - `logo.svg` is placed at the project root.
+- **Help messages**: `builder.py --help` now clearly states that Docker mode is for testing only.
+
+### Fixed
+- **`chroot: Operation not permitted`** under Docker – the build now continues by creating a minimal system without `chroot`.
+- **Permission errors** when writing to `/usr/local/bin` – all scripts now use `$LFS` in Docker mode.
+- **Font path** in the wallpaper generator – fallback to macOS system font (Helvetica) if DejaVu is unavailable.
+- **Dead links** in `packages/sources.list` – updated via `analyze_urls.py` validation.
+
 ## [4.2.0] - 2026-05-14
 
 ### Added
