@@ -2,7 +2,9 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
+# Install base packages
 RUN apt update && apt install -y \
     build-essential \
     bison \
@@ -26,12 +28,34 @@ RUN apt update && apt install -y \
     kmod \
     libssl-dev \
     libelf-dev \
+    file \
+    unzip \
+    xz-utils \
+    zstd \
     && rm -rf /var/lib/apt/lists/*
 
+# Install cross-compilation toolchain for ARM64
+RUN apt update && apt install -y \
+    gcc-aarch64-linux-gnu \
+    binutils-aarch64-linux-gnu \
+    qemu-user-static \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install additional tools
+RUN pip3 install --no-cache-dir \
+    meson \
+    ninja \
+    jinja2 \
+    markupsafe
+
+# Create builder user
 RUN useradd -m -G sudo builder && \
     echo "builder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER builder
 WORKDIR /home/builder
+
+# Setup environment
+RUN echo 'export PATH=$PATH:/home/builder/.local/bin' >> /home/builder/.bashrc
 
 CMD ["/bin/bash"]
