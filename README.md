@@ -1,6 +1,6 @@
 # LFS/BLFS Builder - Custom Linux Distribution Builder
 
-[![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)](https://github.com/lfs-builder/lfs-builder)
+[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/lfs-builder/lfs-builder)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 [![Tests](https://img.shields.io/badge/tests-105%20passed-brightgreen.svg)]()
