@@ -22,7 +22,7 @@ https://www.python.org/ftp/python/3.14.3/Python-3.14.3.tar.xz
 # LFS Additional Required Packages
 https://www.kernel.org/pub/linux/docs/man-pages/man-pages-6.17.tar.xz
 https://www.iana.org/time-zones/repository/releases/tzdata2026b.tar.gz
-https://www.iana.org/assignments/iana-etc/iana-etc-20250602.tar.gz
+# https://www.iana.org/assignments/iana-etc/iana-etc-20250602.tar.gz
 https://zlib.net/zlib-1.3.2.tar.gz
 https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
 https://tukaani.org/xz/xz-5.8.2.tar.xz
@@ -38,13 +38,13 @@ https://prdownloads.sourceforge.net/tcl/tcl8.6.17-src.tar.gz
 https://prdownloads.sourceforge.net/expect/expect5.45.4.tar.gz
 https://mirrors.kernel.org/gnu/dejagnu/dejagnu-1.6.3.tar.gz
 https://distfiles.dereferenced.org/pkgconf/pkgconf-2.5.1.tar.xz
-https://mirrors.kernel.org/gnu/binutils/binutils-2.46.0.tar.xz  # doublon conservé
+https://mirrors.kernel.org/gnu/binutils/binutils-2.46.0.tar.xz
 https://mirrors.kernel.org/gnu/gmp/gmp-6.3.0.tar.xz
 https://mirrors.kernel.org/gnu/mpfr/mpfr-4.2.2.tar.xz
 https://mirrors.kernel.org/gnu/mpc/mpc-1.3.1.tar.gz
 https://download.savannah.gnu.org/releases/attr/attr-2.5.2.tar.gz
 https://download.savannah.gnu.org/releases/acl/acl-2.3.2.tar.xz
-https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.77.tar.xz   # remplacé
+https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.77.tar.xz
 https://github.com/besser82/libxcrypt/releases/download/v4.5.2/libxcrypt-4.5.2.tar.xz
 https://github.com/shadow-maint/shadow/releases/download/4.19.3/shadow-4.19.3.tar.xz
 
@@ -64,7 +64,7 @@ https://mirrors.kernel.org/gnu/inetutils/inetutils-2.5.tar.xz
 https://www.greenwoodsoftware.com/less/less-692.tar.gz
 https://www.cpan.org/src/5.0/perl-5.42.0.tar.xz
 https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.47.tar.gz
-https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz  # INVALID
+# https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz  # INVALID
 https://mirrors.kernel.org/gnu/autoconf/autoconf-2.72.tar.xz
 https://mirrors.kernel.org/gnu/automake/automake-1.18.1.tar.xz
 https://www.openssl.org/source/openssl-3.6.1.tar.gz
@@ -92,7 +92,7 @@ https://mirrors.kernel.org/gnu/grub/grub-2.14.tar.xz
 https://mirrors.kernel.org/gnu/gzip/gzip-1.14.tar.xz
 https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-6.18.0.tar.xz
 https://www.kernel.org/pub/linux/utils/kbd/kbd-2.9.0.tar.xz
-https://savannah.nongnu.org/download/libpipeline/libpipeline-1.5.8.tar.gz  # INVALID
+# https://savannah.nongnu.org/download/libpipeline/libpipeline-1.5.8.tar.gz  # INVALID
 https://mirrors.kernel.org/gnu/patch/patch-2.8.tar.xz
 https://mirrors.kernel.org/gnu/tar/tar-1.35.tar.xz
 https://mirrors.kernel.org/gnu/texinfo/texinfo-7.2.tar.xz
@@ -100,7 +100,7 @@ https://github.com/vim/vim/archive/v9.2.0078/vim-9.2.0078.tar.gz
 https://files.pythonhosted.org/packages/source/M/MarkupSafe/markupsafe-3.0.3.tar.gz
 https://files.pythonhosted.org/packages/source/J/Jinja2/jinja2-3.1.6.tar.gz
 https://github.com/systemd/systemd/archive/v259.1/systemd-259.1.tar.gz
-https://ftp.gnu.org/gnu/man-db/man-db-2.13.1.tar.xz
+# https://ftp.gnu.org/gnu/man-db/man-db-2.13.1.tar.xz # INVALID
 https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-4.0.6.tar.xz
 https://www.kernel.org/pub/linux/utils/util-linux/v2.41/util-linux-2.41.3.tar.xz
 https://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.47.3/e2fsprogs-1.47.3.tar.gz
@@ -211,7 +211,7 @@ https://www.openssl.org/source/openssl-3.6.1.tar.gz
 # ============================================================================
 
 # Ardour (version 8.11.0)
-https://community.ardour.org/download/ardour-8.11.0.tar.bz2
+#https://community.ardour.org/download/ardour-8.11.0.tar.bz2
 
 # Audacity - Audio Editor and Recorder
 https://github.com/audacity/audacity/releases/download/Audacity-3.8.2/audacity-3.8.2.tar.xz
@@ -237,7 +237,7 @@ https://github.com/falkTX/Carla/releases/download/v2.5.9/Carla-2.5.9.tar.gz
 https://github.com/mikeoliphant/sfzero/releases/download/v0.8.5/sfzero-0.8.5.tar.gz
 
 # Audio-Bridge (à vérifier)
-https://github.com/falkTX/audio-bridge/archive/refs/tags/v0.9.3.tar.gz  # INVALID
+# https://github.com/falkTX/audio-bridge/archive/refs/tags/v0.9.3.tar.gz  # INVALID
 
 # ============================================================================
 # JACK AUDIO CONNECTION KIT
@@ -326,7 +326,7 @@ https://w1.fi/releases/wpa_supplicant-2.11.tar.gz
 # iw 0.9.20
 https://www.kernel.org/pub/software/network/iw/iw-0.9.20.tar.gz
 
-# wireless-tools (à vérifier)
+# wireless-tools
 https://ftp.debian.org/debian/pool/main/w/wireless-tools/wireless-tools_30~pre9-14.debian.tar.xz
 
 # ============================================================================
@@ -443,17 +443,14 @@ https://archive.mozilla.org/pub/nspr/releases/v4.37/src/nspr-4.37.tar.gz
 # libvpx
 https://github.com/webmproject/libvpx/archive/v1.15.0/libvpx-1.15.0.tar.gz
 
-# dav1d
-https://code.videolan.org/videolan/dav1d/-/archive/1.5.1/dav1d-1.5.1.tar.gz
-
 # av1 spec (PDF)
-https://aomediacodec.github.io/av1-spec/av1-spec.pdf  # INVALID
+# https://aomediacodec.github.io/av1-spec/av1-spec.pdf  # INVALID
 
 # libwebp
 https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.5.0.tar.gz
 
 # startup-notification
-https://www.freedesktop.org/software/startup-notification/releases/startup-notification-0.12.tar.gz
+# https://www.freedesktop.org/software/startup-notification/releases/startup-notification-0.12.tar.gz #INVALID
 
 # ============================================================================
 # REMOTE ACCESS TOOLS
