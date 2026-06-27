@@ -1331,4 +1331,59 @@ chmod +x mac-lfs-builder.sh
 python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html
 ```
 
+## Mac OSX dev
+
+```bash
+# Créer un environnement virtuel
+python3 -m venv venv
+
+# Activer l'environnement virtuel
+source venv/bin/activate
+
+# Exécuter les tests
+python -m pytest tests/ -v
+
+# Quitter l'environnement virtuel
+deactivate
+
+# Exécuter un test spécifique
+python -m pytest tests/test_config.py -v  
+
+# Exécuter un tests avec coverage
+python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html
+
+# Pour les tests USB (avec une vraie clé USB - DANGEREUX)
+python -m pytest tests/test_integration_usb.py -v --usb-device=/dev/sdb --dangerous
+
+# Rendre le script exécutable
+chmod +x mac-lfs-builder.sh
+
+# Build par défaut (XFCE)
+./mac-lfs-builder.sh
+
+# Build pour Pinebook
+./mac-lfs-builder.sh --pinebook
+
+# Build pour Brax3
+./mac-lfs-builder.sh --brax3
+
+# Build audio studio
+./mac-lfs-builder.sh --audio-studio
+
+# Build ARM64 (Raspberry Pi)
+./mac-lfs-builder.sh --arm64
+
+# Build minimal avec sysvinit
+./mac-lfs-builder.sh --profile minimal --init sysvinit
+
+# Build complet sans live USB
+./mac-lfs-builder.sh --profile full --no-live
+
+# Nettoyer
+./mac-lfs-builder.sh --clean
+
+# Aide
+./mac-lfs-builder.sh --help
+```
+
 **Built with ❤️ for the LFS community**
