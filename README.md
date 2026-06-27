@@ -42,10 +42,9 @@ LFS/BLFS Builder is an automated toolchain that builds a complete Linux distribu
 - ✅ Complete LFS 13.0 + BLFS 13.0 build system
 - ✅ Live USB "Try before install" capability
 - ✅ Automated installer with disk partitioning
-- ✅ Cross-platform support (Linux, macOS via Docker, Windows via WSL2)
 - ✅ Multiple init systems (sysvinit, systemd, OpenRC, runit, s6) with unified `svc` command
 
-### Audio Production (NEW in 4.2.0)
+### Audio Production
 - 🎵 **CLI Audio Profile** - Headless, low-latency audio production
 - 🎚️ **Studio Profile** - Full XFCE desktop with professional DAWs
 - 🔥 **Real-time Kernel** - PREEMPT_RT for ultra-low latency
@@ -63,7 +62,7 @@ LFS/BLFS Builder is an automated toolchain that builds a complete Linux distribu
 - 🖥️ **LXQt 2.1.0** - Extremely lightweight Qt desktop
 - 🖥️ **Minimal** - Command-line only (servers/embedded)
 
-### Network Stack (NEW in 4.2.0)
+### Network Stack
 - 🌐 **Web Browsers**: Firefox 128.8.0esr, Brave 1.76.82, Chromium 133.0.6943.98
 - 📧 **Email Clients**: Thunderbird 140.8.0esr, Claws Mail 4.3.0, Mutt 2.2.15
 - 🖥️ **Terminal Browsers**: Lynx 2.9.2, Links 2.30, w3m 0.5.3
