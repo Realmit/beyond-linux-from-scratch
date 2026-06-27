@@ -6,7 +6,7 @@ from pathlib import Path
 import logging
 
 from builder import LFSBuilder, ScriptExecutor, SourceDownloader
-
+from builder import main  # add at the top
 
 @pytest.fixture
 def builder():
@@ -122,3 +122,44 @@ class TestCheckPrerequisites:
                 with patch('pathlib.Path.chmod'):
                     result = executor.run_script('script.sh', 'stage')
                     assert result is False
+
+
+
+    def test_main_help(self, capsys):
+        with pytest.raises(SystemExit) as exc:
+            with patch('sys.argv', ['builder.py', '--help']):
+                main()
+        assert exc.value.code == 0
+
+    def test_download_retry_success_after_failure(self, downloader):
+        # Simulate failure on first attempt, success on second
+        def fake_retrieve(url, dest, reporthook):
+            if not hasattr(fake_retrieve, 'attempt'):
+                fake_retrieve.attempt = 0
+            fake_retrieve.attempt += 1
+            if fake_retrieve.attempt == 1:
+                raise Exception('Network error')
+            # Second attempt: write dummy content
+            dest.write_text('dummy')
+            return (str(dest), None)
+        with patch('urllib.request.urlretrieve', side_effect=fake_retrieve):
+            result = downloader.download('http://example.com/file', 'file')
+            assert result is True
+
+    def test_find_script_with_scripts_prefix(self, executor, tmp_path):
+        # Create a file in a 'scripts' subdirectory
+        scripts_dir = tmp_path / 'scripts'
+        scripts_dir.mkdir()
+        (scripts_dir / 'test.sh').touch()
+
+        def exists_side_effect(path):
+            # path is a Path object
+            if str(path) == 'test.sh':
+                return False
+            if str(path) == 'scripts/test.sh':
+                return True
+            return False
+
+        with patch('pathlib.Path.exists', side_effect=exists_side_effect):
+            result = executor.find_script('test.sh')
+            assert result == Path('scripts/test.sh')
