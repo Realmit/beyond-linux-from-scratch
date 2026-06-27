@@ -1,3 +1,8 @@
+#!/bin/bash
+# sources.list corrigé pour LFS 13.0/BLFS 13.0
+# Généré le 2026-06-27
+# Remplacements : miroir kernel.org pour GNU, mises à jour de versions
+
 # ============================================================================
 # LFS 13.0 CORE PACKAGES
 # See: https://www.linuxfromscratch.org/lfs/view/stable/
@@ -6,66 +11,66 @@
 # Linux Kernel 6.12.20 (LTS)
 https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.12.20.tar.xz
 
-# GNU Toolchain
-https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz
-https://ftp.gnu.org/gnu/binutils/binutils-2.46.0.tar.xz
-https://ftp.gnu.org/gnu/glibc/glibc-2.43.tar.xz
-https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz
-https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz
+# GNU Toolchain (miroir kernel.org)
+https://mirrors.kernel.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz
+https://mirrors.kernel.org/gnu/binutils/binutils-2.46.0.tar.xz
+https://mirrors.kernel.org/gnu/glibc/glibc-2.43.tar.xz
+https://mirrors.kernel.org/gnu/make/make-4.4.1.tar.gz
+https://mirrors.kernel.org/gnu/bash/bash-5.3.tar.gz
 https://www.python.org/ftp/python/3.14.3/Python-3.14.3.tar.xz
 
 # LFS Additional Required Packages
 https://www.kernel.org/pub/linux/docs/man-pages/man-pages-6.17.tar.xz
 https://www.iana.org/time-zones/repository/releases/tzdata2026b.tar.gz
-https://www.iana.org/assignments/iana-etc/iana-etc-20260202.tar.gz
+https://www.iana.org/assignments/iana-etc/iana-etc-20260602.tar.gz  # INVALID (original comment: mis à jour)
 https://zlib.net/zlib-1.3.2.tar.gz
 https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
 https://tukaani.org/xz/xz-5.8.2.tar.xz
 https://github.com/lz4/lz4/releases/download/v1.10.0/lz4-1.10.0.tar.gz
 https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
 https://astron.com/pub/file/file-5.46.tar.gz
-https://ftp.gnu.org/gnu/readline/readline-8.3.tar.gz
+https://mirrors.kernel.org/gnu/readline/readline-8.3.tar.gz
 https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.bz2
-https://ftp.gnu.org/gnu/m4/m4-1.4.21.tar.xz
-https://ftp.gnu.org/gnu/bc/bc-7.0.3.tar.xz
+https://mirrors.kernel.org/gnu/m4/m4-1.4.21.tar.xz
+https://mirrors.kernel.org/gnu/bc/bc-7.0.3.tar.xz  # INVALID
 https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
 https://prdownloads.sourceforge.net/tcl/tcl8.6.17-src.tar.gz
 https://prdownloads.sourceforge.net/expect/expect5.45.4.tar.gz
-https://ftp.gnu.org/gnu/dejagnu/dejagnu-1.6.3.tar.gz
+https://mirrors.kernel.org/gnu/dejagnu/dejagnu-1.6.3.tar.gz
 https://distfiles.dereferenced.org/pkgconf/pkgconf-2.5.1.tar.xz
-https://ftp.gnu.org/gnu/binutils/binutils-2.46.0.tar.xz
-https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz
-https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz
-https://ftp.gnu.org/gnu/mpc/mpc-1.3.1.tar.gz
+https://mirrors.kernel.org/gnu/binutils/binutils-2.46.0.tar.xz  # doublon conservé
+https://mirrors.kernel.org/gnu/gmp/gmp-6.3.0.tar.xz
+https://mirrors.kernel.org/gnu/mpfr/mpfr-4.2.2.tar.xz
+https://mirrors.kernel.org/gnu/mpc/mpc-1.3.1.tar.gz
 https://download.savannah.gnu.org/releases/attr/attr-2.5.2.tar.gz
 https://download.savannah.gnu.org/releases/acl/acl-2.3.2.tar.xz
-https://sites.google.com/site/fullycapable/libcap-2.77.tar.xz
+https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.77.tar.xz   # remplacé
 https://github.com/besser82/libxcrypt/releases/download/v4.5.2/libxcrypt-4.5.2.tar.xz
 https://github.com/shadow-maint/shadow/releases/download/4.19.3/shadow-4.19.3.tar.xz
 
 # System Utilities
-https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz
+https://mirrors.kernel.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz  # doublon
 https://invisible-mirror.net/archives/ncurses/ncurses-6.6.tar.gz
-https://ftp.gnu.org/gnu/sed/sed-4.9.tar.xz
+https://mirrors.kernel.org/gnu/sed/sed-4.9.tar.xz
 https://sourceforge.net/projects/psmisc/files/psmisc/psmisc-23.7.tar.xz
-https://ftp.gnu.org/gnu/gettext/gettext-0.24.1.tar.xz
-https://ftp.gnu.org/gnu/bison/bison-3.8.2.tar.xz
-https://ftp.gnu.org/gnu/grep/grep-3.12.tar.xz
-https://ftp.gnu.org/gnu/libtool/libtool-2.5.4.tar.xz
-https://www.gnu.org/software/gdbm/gdbm-1.26.tar.gz
-https://ftp.gnu.org/gnu/gperf/gperf-3.3.tar.gz
+https://mirrors.kernel.org/gnu/gettext/gettext-0.24.1.tar.xz
+https://mirrors.kernel.org/gnu/bison/bison-3.8.2.tar.xz
+https://mirrors.kernel.org/gnu/grep/grep-3.12.tar.xz
+https://mirrors.kernel.org/gnu/libtool/libtool-2.5.4.tar.xz
+https://www.gnu.org/software/gdbm/gdbm-1.26.tar.gz  # INVALID (original comment: GNU timeout, conservé)
+https://mirrors.kernel.org/gnu/gperf/gperf-3.3.tar.gz
 https://prdownloads.sourceforge.net/expat/expat-2.7.4.tar.xz
-https://ftp.gnu.org/gnu/inetutils/inetutils-2.7.tar.xz
+https://mirrors.kernel.org/gnu/inetutils/inetutils-2.7.tar.xz  # INVALID
 https://www.greenwoodsoftware.com/less/less-692.tar.gz
 https://www.cpan.org/src/5.0/perl-5.42.0.tar.xz
 https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.47.tar.gz
-https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz
-https://ftp.gnu.org/gnu/autoconf/autoconf-2.72.tar.xz
-https://ftp.gnu.org/gnu/automake/automake-1.18.1.tar.xz
+https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz  # INVALID
+https://mirrors.kernel.org/gnu/autoconf/autoconf-2.72.tar.xz
+https://mirrors.kernel.org/gnu/automake/automake-1.18.1.tar.xz
 https://www.openssl.org/source/openssl-3.6.1.tar.gz
 https://sourceware.org/ftp/elfutils/0.192/elfutils-0.192.tar.bz2
-https://sourceware.org/libffi/libffi-3.5.2.tar.gz
-https://sqlite.org/2025/sqlite-autoconf-3510200.tar.gz
+https://sourceware.org/libffi/libffi-3.5.2.tar.gz  # INVALID (original comment: 404, à vérifier)
+https://sqlite.org/2025/sqlite-autoconf-3510200.tar.gz  # INVALID (original comment: 404, à vérifier)
 
 # Python and Build Tools
 https://www.python.org/ftp/python/3.14.3/Python-3.14.3.tar.xz
@@ -73,33 +78,33 @@ https://files.pythonhosted.org/packages/source/f/flit_core/flit_core-3.12.0.tar.
 https://files.pythonhosted.org/packages/source/p/packaging/packaging-26.0.tar.gz
 https://files.pythonhosted.org/packages/source/w/wheel/wheel-0.46.3.tar.gz
 https://files.pythonhosted.org/packages/source/s/setuptools/setuptools-82.0.0.tar.gz
-https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-1.13.2.tar.gz
+https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-1.13.2.tar.gz  # 404, vérifier version
 https://github.com/mesonbuild/meson/releases/download/1.10.1/meson-1.10.1.tar.gz
 https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-34.2.tar.xz
 
 # Core System Components
-https://ftp.gnu.org/gnu/coreutils/coreutils-9.10.tar.xz
-https://ftp.gnu.org/gnu/diffutils/diffutils-3.12.tar.xz
-https://ftp.gnu.org/gnu/gawk/gawk-5.3.2.tar.xz
-https://ftp.gnu.org/gnu/findutils/findutils-4.10.0.tar.xz
-https://ftp.gnu.org/gnu/groff/groff-1.23.0.tar.gz
-https://ftp.gnu.org/gnu/grub/grub-2.14.tar.xz
-https://ftp.gnu.org/gnu/gzip/gzip-1.14.tar.xz
+https://mirrors.kernel.org/gnu/coreutils/coreutils-9.10.tar.xz
+https://mirrors.kernel.org/gnu/diffutils/diffutils-3.12.tar.xz
+https://mirrors.kernel.org/gnu/gawk/gawk-5.3.2.tar.xz
+https://mirrors.kernel.org/gnu/findutils/findutils-4.10.0.tar.xz
+https://mirrors.kernel.org/gnu/groff/groff-1.23.0.tar.gz
+https://mirrors.kernel.org/gnu/grub/grub-2.14.tar.xz
+https://mirrors.kernel.org/gnu/gzip/gzip-1.14.tar.xz
 https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-6.18.0.tar.xz
 https://www.kernel.org/pub/linux/utils/kbd/kbd-2.9.0.tar.xz
-https://savannah.nongnu.org/download/libpipeline/libpipeline-1.5.8.tar.gz
-https://ftp.gnu.org/gnu/patch/patch-2.8.tar.xz
-https://ftp.gnu.org/gnu/tar/tar-1.35.tar.xz
-https://ftp.gnu.org/gnu/texinfo/texinfo-7.2.tar.xz
+https://savannah.nongnu.org/download/libpipeline/libpipeline-1.5.8.tar.gz  # INVALID (original comment: timeout)
+https://mirrors.kernel.org/gnu/patch/patch-2.8.tar.xz
+https://mirrors.kernel.org/gnu/tar/tar-1.35.tar.xz
+https://mirrors.kernel.org/gnu/texinfo/texinfo-7.2.tar.xz
 https://github.com/vim/vim/archive/v9.2.0078/vim-9.2.0078.tar.gz
 https://files.pythonhosted.org/packages/source/M/MarkupSafe/markupsafe-3.0.3.tar.gz
 https://files.pythonhosted.org/packages/source/J/Jinja2/jinja2-3.1.6.tar.gz
 https://github.com/systemd/systemd/archive/v259.1/systemd-259.1.tar.gz
-https://savannah.nongnu.org/download/man-db/man-db-2.13.1.tar.xz
+https://savannah.nongnu.org/download/man-db/man-db-2.13.1.tar.xz  # INVALID (original comment: timeout)
 https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-4.0.6.tar.xz
 https://www.kernel.org/pub/linux/utils/util-linux/v2.41/util-linux-2.41.3.tar.xz
 https://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.47.3/e2fsprogs-1.47.3.tar.gz
-https://www.infodrom.org/projects/sysklogd/download/sysklogd-2.7.2.tar.gz
+https://www.infodrom.org/projects/sysklogd/download/sysklogd-2.7.2.tar.gz  # INVALID (original comment: 404)
 https://github.com/slicer69/sysvinit/releases/download/3.14/sysvinit-3.14.tar.xz
 
 # ============================================================================
@@ -112,8 +117,8 @@ https://download.gnome.org/sources/glib/2.84/glib-2.84.0.tar.xz
 # Xorg Utility Macros 1.20.3
 https://xorg.org/pub/individual/util/util-macros-1.20.3.tar.xz
 
-# GTK+ 4.18.0
-https://download.gnome.org/sources/gtk/4.18/gtk-4.18.0.tar.xz
+# GTK+ 4.18.0 (remplacé par 4.18.2)
+https://download.gnome.org/sources/gtk/4.18/gtk-4.18.2.tar.xz
 
 # X11 Libraries
 https://gitlab.freedesktop.org/xorg/lib/libxcb/-/archive/libxcb-1.17.0/libxcb-1.17.0.tar.gz
@@ -126,8 +131,8 @@ https://www.x.org/pub/individual/lib/libX11-1.8.12.tar.xz
 # XFCE 4.20
 https://archive.xfce.org/xfce/4.20/fat_tarballs/xfce-4.20.tar.bz2
 
-# LightDM 1.34.0
-https://github.com/canonical/lightdm/archive/refs/tags/1.34.0.tar.gz
+# LightDM 1.34.0 (à vérifier si tag existe)
+https://github.com/canonical/lightdm/archive/refs/tags/1.34.0.tar.gz  # INVALID
 
 # ============================================================================
 # APPLICATIONS
@@ -136,8 +141,8 @@ https://github.com/canonical/lightdm/archive/refs/tags/1.34.0.tar.gz
 # Firefox 128.8.0esr
 https://ftp.mozilla.org/pub/firefox/releases/128.8.0esr/source/firefox-128.8.0esr.source.tar.xz
 
-# LibreOffice 25.8.1
-https://download.documentfoundation.org/libreoffice/stable/25.8.1/deb/x86_64/LibreOffice_25.8.1_Linux_x86-64_deb.tar.gz
+# LibreOffice 25.8.1 (à vérifier)
+https://download.documentfoundation.org/libreoffice/stable/25.8.1/deb/x86_64/LibreOffice_25.8.1_Linux_x86-64_deb.tar.gz  # INVALID
 
 # VLC 3.0.22
 https://get.videolan.org/vlc/3.0.22/vlc-3.0.22.tar.xz
@@ -155,14 +160,14 @@ https://github.com/obsproject/obs-studio/archive/32.0.0.tar.gz
 # Eclipse Temurin JDK 21.0.10
 https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.10_9.tar.gz
 
-# Maven 3.9.9
-https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz
+# Maven 3.9.9 (à vérifier)
+https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz  # INVALID
 
-# Gradle 8.15
-https://services.gradle.org/distributions/gradle-8.15-bin.zip
+# Gradle 8.15 (à vérifier)
+https://services.gradle.org/distributions/gradle-8.15-bin.zip  # INVALID
 
-# Tomcat 10.1.39
-https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.39/bin/apache-tomcat-10.1.39.tar.gz
+# Tomcat 10.1.39 (à vérifier)
+https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.39/bin/apache-tomcat-10.1.39.tar.gz  # INVALID
 
 # Node.js 22.15.0 LTS
 https://nodejs.org/dist/v22.15.0/node-v22.15.0-linux-x64.tar.xz
@@ -173,11 +178,11 @@ https://download.docker.com/linux/static/stable/x86_64/docker-28.3.3.tgz
 # kubectl 1.32.4
 https://dl.k8s.io/release/v1.32.4/bin/linux/amd64/kubectl
 
-# Jenkins 2.500.1 LTS
-https://get.jenkins.io/war-stable/2.500.1/jenkins.war
+# Jenkins 2.500.1 LTS (à vérifier)
+https://get.jenkins.io/war-stable/2.500.1/jenkins.war  # INVALID
 
-# Apache JMeter 5.7.0
-https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.7.0.tgz
+# Apache JMeter 5.7.0 (à vérifier)
+https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.7.0.tgz  # INVALID
 
 # Allure 2.33.0
 https://github.com/allure-framework/allure2/releases/download/2.33.0/allure-2.33.0.tgz
@@ -186,11 +191,11 @@ https://github.com/allure-framework/allure2/releases/download/2.33.0/allure-2.33
 # SECURITY TOOLS
 # ============================================================================
 
-# Fail2ban 1.2.0
-https://github.com/fail2ban/fail2ban/archive/1.2.0.tar.gz
+# Fail2ban 1.2.0 (à vérifier)
+https://github.com/fail2ban/fail2ban/archive/1.2.0.tar.gz  # INVALID
 
-# Lynis 3.2.0
-https://github.com/CISOfy/lynis/archive/3.2.0.tar.gz
+# Lynis 3.2.0 (à vérifier)
+https://github.com/CISOfy/lynis/archive/3.2.0.tar.gz  # INVALID
 
 # rkhunter 1.4.8
 https://downloads.sourceforge.net/project/rkhunter/rkhunter/1.4.8/rkhunter-1.4.8.tar.gz
@@ -205,30 +210,24 @@ https://www.openssl.org/source/openssl-3.6.1.tar.gz
 # PACKAGE MANAGERS
 # ============================================================================
 
-# GNU Guix (Package manager)
-# Il est généralement installé via son script binaire ou construit depuis Git
-https://git.savannah.gnu.org/git/guix.git
-# Alternative : Script d'installation officiel
-https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh
+# GNU Guix (Git)
+https://git.savannah.gnu.org/git/guix.git  # INVALID
+https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh  # INVALID
 
 # ============================================================================
 # AUDIO CREATION SOFTWARE (Music Production)
 # ============================================================================
 
-# Ardour - Professional DAW (Digital Audio Workstation)
-# https://ardour.org/
-https://community.ardour.org/download/ardour-8.12.0.tar.bz2
+# Ardour - Professional DAW (à vérifier)
+https://community.ardour.org/download/ardour-8.12.0.tar.bz2  # INVALID
 
 # Audacity - Audio Editor and Recorder
-# https://www.audacityteam.org/
 https://github.com/audacity/audacity/releases/download/Audacity-3.8.2/audacity-3.8.2.tar.xz
 
-# LMMS - Music Production Suite (alternative to FL Studio)
-# https://lmms.io/
+# LMMS - Music Production Suite
 https://github.com/LMMS/lmms/releases/download/v1.2.2/lmms-1.2.2.tar.xz
 
-# Audacious - Lightweight Audio Player (useful for playback/monitoring)
-# Version 4.5.1 is known to build and work properly with LFS 13.0 platform [citation:1]
+# Audacious - Lightweight Audio Player
 https://distfiles.audacious-media-player.org/audacious-4.5.1.tar.bz2
 https://distfiles.audacious-media-player.org/audacious-plugins-4.5.1.tar.bz2
 
@@ -239,51 +238,46 @@ https://distfiles.audacious-media-player.org/audacious-plugins-4.5.1.tar.bz2
 # LV2 Plugin SDK
 https://lv2plug.in/spec/lv2-1.18.10.tar.xz
 
-# Carla Plugin Host (runs LV2, VST, VST3, AU plugins)
+# Carla Plugin Host
 https://github.com/falkTX/Carla/releases/download/v2.5.9/Carla-2.5.9.tar.gz
 
 # SFZero - SFZ sampler plugin
-# Allows playing SoundFont and SFZ sample libraries
 https://github.com/mikeoliphant/sfzero/releases/download/v0.8.5/sfzero-0.8.5.tar.gz
 
-# Audio-Bridge: Bridges audio from JACK to ALSA and vice-versa
-# Essential for low-latency audio routing on LFS systems [citation:2]
-https://github.com/falkTX/audio-bridge/archive/refs/tags/v0.9.3.tar.gz
+# Audio-Bridge (à vérifier)
+https://github.com/falkTX/audio-bridge/archive/refs/tags/v0.9.3.tar.gz  # INVALID
 
 # ============================================================================
 # JACK AUDIO CONNECTION KIT
 # ============================================================================
 
-# JACK2 (JACK Audio Connection Kit) - Low-latency audio server
-# Required for real-time professional audio workflows
+# JACK2
 https://github.com/jackaudio/jack2/releases/download/v1.9.22/jack2-1.9.22.tar.gz
 
-# QjackCtl - GUI control for JACK daemon
+# QjackCtl
 https://github.com/jackaudio/qjackctl/releases/download/v1.0.1/qjackctl-1.0.1.tar.gz
 
 # ============================================================================
 # MIDI TOOLS
 # ============================================================================
 
-# FluidSynth - Software synthesizer (SoundFont player)
-# Essential for MIDI playback and rendering
+# FluidSynth
 https://github.com/FluidSynth/fluidsynth/releases/download/v2.5.0/fluidsynth-2.5.0.tar.gz
 
-# TiMidity++ - MIDI to WAVE converter/player
+# TiMidity++
 https://sourceforge.net/projects/timidity/files/TiMidity%2B%2B/TiMidity%2B%2B-2.15.0/TiMidity%2B%2B-2.15.0.tar.gz
 
-# WildMIDI - Lightweight MIDI player
+# WildMIDI
 https://github.com/Mindwerks/wildmidi/archive/wildmidi-0.4.6.tar.gz
 
 # ============================================================================
 # AUDIO UTILITIES
 # ============================================================================
 
-# SoX - Sound eXchange: Swiss Army knife of audio processing
+# SoX
 https://sourceforge.net/projects/sox/files/sox/14.4.2/sox-14.4.2.tar.gz
 
-# JACK Rack - LV2/JACK plugin rack
-# Host multiple audio plugins in a single JACK client
+# JACK Rack
 https://github.com/jackaudio/jack-rack/releases/download/v1.4.7/jack-rack-1.4.7.tar.gz
 
 # ============================================================================
@@ -291,158 +285,133 @@ https://github.com/jackaudio/jack-rack/releases/download/v1.4.7/jack-rack-1.4.7.
 # Based on BLFS 13.0 network section
 # ============================================================================
 
-# Curl - Command line URL data transfer
-# Required for many applications (Git, Docker, etc.)
+# Curl
 https://curl.se/download/curl-8.16.0.tar.xz
 
-# Wget - Network downloader
-https://ftp.gnu.org/gnu/wget/wget-1.25.0.tar.gz
+# Wget (miroir)
+https://mirrors.kernel.org/gnu/wget/wget-1.25.0.tar.gz
 
-# libnsl - Public client interface for NIS(YP) and NIS+
+# libnsl
 https://github.com/thkukuk/libnsl/releases/download/v2.0.1/libnsl-2.0.1.tar.xz
 
-# libtirpc - Transport Independent RPC library
+# libtirpc
 https://sourceforge.net/projects/libtirpc/files/libtirpc/1.3.6/libtirpc-1.3.6.tar.bz2
 
-# rpcsvc-proto - RPC protocol definitions
+# rpcsvc-proto
 https://github.com/thkukuk/rpcsvc-proto/releases/download/v1.4.1/rpcsvc-proto-1.4.1.tar.xz
 
-# Nettle - Cryptographic library (required for GnuTLS)
-https://ftp.gnu.org/gnu/nettle/nettle-3.10.1.tar.gz
+# Nettle (miroir)
+https://mirrors.kernel.org/gnu/nettle/nettle-3.10.1.tar.gz
 
-# GnuTLS - Transport Layer Security library
+# GnuTLS
 https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.9.tar.xz
 
-# libpsl - Public Suffix List library
+# libpsl
 https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz
 
-# libidn2 - Internationalized domain name library
-https://ftp.gnu.org/gnu/libidn/libidn2-2.3.8.tar.gz
+# libidn2 (miroir)
+https://mirrors.kernel.org/gnu/libidn/libidn2-2.3.8.tar.gz
 
-# libunistring - Unicode string library
-https://ftp.gnu.org/gnu/libunistring/libunistring-1.3.tar.xz
-
-# cURL's dependencies (already above: libpsl, libidn2, gnutls)
+# libunistring (miroir)
+https://mirrors.kernel.org/gnu/libunistring/libunistring-1.3.tar.xz
 
 # ============================================================================
 # NETWORK UTILITIES
 # ============================================================================
 
-# NetworkManager 1.52.0 - Network connection manager
-# BLFS 13.0 recommends NetworkManager for modern network management
-https://download.gnome.org/sources/NetworkManager/1.52/NetworkManager-1.52.0.tar.xz
+# NetworkManager 1.52.0 (à vérifier)
+https://download.gnome.org/sources/NetworkManager/1.52/NetworkManager-1.52.0.tar.xz  # INVALID
 
-# dhcpcd 10.2.0 - DHCP client (lightweight alternative)
+# dhcpcd
 https://github.com/NetworkConfiguration/dhcpcd/releases/download/v10.2.0/dhcpcd-10.2.0.tar.xz
 
-# D-Bus 1.16.2 - Message bus system (required by NetworkManager)
+# D-Bus
 https://dbus.freedesktop.org/releases/dbus/dbus-1.16.2.tar.xz
 
-# wpa_supplicant 2.11 - Wi-Fi client
+# wpa_supplicant
 https://w1.fi/releases/wpa_supplicant-2.11.tar.gz
 
-# iw 6.9 - Wireless configuration tool
-https://www.kernel.org/pub/linux/kernel/people/linville/wireless-tools/iw-6.9.tar.xz
+# iw 6.9 (à vérifier)
+https://www.kernel.org/pub/linux/kernel/people/linville/wireless-tools/iw-6.9.tar.xz  # INVALID
 
-# wireless-tools 30.pre9 - Legacy wireless tools
-https://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/wireless-tools.30.pre9.tar.gz
+# wireless-tools (à vérifier)
+https://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/wireless-tools.30.pre9.tar.gz  # INVALID
 
 # ============================================================================
 # WEB BROWSERS & CLIENTS
 # ============================================================================
 
-# Firefox 128.8.0esr (already in APPLICATIONS, but moved here for completeness)
-# See APPLICATIONS section above
-
-# Lynx 2.9.2 - Text-based web browser
+# Lynx 2.9.2
 https://invisible-island.net/archives/lynx/tarballs/lynx2.9.2.tar.bz2
 
-# Links 2.30 - Graphics and text mode web browser
+# Links 2.30
 http://links.twibright.com/download/links-2.30.tar.gz
 
 # ============================================================================
 # NETWORK LIBRARIES
 # ============================================================================
 
-# libsoup 3.6.4 - HTTP client/server library (GNOME dependency)
+# libsoup 3.6.4
 https://download.gnome.org/sources/libsoup/3.6/libsoup-3.6.4.tar.xz
 
-# libxml2 2.14.0 - XML parser (often used by network tools)
+# libxml2 2.14.0
 https://download.gnome.org/sources/libxml2/2.14/libxml2-2.14.0.tar.xz
 
-# libxslt 1.1.42 - XSLT processor
+# libxslt 1.1.42
 https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.42.tar.xz
 
-# MIT Kerberos 1.21.4 - Network authentication
-https://web.mit.edu/kerberos/dist/krb5/1.21/krb5-1.21.4.tar.gz
+# MIT Kerberos 1.21.4 (à vérifier)
+https://web.mit.edu/kerberos/dist/krb5/1.21/krb5-1.21.4.tar.gz  # INVALID
 
-# c-ares 1.36.1 - Asynchronous DNS resolver
-https://c-ares.org/download/c-ares-1.36.1.tar.gz
+# c-ares 1.36.1 (à vérifier)
+https://c-ares.org/download/c-ares-1.36.1.tar.gz  # INVALID
+
 # ============================================================================
 # WEB BROWSERS
 # ============================================================================
 
-# Firefox - Modern web browser (ESR version)
-# Based on Mozilla codebase, uses Gecko rendering engine [citation:5][citation:9]
-# BLFS 13.0: firefox-128.8.0esr
-# Note: Uses 8+ GB RAM during link, requires Python 3.14 patch [citation:2]
+# Firefox 128.8.0esr
 https://ftp.mozilla.org/pub/firefox/releases/128.8.0esr/source/firefox-128.8.0esr.source.tar.xz
 
-# Firefox Dependencies (required for build) [citation:2]
-# cbindgen - Rust bindings generator
+# Firefox Dependencies
 https://github.com/eqrion/cbindgen/archive/v0.29.2/cbindgen-0.29.2.tar.gz
-# nodejs - JavaScript runtime (required for build)
 https://nodejs.org/dist/v22.22.0/node-v22.22.0.tar.xz
-# llvm/clang - Alternative compiler for faster builds
 https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.8/llvm-project-21.1.8.src.tar.xz
 
-# Firefox patches for LFS 13.0
-# Python 3.14 compatibility fix [citation:2]
-https://www.linuxfromscratch.org/patches/blfs/13.0/firefox-128.8.0esr-python_3.14_fixes-1.patch
-# glibc 2.43 compatibility fix [citation:2]
-https://www.linuxfromscratch.org/patches/blfs/13.0/firefox-128.8.0esr-glibc-2.43.patch
+# Firefox patches (à vérifier)
+https://www.linuxfromscratch.org/patches/blfs/13.0/firefox-128.8.0esr-python_3.14_fixes-1.patch  # INVALID
+https://www.linuxfromscratch.org/patches/blfs/13.0/firefox-128.8.0esr-glibc-2.43.patch  # INVALID
 
-# Brave Browser - Privacy-focused browser (built from source)
-# Note: Building Brave requires significant resources (>16GB RAM)
-# BLFS does not officially include Brave, but can be built from Chromium source
+# Brave Browser
 https://github.com/brave/brave-browser/releases/download/v1.76.82/brave-browser-1.76.82.tar.gz
 
-# Chromium - Base for many browsers (alternative to Firefox)
-# BLFS 13.0: chromium-133.0.6943.98
-https://www.chromium.org/getting-involved/download-chromium/chromium-133.0.6943.98.tar.xz
+# Chromium (à vérifier)
+https://www.chromium.org/getting-involved/download-chromium/chromium-133.0.6943.98.tar.xz  # INVALID
 
 # ============================================================================
 # EMAIL CLIENTS
 # ============================================================================
 
-# Thunderbird - Full-featured email client (Mozilla-based) [citation:2]
-# BLFS 13.0: thunderbird-140.8.0esr
-# Build requirements similar to Firefox
-# Estimated: 724 MB download, 8.9 GB disk space, 14 SBU build time [citation:2]
+# Thunderbird 140.8.0esr
 https://ftp.mozilla.org/pub/thunderbird/releases/140.8.0esr/source/thunderbird-140.8.0esr.source.tar.xz
 
-# Thunderbird patches for LFS 13.0 [citation:2]
-https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-python_3.14_fixes-1.patch
-https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-glibc-2.43.patch
+# Thunderbird patches (à vérifier)
+https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-python_3.14_fixes-1.patch  # INVALID
+https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-glibc-2.43.patch  # INVALID
 
-# Claws Mail - Lightweight GTK-based email client
-# Good alternative for minimal systems or XFCE desktop
+# Claws Mail
 https://www.claws-mail.org/releases/claws-mail-4.3.0.tar.xz
 
-# Balsa - Lightweight GTK+ mail client [citation:3]
-# BLFS 13.0 compatible, requires MTA (sendmail command) at runtime [citation:3]
-https://pulsesoftware.info/balsa/download/balsa-2.6.5.tar.xz
+# Balsa (à vérifier)
+https://pulsesoftware.info/balsa/download/balsa-2.6.5.tar.xz  # INVALID
 
-# Mutt - Terminal-based email client (CLI)
-# Perfect for headless/minimal systems
-https://ftp.mutt.org/pub/mutt/mutt-2.2.15.tar.gz
+# Mutt (à vérifier)
+https://ftp.mutt.org/pub/mutt/mutt-2.2.15.tar.gz  # INVALID
 
-# NeoMutt - Modern terminal email client (Mutt with patches)
+# NeoMutt
 https://github.com/neomutt/neomutt/releases/download/20241212/neomutt-20241212.tar.gz
 
-# Evolution - GNOME integrated email/calendar suite [citation:7]
-# BLFS 11.3: evolution-3.46.4, newer version in BLFS 13.0
-# Requires GNOME desktop environment [citation:7]
+# Evolution
 https://download.gnome.org/sources/evolution/3.52/evolution-3.52.0.tar.xz
 https://download.gnome.org/sources/evolution-data-server/3.52/evolution-data-server-3.52.0.tar.xz
 
@@ -450,67 +419,56 @@ https://download.gnome.org/sources/evolution-data-server/3.52/evolution-data-ser
 # NETWORK UTILITIES (Enhanced)
 # ============================================================================
 
-# Lynx - Text-based web browser (CLI)
-# Perfect for terminal-only systems
-https://invisible-island.net/archives/lynx/tarballs/lynx2.9.2.tar.bz2
-
-# Links - Graphics and text mode browser
-http://links.twibright.com/download/links-2.30.tar.gz
-
-# w3m - Terminal web browser with tables/frames support
-https://github.com/tats/w3m/archive/v0.5.3.tar.gz
+# Lynx (déjà présent)
+# Links (déjà présent)
+# w3m (à vérifier)
+https://github.com/tats/w3m/archive/v0.5.3.tar.gz  # INVALID
 
 # ============================================================================
 # DOWNLOAD MANAGERS
 # ============================================================================
 
-# wget2 - Improved version of wget with better performance
-https://ftp.gnu.org/gnu/wget/wget2-2.2.0.tar.gz
+# wget2 (miroir)
+https://mirrors.kernel.org/gnu/wget/wget2-2.2.0.tar.gz
 
-# curl (already in core packages, included for completeness)
-https://curl.se/download/curl-8.16.0.tar.xz
-
-# aria2 - High-speed download utility with BitTorrent support
+# curl (déjà présent)
+# aria2
 https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0.tar.xz
 
 # ============================================================================
 # NETWORK LIBRARIES (For browser/email builds)
 # ============================================================================
 
-# libevent - Event notification library (required by some browsers)
+# libevent
 https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
 
-# nss - Network Security Services (Mozilla) [citation:2]
-# Required for Firefox and Thunderbird builds
+# nss
 https://archive.mozilla.org/pub/security/nss/releases/NSS_3_107_RTM/src/nss-3.107.tar.gz
 
-# nspr - Netscape Portable Runtime [citation:2]
+# nspr
 https://archive.mozilla.org/pub/nspr/releases/v4.37/src/nspr-4.37.tar.gz
 
-# libvpx - VP8/VP9 codec (required by Firefox/Chromium) [citation:2]
+# libvpx
 https://github.com/webmproject/libvpx/archive/v1.15.0/libvpx-1.15.0.tar.gz
 
-# dav1d - AV1 decoder (required by modern browsers) [citation:1][citation:6][citation:8]
-# New in BLFS 13.0
+# dav1d
 https://code.videolan.org/videolan/dav1d/-/archive/1.5.1/dav1d-1.5.1.tar.gz
 
-# av1 - AV1 encoder/decoder support [citation:1][citation:6]
-https://aomediacodec.github.io/av1-spec/av1-spec.pdf
+# av1 spec (PDF)
+https://aomediacodec.github.io/av1-spec/av1-spec.pdf  # INVALID
 
-# libwebp - WebP image format support [citation:2]
+# libwebp
 https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.5.0.tar.gz
 
-# startup-notification - Application startup feedback (required by Firefox) [citation:2]
-https://www.freedesktop.org/software/startup-notification/releases/startup-notification-0.12.tar.gz
+# startup-notification (à vérifier)
+https://www.freedesktop.org/software/startup-notification/releases/startup-notification-0.12.tar.gz  # INVALID
 
 # ============================================================================
 # REMOTE ACCESS TOOLS
 # ============================================================================
 
-# TigerVNC - VNC server and client [citation:4]
-# BLFS 11.3: tigervnc-1.13.0
-# Requires CMake, FLTK, GnuTLS, libgcrypt, libjpeg-turbo [citation:4]
+# TigerVNC
 https://github.com/TigerVNC/tigervnc/archive/v1.15.0/tigervnc-1.15.0.tar.gz
 
-# xrdp - Remote desktop protocol server
+# xrdp
 https://github.com/neutrinolabs/xrdp/releases/download/v0.10.2/xrdp-0.10.2.tar.gz
