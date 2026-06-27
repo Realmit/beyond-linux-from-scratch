@@ -204,7 +204,82 @@ cd lfs-builder
 python3 builder.py --profile xfce
 ```
 
-### macOS (Docker)
+---
+
+### 🔹 Fedora / RHEL / CentOS (with `dnf`)
+
+```bash
+sudo dnf groupinstall -y "Development Tools"
+sudo dnf install -y bison flex gawk texinfo wget curl git python3 python3-pip \
+    xorriso isolinux mtools dosfstools parted rsync bc cpio kmod \
+    openssl-devel elfutils-libelf-devel
+```
+
+> **Notes**:
+> - `build-essential` is replaced by the `"Development Tools"` group.
+> - `libssl-dev` → `openssl-devel`
+> - `libelf-dev` → `elfutils-libelf-devel`
+> - `isolinux` is part of the `syslinux` package (or `syslinux-tools`). If the command fails, try `syslinux` or `syslinux-tools`.
+
+---
+
+### 🔹 Arch Linux (with `pacman`)
+
+```bash
+sudo pacman -S --needed base-devel bison flex gawk texinfo wget curl git python python-pip \
+    xorriso libisoburn mtools dosfstools parted rsync bc cpio kmod \
+    openssl elfutils
+```
+
+> **Notes**:
+> - `base-devel` includes `gcc`, `make`, etc.
+> - `python` and `python-pip` are the Python packages.
+> - `libisoburn` provides `xorriso`; you can install `xorriso` if available.
+> - `openssl` and `elfutils` are development library equivalents (headers are included).
+
+---
+
+### 🔹 openSUSE (with `zypper`)
+
+```bash
+sudo zypper install -t pattern devel_basis
+sudo zypper install -y bison flex gawk texinfo wget curl git python3 python3-pip \
+    xorriso isolinux mtools dosfstools parted rsync bc cpio kmod \
+    libopenssl-devel elfutils-devel
+```
+
+> **Notes**:
+> - `devel_basis` is the equivalent of `build-essential`.
+> - `libopenssl-devel` corresponds to `libssl-dev`.
+> - `elfutils-devel` provides ELF headers.
+
+---
+
+### 🔹 Alpine Linux (with `apk`) – if needed
+
+```bash
+sudo apk add build-base bison flex gawk texinfo wget curl git python3 py3-pip \
+    xorriso isolinux mtools dosfstools parted rsync bc cpio kmod \
+    openssl-dev elfutils-dev
+```
+
+> `build-base` replaces `build-essential`, and development libraries have the `-dev` suffix.
+
+---
+
+### 🔹 Gentoo (with `emerge`) – for the adventurous
+
+```bash
+sudo emerge -av sys-devel/gcc sys-devel/binutils sys-devel/make sys-devel/bison \
+    sys-devel/flex sys-devel/m4 sys-devel/gawk sys-devel/texinfo net-misc/wget \
+    net-misc/curl dev-vcs/git dev-lang/python dev-python/pip app-cdr/xorriso \
+    sys-boot/syslinux sys-fs/mtools sys-fs/dosfstools sys-block/parted net-misc/rsync \
+    app-alternatives/bc sys-apps/cpio sys-apps/kmod dev-libs/openssl dev-libs/elfutils
+```
+
+---
+
+### macOS (Docker) won't produce an iso file, only for testing pipeline
 
 ```bash
 # Install Docker Desktop from https://www.docker.com/products/docker-desktop
@@ -1155,5 +1230,69 @@ alias proj='cd ~/projects'
 ![LFS Wallpaper with Logo](images/lfs-wallpaper-5.png)
 
 ---
+
+## tests
+
+mac
+```bash
+# Créer un environnement virtuel
+python3 -m venv venv
+
+# Activer l'environnement virtuel
+source venv/bin/activate
+
+# Installer les dépendances
+pip install -r requirements-test.txt
+
+# Exécuter les tests
+python -m pytest tests/ -v
+
+# Quitter l'environnement virtuel
+deactivate
+
+# Exécuter un test spécifique
+python -m pytest tests/test_config.py -v
+
+# Exécuter un tests avec coverage
+python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html
+
+# Pour les tests USB (avec une vraie clé USB - DANGEREUX)
+python -m pytest tests/test_integration_usb.py -v --usb-device=/dev/sdb --dangerous
+
+# Rendre le script exécutable
+chmod +x mac-lfs-builder.sh
+
+# Build par défaut (XFCE)
+./mac-lfs-builder.sh
+
+# Build pour Pinebook
+./mac-lfs-builder.sh --pinebook
+
+# Build pour Brax3
+./mac-lfs-builder.sh --brax3
+
+# Build audio studio
+./mac-lfs-builder.sh --audio-studio
+
+# Build ARM64 (Raspberry Pi)
+./mac-lfs-builder.sh --arm64
+
+# Build minimal avec sysvinit
+./mac-lfs-builder.sh --profile minimal --init sysvinit
+
+# Build complet sans live USB
+./mac-lfs-builder.sh --profile full --no-live
+
+# Nettoyer
+./mac-lfs-builder.sh --clean
+
+# Aide
+./mac-lfs-builder.sh --help
+```
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+```
 
 **Built with ❤️ for the LFS community**
