@@ -1137,10 +1137,18 @@ alias proj='cd ~/projects'
 ### Wallpaper
 
 ## without Logo
-![LFS Wallpaper](lfs-wallpaper.png)
+![LFS Wallpaper](images/lfs-wallpaper-1.png)
 
 ## with Logo
-![LFS Wallpaper with Logo](lfs-wallpaper-with-logo.png)
+![LFS Wallpaper with Logo](images/lfs-wallpaper-with-logo.png)
+
+## more
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-1.png)
+![LFS Wallpaper with Logo](images/lfs-wallpaper-2.png)
+![LFS Wallpaper with Logo](images/lfs-wallpaper-3.png)
+![LFS Wallpaper with Logo](images/lfs-wallpaper-4.png)
+![LFS Wallpaper with Logo](images/lfs-wallpaper-5.png)
 
 ---
 

@@ -14,7 +14,7 @@ png_data = cairosvg.svg2png(bytestring=svg_data, output_width=400, output_height
 logo_img = Image.open(io.BytesIO(png_data))
 
 # Créer le fond d'écran (déjà généré précédemment)
-wallpaper = Image.open("lfs-wallpaper.png")  # ou générez-en un neuf
+wallpaper = Image.open("images/lfs-wallpaper.png")  # ou générez-en un neuf
 
 # Positionner le logo au centre
 logo_size = (400, 400)
