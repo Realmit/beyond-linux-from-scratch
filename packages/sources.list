@@ -144,8 +144,8 @@ https://ftp.mozilla.org/pub/firefox/releases/128.8.0esr/source/firefox-128.8.0es
 # LibreOffice 26.2.4
 https://download.documentfoundation.org/libreoffice/stable/26.2.4/deb/x86_64/LibreOffice_26.2.4_Linux_x86-64_deb.tar.gz
 
-# VLC 3.0.22
-https://get.videolan.org/vlc/3.0.22/vlc-3.0.22.tar.xz
+# VLC 3.0.9.2
+https://get.videolan.org/vlc/3.0.9.2/vlc-3.0.9.2.tar.xz
 
 # GIMP 3.0.2
 https://download.gimp.org/pub/gimp/v3.0/gimp-3.0.2.tar.xz
@@ -378,9 +378,9 @@ https://github.com/eqrion/cbindgen/archive/v0.29.2/cbindgen-0.29.2.tar.gz
 https://nodejs.org/dist/v22.22.0/node-v22.22.0.tar.xz
 https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.8/llvm-project-21.1.8.src.tar.xz
 
-# Firefox patches (à vérifier)
-https://www.linuxfromscratch.org/patches/blfs/13.0/firefox-128.8.0esr-python_3.14_fixes-1.patch  # INVALID
-https://www.linuxfromscratch.org/patches/blfs/13.0/firefox-128.8.0esr-glibc-2.43.patch  # INVALID
+# Firefox patches
+https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-python_3.14_fixes-1.patch
+https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-glibc-2.43.patch
 
 # Brave Browser
 https://github.com/brave/brave-browser/releases/download/v1.76.82/brave-browser-1.76.82.tar.gz
@@ -402,8 +402,8 @@ https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-glibc-
 # Claws Mail
 https://www.claws-mail.org/releases/claws-mail-4.3.0.tar.xz
 
-# balsa (temps d’attente – utiliser le dépôt officiel)
-https://gitlab.gnome.org/GNOME/balsa/-/archive/v2.6.5/balsa-2.6.5.tar.gz
+# balsa
+https://gitlab.gnome.org/GNOME/balsa/-/archive/2.6.5/balsa-2.6.5.tar.gz
 
 # Mutt (passer en HTTP pour éviter l’erreur SSL)
 http://ftp.mutt.org/pub/mutt/mutt-2.2.15.tar.gz
