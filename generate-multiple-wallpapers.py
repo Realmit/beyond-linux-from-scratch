@@ -368,6 +368,6 @@ for idx, cfg in enumerate(configs):
     # Sauvegarde
     filename = "lfs-wallpaper.png" if idx == 0 else f"lfs-wallpaper-{idx+1}.png"
     img.save(filename)
-    print(f"✅ {filename} généré")
+    print(f" {filename} generated")
 
-print("\n🎨 Tous les 15 fonds d'écran ont été générés !")
+print("\n all files generated !")
