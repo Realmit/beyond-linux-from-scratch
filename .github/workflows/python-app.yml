@@ -31,3 +31,10 @@ jobs:
       - name: Test with pytest
         run: |
           pytest tests/ --cov=builder --cov-report=term
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: unittests
+          fail_ci_if_error: false

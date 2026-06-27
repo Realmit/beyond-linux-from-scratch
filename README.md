@@ -3,8 +3,8 @@
 [![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/lfs-builder/lfs-builder)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
-[![Tests](https://img.shields.io/badge/tests-105%20passed-brightgreen.svg)]()
-[![Coverage](https://img.shields.io/badge/coverage-84%25-yellowgreen.svg)]()
+![Tests](https://github.com/landrevillejf/beyond-linux-from-scratch/actions/workflows/python-app.yml/badge.svg)
+[![Coverage](https://codecov.io/gh/landrevillejf/beyond-linux-from-scratch/branch/main/graph/badge.svg)](https://codecov.io/gh/landrevillejf/beyond-linux-from-scratch)
 
 A complete set of scripts to build a custom Linux From Scratch distribution with desktop environment, audio production tools, multiple init systems, and capable of creating bootable USB installers from macOS, Linux, or Windows.
 
