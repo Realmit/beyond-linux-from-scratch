@@ -974,7 +974,7 @@ speaker-test -t wav -c 2
 
 ```
 lfs-builder/
-├── builder.py                 # Main orchestrator (v4.2.0)
+├── builder.py                 # Main orchestrator
 ├── mac-lfs-builder.sh         # macOS Docker build script
 ├── Dockerfile.mac             # macOS Docker configuration
 ├── config/
