@@ -1,0 +1,36 @@
+name: Build Cache
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'   # weekly on Sunday
+  workflow_dispatch:      # manual trigger
+
+jobs:
+  build-cache:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        profile: [kde, gnome, full]
+        init: [systemd]
+        arch: [x86_64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential bison flex gawk texinfo wget git python3 xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev
+      - name: Build profile
+        run: |
+          # We need to run the builder and capture the rootfs.
+          sudo python3 builder.py --profile ${{ matrix.profile }} --init ${{ matrix.init }} --output /tmp/lfs-build
+          # Compress the image directory
+          cd /tmp/lfs-build/image
+          tar -cJf /tmp/rootfs.tar.xz .
+      - name: Upload to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: /tmp/rootfs.tar.xz
+          asset_name: lfs-rootfs-${{ matrix.profile }}-${{ matrix.init }}-${{ matrix.arch }}.tar.xz
+          tag: v4.3.0-cache
+          overwrite: true
