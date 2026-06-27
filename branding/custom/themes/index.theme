@@ -1,0 +1,15 @@
+[Desktop Entry]
+Name=LFS-Dark
+Comment=LFS Branded Dark Theme
+Encoding=UTF-8
+Type=X-GNOME-Metatheme
+
+[GTK]
+MoreSpecific=1
+Default=1
+
+[X-GNOME-Metatheme]
+GtkTheme=LFS
+MetacityTheme=LFS
+IconTheme=Papirus
+CursorTheme=Adwaita
