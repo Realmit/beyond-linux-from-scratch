@@ -75,6 +75,18 @@ class URLValidator:
             ('Connection', 'close'),
         ]
 
+    def _get_domain(self, url: str) -> str:
+        """Extract domain from URL safely"""
+        try:
+            parsed = urllib.parse.urlparse(url)
+            domain = parsed.netloc.lower()
+            # Remove leading www.
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            return domain
+        except Exception:
+            return ''
+
     def should_ignore(self, url: str) -> Tuple[bool, str]:
         """Check if URL should be ignored"""
         url = url.strip()
@@ -92,12 +104,31 @@ class URLValidator:
 
     def is_git_url(self, url: str) -> bool:
         """Check if this is a Git URL"""
-        return (url.startswith('git://') or
+        # Check scheme or obvious git indicators
+        if (url.startswith('git://') or
                 url.startswith('git@') or
-                url.endswith('.git') or
-                'git.savannah.gnu.org' in url or
-                'git.kernel.org' in url or
-                'github.com' in url and '/archive/' not in url)
+                url.endswith('.git')):
+            return True
+
+        # Parse domain and check against known Git hosting services
+        domain = self._get_domain(url)
+        # Known Git hosting domains (excluding release archives)
+        git_domains = {
+            'git.savannah.gnu.org',
+            'git.kernel.org',
+            'github.com',
+            'gitlab.com',
+            'bitbucket.org'
+        }
+        if domain in git_domains:
+            # For GitHub, if the path contains '/archive/' it's a release tarball, not a Git URL
+            if domain == 'github.com':
+                parsed = urllib.parse.urlparse(url)
+                path = parsed.path.lower()
+                if '/archive/' in path:
+                    return False
+            return True
+        return False
 
     def is_slow_url(self, url: str) -> bool:
         """Check if URL is likely to be slow"""
@@ -147,7 +178,7 @@ class URLValidator:
                 status = response.getcode()
                 if 200 <= status < 400:
                     # Read only a few bytes to minimize transfer
-                    content = response.read(1024)
+                    response.read(1024)
                     return url, True, f"OK (GET {status})"
                 return url, False, f"GET {status}"
 
@@ -391,7 +422,7 @@ def main():
 
     filepath = Path(args.file)
     if not filepath.exists():
-        print(f"{Colors.RED}❌ File not found: {filepath}{Colors.RESET}")
+        print(f"{Colors.RED} File not found: {filepath}{Colors.RESET}")
         sys.exit(1)
 
     # Initialize validator
