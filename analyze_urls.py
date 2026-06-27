@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 from typing import Dict, List, Tuple, Optional
-import urllib.parse
+from urllib.parse import urlparse
 
 class URLAnalyzer:
     """Analyze URL validation results and provide fixes"""
@@ -107,6 +107,18 @@ class URLAnalyzer:
         """Extract invalid URLs from report"""
         return [r for r in self.data.get('results', []) if r.get('valid') is False]
 
+    def _get_domain(self, url: str) -> str:
+        """Extract domain from URL safely"""
+        try:
+            parsed = urlparse(url)
+            domain = parsed.netloc.lower()
+            # Remove leading www. if present
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            return domain
+        except Exception:
+            return ''
+
     def analyze_url(self, url: str, message: str) -> Dict:
         """Analyze a single URL and suggest fixes"""
         result = {
@@ -117,8 +129,10 @@ class URLAnalyzer:
             'status': 'needs_manual'
         }
 
+        domain = self._get_domain(url)
+
         # Check if it's a GNU FTP timeout
-        if 'ftp.gnu.org' in url and 'TIMEOUT' in message:
+        if domain == 'ftp.gnu.org' and 'TIMEOUT' in message:
             result['status'] = 'timeout'
             result['note'] = 'GNU FTP server is slow. Try using a mirror or increasing timeout.'
 
@@ -137,7 +151,7 @@ class URLAnalyzer:
             result['status'] = 'not_found'
 
             # GitHub archive URL
-            if 'github.com' in url and 'archive/refs/tags' in url:
+            if domain == 'github.com' and 'archive/refs/tags' in url:
                 match = re.search(r'github\.com/([^/]+)/([^/]+)/archive/refs/tags/([^/]+)', url)
                 if match:
                     user, repo, tag = match.groups()
@@ -146,7 +160,7 @@ class URLAnalyzer:
                     result['status'] = 'github_tag_mismatch'
 
             # Apache download
-            elif 'dlcdn.apache.org' in url:
+            elif domain == 'dlcdn.apache.org':
                 match = re.search(r'dlcdn\.apache\.org/([^/]+)/([^/]+)', url)
                 if match:
                     category, version = match.groups()
@@ -154,7 +168,7 @@ class URLAnalyzer:
                     result['status'] = 'apache_version_mismatch'
 
             # GNOME download
-            elif 'download.gnome.org' in url:
+            elif domain.endswith('download.gnome.org'):
                 match = re.search(r'download\.gnome\.org/sources/([^/]+)/([0-9.]+)', url)
                 if match:
                     package, version = match.groups()
@@ -163,7 +177,7 @@ class URLAnalyzer:
                     result['status'] = 'gnome_version_mismatch'
 
             # SourceForge
-            elif 'sourceforge.net' in url or 'downloads.sourceforge.net' in url:
+            elif domain.endswith('sourceforge.net') or domain.endswith('downloads.sourceforge.net'):
                 result['note'] = "SourceForge URLs may be blocked. Try using the project's official website."
                 result['status'] = 'sourceforge_issue'
 
@@ -176,7 +190,7 @@ class URLAnalyzer:
         elif 'SSL' in message or 'CERTIFICATE' in message:
             result['status'] = 'ssl_error'
             result['note'] = "SSL certificate error. Try using HTTP or updating your SSL certificates."
-            if 'ftp.mutt.org' in url:
+            if domain == 'ftp.mutt.org':
                 result['fix'] = url.replace('https://', 'http://')
 
         # HTTP 418 (Teapot)
