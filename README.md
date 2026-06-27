@@ -176,6 +176,20 @@ python3 builder.py --clean --output ./lfs-build
 python3 builder.py --no-live --profile server
 ```
 
+### Using Pre‑built Caches
+
+For heavy profiles like `kde`, `gnome`, or `full`, you can save days of compilation time by using our pre‑built cache. The builder will automatically download a ready‑to‑use root filesystem if you enable the `--use-cache` flag.
+
+```bash
+python3 builder.py --profile kde --use-cache
+```
+
+If you want to ensure that only the cache is used (no fallback to compilation), add `--cache-only`:
+
+```bash
+python3 builder.py --profile kde --use-cache --cache-only
+```
+
 ## Installation
 
 ### Linux (Native)
