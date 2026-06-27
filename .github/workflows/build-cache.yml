@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * 0'   # weekly on Sunday
   workflow_dispatch:      # manual trigger
 
+permissions:
+  contents: write         # Required to upload release assets
+
 jobs:
   build-cache:
     runs-on: ubuntu-latest
