@@ -7,6 +7,10 @@ Usage: python3 make_iso.py --lfs /mnt/lfs --output lfs.iso
 import argparse
 import subprocess
 import os
+import sys
+import argparse
+import subprocess
+import shutil
 from pathlib import Path
 
 def main():
