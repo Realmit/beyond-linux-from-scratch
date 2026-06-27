@@ -1157,4 +1157,3 @@ alias proj='cd ~/projects'
 ---
 
 **Built with ❤️ for the LFS community**
-```
