@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/lfs-builder/lfs-builder)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
+[![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)]()
 ![Tests](https://github.com/landrevillejf/beyond-linux-from-scratch/actions/workflows/python-app.yml/badge.svg)
 [![Coverage](https://codecov.io/gh/landrevillejf/beyond-linux-from-scratch/branch/main/graph/badge.svg)](https://codecov.io/gh/landrevillejf/beyond-linux-from-scratch)
 
