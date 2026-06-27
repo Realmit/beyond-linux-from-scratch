@@ -1123,6 +1123,7 @@ chore(scope): maintenance tasks
 - 📖 **Documentation**: [ADVANCED.md](ADVANCED.md)
 - 📝 **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/lfs-builder/lfs-builder/issues)
+- 🐛 **Troubleshooting**: [Troubleshoot Guide](troubleshoot.md)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/lfs-builder/lfs-builder/discussions)
 
 ## Acknowledgments
