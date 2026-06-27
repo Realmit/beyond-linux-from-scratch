@@ -108,13 +108,13 @@ LFS/BLFS Builder is an automated toolchain that builds a complete Linux distribu
 ## System Requirements
 
 ### Linux (Native Build)
-| Requirement | Minimal | Recommended                                    |
-|-------------|--------|------------------------------------------------|
-| **Disk Space** | 50GB | 100GB                                          |
-| **RAM** | 8GB | 16GB                                           |
-| **CPU Cores** | 4 | 8+                                             |
-| **OS** | Ubuntu | Redhat, Fedora, Arch, openSUSE, Gentoo, Debian |
-| **Architecture** | x86_64 | x86_64 / ARM64                                 |
+| Requirement | Minimal | Recommended |
+|-------------|---------|-------------|
+| **Disk Space** | 50 GB | 100 GB |
+| **RAM** | 8 GB | 16 GB |
+| **CPU Cores** | 4 | 8+ |
+| **OS** | Ubuntu (or Debian) | Red Hat, Fedora, Arch, openSUSE, Gentoo, Debian (and other mainstream distributions) |
+| **Architecture** | x86_64 | x86_64 / ARM64 |
 
 ### Windows (WSL2) -> experimental
 | Requirement | Minimal | Recommended |
