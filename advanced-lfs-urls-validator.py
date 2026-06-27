@@ -122,6 +122,18 @@ class URLValidator:
             ('Accept', '*/*'), ('Connection', 'close'),
         ]
 
+    def _get_domain(self, url: str) -> str:
+        """Extract domain from URL safely"""
+        try:
+            parsed = urllib.parse.urlparse(url)
+            domain = parsed.netloc.lower()
+            # Remove leading www.
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            return domain
+        except Exception:
+            return ''
+
     def should_ignore(self, url: str) -> Tuple[bool, str]:
         url = url.strip()
         if not url or url.startswith('#'):
@@ -132,10 +144,22 @@ class URLValidator:
         return False, ""
 
     def is_git_url(self, url: str) -> bool:
-        return (url.startswith('git://') or url.startswith('git@') or
-                url.endswith('.git') or 'git.savannah.gnu.org' in url or
-                'git.kernel.org' in url or
-                ('github.com' in url and '/archive/' not in url))
+        """Check if URL is a Git URL using domain and path heuristics"""
+        domain = self._get_domain(url)
+        # Known Git hosting domains
+        git_domains = {'github.com', 'gitlab.com', 'bitbucket.org', 'git.savannah.gnu.org', 'git.kernel.org'}
+        if domain in git_domains:
+            # For GitHub, we need to check path; if it contains '/archive/' it's a release tarball, not a Git URL
+            if domain == 'github.com':
+                parsed = urllib.parse.urlparse(url)
+                path = parsed.path.lower()
+                if '/archive/' in path:
+                    return False
+            return True
+        # Also check for .git suffix or git:// scheme
+        if url.startswith('git://') or url.startswith('git@') or url.endswith('.git'):
+            return True
+        return False
 
     def is_slow_url(self, url: str) -> bool:
         return any(re.search(p, url, re.IGNORECASE) for p in self.SLOW_URL_PATTERNS)
