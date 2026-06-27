@@ -8,7 +8,7 @@ for cmd in REQUIRED:
     if not shutil.which(cmd):
         missing.append(cmd)
 if missing:
-    print("❌ Missing commands:", ", ".join(missing))
+    print(" Missing commands:", ", ".join(missing))
     sys.exit(1)
 else:
-    print("✅ All required commands found")
+    print(" All required commands found")

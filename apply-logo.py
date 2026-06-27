@@ -22,4 +22,4 @@ x = (wallpaper.width - logo_size[0]) // 2
 y = (wallpaper.height - logo_size[1]) // 2
 wallpaper.paste(logo_img, (x, y), logo_img)  # le logo a un fond transparent (grâce au rectangle)
 wallpaper.save("lfs-wallpaper-with-logo.png")
-print("✅ Fond d'écran avec logo généré !")
+print("Fond d'écran avec logo généré !")

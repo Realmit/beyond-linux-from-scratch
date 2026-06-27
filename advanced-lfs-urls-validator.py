@@ -49,23 +49,23 @@ def print_section(text: str):
 
 def print_success(text: str):
     """Print success message"""
-    print(f"{Colors.GREEN}✅ {text}{Colors.RESET}")
+    print(f"{Colors.GREEN} {text}{Colors.RESET}")
 
 def print_error(text: str):
     """Print error message"""
-    print(f"{Colors.RED}❌ {text}{Colors.RESET}")
+    print(f"{Colors.RED} {text}{Colors.RESET}")
 
 def print_warning(text: str):
     """Print warning message"""
-    print(f"{Colors.YELLOW}⚠️  {text}{Colors.RESET}")
+    print(f"{Colors.YELLOW}  {text}{Colors.RESET}")
 
 def print_info(text: str):
     """Print info message"""
-    print(f"{Colors.CYAN}ℹ️  {text}{Colors.RESET}")
+    print(f"{Colors.CYAN}  {text}{Colors.RESET}")
 
 def print_dim(text: str):
     """Print dim text"""
-    print(f"{Colors.DIM}{text}{Colors.RESET}")
+    print(f"{Colors.DIM}  {text}{Colors.RESET}")
 
 def get_user_choice(prompt: str, options: List[str], default: int = 0) -> int:
     """Get user choice from a menu"""
@@ -501,13 +501,13 @@ def show_statistics():
     ignored = stats.get('ignored', 0)
 
     print(f"Total URLs:          {total}")
-    print(f"{Colors.GREEN}✅ Valid:             {valid} ({valid/total*100:.1f}%){Colors.RESET}")
-    print(f"{Colors.RED}❌ Invalid:           {invalid} ({invalid/total*100:.1f}%){Colors.RESET}")
-    print(f"{Colors.YELLOW}⚠️  Ignored:           {ignored} ({ignored/total*100:.1f}%){Colors.RESET}")
-    print(f"⏰ Timeouts:          {stats.get('timeout', 0)}")
-    print(f"🔄 Git URLs:          {stats.get('git', 0)}")
-    print(f"🐌 Slow URLs:         {stats.get('slow', 0)}")
-    print(f"❌ Errors:            {stats.get('error', 0)}")
+    print(f"{Colors.GREEN} Valid:             {valid} ({valid/total*100:.1f}%){Colors.RESET}")
+    print(f"{Colors.RED} Invalid:           {invalid} ({invalid/total*100:.1f}%){Colors.RESET}")
+    print(f"{Colors.YELLOW} Ignored:           {ignored} ({ignored/total*100:.1f}%){Colors.RESET}")
+    print(f" Timeouts:          {stats.get('timeout', 0)}")
+    print(f" Git URLs:          {stats.get('git', 0)}")
+    print(f" Slow URLs:         {stats.get('slow', 0)}")
+    print(f" Errors:            {stats.get('error', 0)}")
 
     # Show error distribution
     categories = manager.get_categorized_errors()
@@ -557,7 +557,7 @@ def show_invalid_urls():
 
     if invalid:
         for url, msg in invalid:
-            print(f"{Colors.RED}❌ {url}{Colors.RESET}")
+            print(f"{Colors.RED} {url}{Colors.RESET}")
             print(f"   └─ {Colors.DIM}{msg}{Colors.RESET}")
             print()
     else:
@@ -663,8 +663,8 @@ def compare_with_original():
     invalid_count = len(invalid_urls)
 
     print(f"Total URLs in original:  {total}")
-    print(f"{Colors.GREEN}✅ Valid URLs:            {valid_count} ({valid_count/total*100:.1f}%){Colors.RESET}")
-    print(f"{Colors.RED}❌ Invalid URLs:          {invalid_count} ({invalid_count/total*100:.1f}%){Colors.RESET}")
+    print(f"{Colors.GREEN} Valid URLs:            {valid_count} ({valid_count/total*100:.1f}%){Colors.RESET}")
+    print(f"{Colors.RED} Invalid URLs:          {invalid_count} ({invalid_count/total*100:.1f}%){Colors.RESET}")
 
     input(f"\n{Colors.DIM}Press Enter to continue...{Colors.RESET}")
 
@@ -728,9 +728,9 @@ def export_markdown(manager):
         f.write("| Metric | Value |\n")
         f.write("|--------|-------|\n")
         f.write(f"| Total URLs | {total} |\n")
-        f.write(f"| ✅ Valid | {stats.get('valid', 0)} ({stats.get('valid', 0)/total*100:.1f}%) |\n")
-        f.write(f"| ❌ Invalid | {stats.get('invalid', 0)} ({stats.get('invalid', 0)/total*100:.1f}%) |\n")
-        f.write(f"| ⚠️ Ignored | {stats.get('ignored', 0)} |\n\n")
+        f.write(f"|  Valid | {stats.get('valid', 0)} ({stats.get('valid', 0)/total*100:.1f}%) |\n")
+        f.write(f"|  Invalid | {stats.get('invalid', 0)} ({stats.get('invalid', 0)/total*100:.1f}%) |\n")
+        f.write(f"|  Ignored | {stats.get('ignored', 0)} |\n\n")
 
         invalid = manager.get_invalid_urls()
         if invalid:
@@ -772,14 +772,14 @@ def export_html(manager):
         f.write("<h2>Statistics</h2>\n")
         f.write("<ul>\n")
         f.write(f"<li>Total URLs: {total}</li>\n")
-        f.write(f"<li class='valid'>✅ Valid: {stats.get('valid', 0)} ({stats.get('valid', 0)/total*100:.1f}%)</li>\n")
-        f.write(f"<li class='invalid'>❌ Invalid: {stats.get('invalid', 0)} ({stats.get('invalid', 0)/total*100:.1f}%)</li>\n")
-        f.write(f"<li class='ignored'>⚠️ Ignored: {stats.get('ignored', 0)}</li>\n")
+        f.write(f"<li class='valid'>  Valid: {stats.get('valid', 0)} ({stats.get('valid', 0)/total*100:.1f}%)</li>\n")
+        f.write(f"<li class='invalid'>  Invalid: {stats.get('invalid', 0)} ({stats.get('invalid', 0)/total*100:.1f}%)</li>\n")
+        f.write(f"<li class='ignored'>  Ignored: {stats.get('ignored', 0)}</li>\n")
         f.write("</ul>\n</div>\n")
 
         f.write("<h2>Results</h2>\n<table>\n<tr><th>URL</th><th>Status</th><th>Message</th></tr>\n")
         for url, valid, msg in manager.results:
-            status = "✅ Valid" if valid is True else ("⚠️ Ignored" if valid is None else "❌ Invalid")
+            status = " Valid" if valid is True else (" Ignored" if valid is None else " Invalid")
             cls = "valid" if valid is True else ("ignored" if valid is None else "invalid")
             f.write(f'<tr class="{cls}"><td>{url}</td><td>{status}</td><td>{msg or ""}</td></tr>\n')
         f.write("</table>\n</body>\n</html>")
@@ -867,7 +867,7 @@ def main():
             show_help()
         elif choice == 12:
             print_header("Goodbye!")
-            print("Thank you for using LFS URL Validator! 🚀")
+            print("Thank you for using LFS URL Validator!")
             print()
             sys.exit(0)
 

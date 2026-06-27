@@ -180,10 +180,10 @@ class URLValidator:
     def validate_file(self, filepath: Path) -> List[Tuple[str, bool, Optional[str]]]:
         """Validate all URLs in a file"""
         if not filepath.exists():
-            print(f"{Colors.RED}❌ File not found: {filepath}{Colors.RESET}")
+            print(f"{Colors.RED} File not found: {filepath}{Colors.RESET}")
             return []
 
-        print(f"{Colors.CYAN}📄 Reading file: {filepath}{Colors.RESET}")
+        print(f"{Colors.CYAN} Reading file: {filepath}{Colors.RESET}")
 
         # Read all URLs
         urls = []
@@ -198,7 +198,7 @@ class URLValidator:
                         urls.append(url)
 
         self.stats['total'] = len(urls)
-        print(f"{Colors.CYAN}📊 {len(urls)} URLs found{Colors.RESET}")
+        print(f"{Colors.CYAN} {len(urls)} URLs found{Colors.RESET}")
 
         # Filter URLs to ignore
         valid_urls = []
@@ -214,10 +214,10 @@ class URLValidator:
         self.stats['ignored'] = ignored_count
 
         if not valid_urls:
-            print(f"{Colors.YELLOW}⚠️  No URLs to check{Colors.RESET}")
+            print(f"{Colors.YELLOW}  No URLs to check{Colors.RESET}")
             return self.results
 
-        print(f"{Colors.CYAN}🔍 Checking {len(valid_urls)} URLs (timeout: {self.timeout}s, workers: {self.max_workers}){Colors.RESET}")
+        print(f"{Colors.CYAN} Checking {len(valid_urls)} URLs (timeout: {self.timeout}s, workers: {self.max_workers}){Colors.RESET}")
         print("-" * 80)
 
         # Check in parallel
@@ -259,14 +259,14 @@ class URLValidator:
 
                     # Truncate URL for display
                     display_url = url[:70] + "..." if len(url) > 70 else url
-                    print(f"{status_color}{status_icon} {display_url}")
+                    print(f"{status_color} {status_icon} {display_url}")
                     if self.verbose and message:
                         print(f"   └─ {message}{Colors.RESET}")
                     elif not self.verbose and is_valid is not None and not is_valid:
                         print(f"   └─ {Colors.RED}{message}{Colors.RESET}")
 
                 except Exception as e:
-                    print(f"{Colors.RED}❌ Error checking {url}: {e}{Colors.RESET}")
+                    print(f"{Colors.RED} Error checking {url}: {e}{Colors.RESET}")
                     self.results.append((url, False, f"EXCEPTION: {str(e)[:50]}"))
                     self.stats['invalid'] += 1
 

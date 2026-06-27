@@ -97,7 +97,7 @@ class URLAnalyzer:
     def load_report(self) -> Dict:
         """Load the JSON report"""
         if not self.report_file.exists():
-            print(f"❌ Report file not found: {self.report_file}")
+            print(f" Report file not found: {self.report_file}")
             return {}
 
         with open(self.report_file) as f:
@@ -343,13 +343,13 @@ class URLAnalyzer:
         report_file = output_dir / 'url_analysis_report.txt'
         with open(report_file, 'w') as f:
             f.write(self.generate_report())
-        print(f"✅ Analysis report: {report_file}")
+        print(f" Analysis report: {report_file}")
 
         # Save fixed sources
         fixed_file = output_dir / 'sources.list.fixed'
         with open(fixed_file, 'w') as f:
             f.write(self.generate_fixed_sources())
-        print(f"✅ Fixed sources: {fixed_file}")
+        print(f" Fixed sources: {fixed_file}")
 
         # Save suggested fixes by category
         categories_file = output_dir / 'suggested_fixes_by_category.txt'
@@ -366,7 +366,7 @@ class URLAnalyzer:
                         f.write(f"  → Note: {analysis['note']}\n")
                     f.write("\n")
 
-        print(f"✅ Categorized fixes: {categories_file}")
+        print(f" Categorized fixes: {categories_file}")
 
         # Create a shell script to download fixed URLs
         script_file = output_dir / 'download_fixed_sources.sh'
@@ -380,7 +380,7 @@ class URLAnalyzer:
                     f.write(f"wget -c --timeout=60 --tries=3 -P sources/ {analysis['fix']}\n\n")
 
         script_file.chmod(0o755)
-        print(f"✅ Download script: {script_file}")
+        print(f" Download script: {script_file}")
 
 def main():
     """Main function"""
@@ -392,13 +392,13 @@ def main():
     # Check if report exists
     report_file = Path('packages/sources_report.json')
     if not report_file.exists():
-        print("❌ No validation report found!")
+        print(" No validation report found!")
         print("Please run validation first:")
         print("  python3 validate_urls.py packages/sources.list")
         return
 
     # Analyze
-    print("📊 Analyzing validation results...")
+    print(" Analyzing validation results...")
     analyzer = URLAnalyzer(report_file)
 
     # Generate reports
@@ -409,13 +409,13 @@ def main():
     print()
 
     # Show summary
-    print("📊 Quick Summary:")
+    print(" Quick Summary:")
     print("-" * 40)
     for status, urls in analyzer.suggestions.items():
         print(f"  {status}: {len(urls)}")
     print()
 
-    print("💡 Next Steps:")
+    print(" Next Steps:")
     print("  1. Review: cat packages/url_analysis_report.txt")
     print("  2. Check fixes: cat packages/sources.list.fixed")
     print("  3. Download: ./packages/download_fixed_sources.sh")

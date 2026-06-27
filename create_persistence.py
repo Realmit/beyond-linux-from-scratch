@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
 
     if not args.device.startswith("/dev/"):
-        print("❌ Invalid device")
+        print(" Invalid device")
         sys.exit(1)
 
     # Créer la partition
@@ -27,7 +27,7 @@ def main():
     with open("/mnt/persistence.conf", "w") as f:
         f.write("/ union\n")
     subprocess.run(["sudo", "umount", "/mnt"], check=True)
-    print(f"✅ Persistence partition créée sur {args.device}")
+    print(f" Persistence partition créée sur {args.device}")
 
 if __name__ == "__main__":
     main()

@@ -12,7 +12,7 @@ from datetime import datetime
 def main():
     json_file = sys.argv[1] if len(sys.argv) > 1 else "lfs-output/build_info.json"
     if not Path(json_file).exists():
-        print("❌ build_info.json not found")
+        print("build_info.json not found")
         sys.exit(1)
 
     with open(json_file) as f:

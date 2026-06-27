@@ -17,12 +17,12 @@ def main():
 
     lfs = Path(args.lfs)
     if not lfs.exists():
-        print("❌ LFS directory does not exist")
+        print("LFS directory does not exist")
         sys.exit(1)
 
     # Vérifier que grub-mkrescue est disponible
     if not shutil.which("grub-mkrescue"):
-        print("❌ grub-mkrescue not found. Install grub-common or grub2-tools.")
+        print("grub-mkrescue not found. Install grub-common or grub2-tools.")
         sys.exit(1)
 
     # Créer un répertoire temporaire pour le contenu de l'ISO
