@@ -913,8 +913,6 @@ python3 builder.py --profile arm64 --config config/build-cross.conf
 | Orange Pi PC | `BOARD=orangepi_pc` | 🧪 Testing |
 | Pine64 | `BOARD=pine64` | 🧪 Testing |
 
-## Troubleshooting
-
 ### Common Issues
 
 #### Build fails at toolchain stage
@@ -1208,6 +1206,10 @@ alias tomcat-start='svc start tomcat'
 # Navigation
 alias proj='cd ~/projects'
 ```
+
+## Troubleshooting
+
+For more details, see the [Failed Step](troubleshoot.md).
 
 ### Wallpaper
 
