@@ -1,1 +1,2 @@
-echo "**/themes/*.css" >> .stylelintignore
+branding/**/*.css
+**/themes/*.css
