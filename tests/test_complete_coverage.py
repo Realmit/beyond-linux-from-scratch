@@ -556,3 +556,44 @@ class TestLFSBuilderMissingISO:
             result = builder.build()
             # Should still return True even if ISO not created
             assert result is True
+
+    def test_main_use_cache_flag(self, capsys):
+        with patch('sys.argv', ['builder.py', '--profile', 'minimal', '--use-cache']):
+            with patch('builder.LFSBuilder') as MockBuilder:
+                mock_instance = MockBuilder.return_value
+                mock_instance.check_prerequisites.return_value = True
+                mock_instance.prepare_environment.return_value = True
+                mock_instance.download_sources.return_value = True
+                mock_instance.build.return_value = True
+                main()
+                # assert that build was called with use_cache=True
+                mock_instance.build.assert_called_once_with(resume_from=None, use_cache=True, cache_only=False)
+
+    def test_main_cache_only_flag(self, capsys):
+        with patch('sys.argv', ['builder.py', '--profile', 'minimal', '--use-cache', '--cache-only']):
+            with patch('builder.LFSBuilder') as MockBuilder:
+                mock_instance = MockBuilder.return_value
+                mock_instance.check_prerequisites.return_value = True
+                mock_instance.prepare_environment.return_value = True
+                mock_instance.download_sources.return_value = True
+                mock_instance.build.return_value = True
+                main()
+                mock_instance.build.assert_called_once_with(resume_from=None, use_cache=True, cache_only=True)
+
+    def test_main_cache_url_flag(self, capsys):
+        url = "https://my-custom/metadata.json"
+        with patch('sys.argv', ['builder.py', '--profile', 'minimal', '--cache-url', url]):
+            with patch('builder.LFSBuilder') as MockBuilder:
+                mock_instance = MockBuilder.return_value
+                mock_instance.check_prerequisites.return_value = True
+                mock_instance.prepare_environment.return_value = True
+                mock_instance.download_sources.return_value = True
+                mock_instance.build.return_value = True
+                main()
+                # Verify that the builder was created with the cache_url
+                MockBuilder.assert_called_once_with(
+                    profile='minimal',
+                    output_dir='./lfs-build',           # string, not Path
+                    config_file='config/build.conf',    # string, not Path
+                    cache_url=url
+                )

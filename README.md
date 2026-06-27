@@ -314,6 +314,15 @@ python3 builder.py --config config/my-build.conf
 # Resume from failed stage
 python3 builder.py --resume-from configure-desktop
 
+# Use cache if available, fallback to full build
+python3 builder.py --profile kde --use-cache
+
+# Use cache only; fail if not found
+python3 builder.py --profile gnome --use-cache --cache-only
+
+# Specify custom cache metadata URL
+python3 builder.py --profile full --use-cache --cache-url https://my-server/cache-metadata.json
+
 # Write ISO to USB
 python3 builder.py --write-usb /dev/sdb
 
