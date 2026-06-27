@@ -1158,13 +1158,3 @@ alias proj='cd ~/projects'
 
 **Built with ❤️ for the LFS community**
 ```
-
-This updated README includes:
-- ✅ All new v4.2.0 features (audio production, network stack, init systems)
-- ✅ New profiles (audio-cli, audio-studio)
-- ✅ Init system documentation (sysvinit/systemd with unified `svc` command)
-- ✅ Network stack (browsers, email clients, download managers)
-- ✅ Audio production guides
-- ✅ Updated configuration sections (audio-profile.conf, network.conf, init.conf)
-- ✅ Test suite information (105 tests, 84% coverage)
-- ✅ New scripts documentation (06a through 06e)
