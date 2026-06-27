@@ -4,9 +4,10 @@ import tempfile
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 import logging
+import os
 
-from builder import LFSBuilder, ScriptExecutor, SourceDownloader
-from builder import main  # add at the top
+from builder import LFSBuilder, ScriptExecutor, SourceDownloader, main
+
 
 @pytest.fixture
 def builder():
@@ -30,6 +31,9 @@ def executor(builder):
 
 @pytest.fixture
 def downloader(builder):
+    # Ensure sources directory exists
+    sources_dir = builder.downloader.sources_dir
+    sources_dir.mkdir(parents=True, exist_ok=True)
     return builder.downloader
 
 
@@ -123,8 +127,6 @@ class TestCheckPrerequisites:
                     result = executor.run_script('script.sh', 'stage')
                     assert result is False
 
-
-
     def test_main_help(self, capsys):
         with pytest.raises(SystemExit) as exc:
             with patch('sys.argv', ['builder.py', '--help']):
@@ -139,7 +141,8 @@ class TestCheckPrerequisites:
             fake_retrieve.attempt += 1
             if fake_retrieve.attempt == 1:
                 raise Exception('Network error')
-            # Second attempt: write dummy content
+            # Ensure parent directory exists (it should, but just in case)
+            dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text('dummy')
             return (str(dest), None)
         with patch('urllib.request.urlretrieve', side_effect=fake_retrieve):
@@ -147,19 +150,20 @@ class TestCheckPrerequisites:
             assert result is True
 
     def test_find_script_with_scripts_prefix(self, executor, tmp_path):
-        # Create a file in a 'scripts' subdirectory
-        scripts_dir = tmp_path / 'scripts'
-        scripts_dir.mkdir()
-        (scripts_dir / 'test.sh').touch()
+        # Change working directory to tmp_path to isolate the test
+        original_cwd = os.getcwd()
+        os.chdir(tmp_path)
+        try:
+            # Create a 'scripts' subdirectory with a test script
+            scripts_dir = tmp_path / 'scripts'
+            scripts_dir.mkdir()
+            (scripts_dir / 'test.sh').touch()
 
-        def exists_side_effect(path):
-            # path is a Path object
-            if str(path) == 'test.sh':
-                return False
-            if str(path) == 'scripts/test.sh':
-                return True
-            return False
-
-        with patch('pathlib.Path.exists', side_effect=exists_side_effect):
+            # The function searches in current directory and 'scripts/'
+            # We want to simulate that the script is only in 'scripts/'
+            # So we make sure it's not directly in tmp_path
             result = executor.find_script('test.sh')
+            # It should find it in 'scripts/test.sh'
             assert result == Path('scripts/test.sh')
+        finally:
+            os.chdir(original_cwd)
