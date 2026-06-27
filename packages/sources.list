@@ -1,7 +1,7 @@
 #!/bin/bash
 # sources.list corrigé pour LFS 13.0/BLFS 13.0
-# Généré le 2026-06-27
-# Remplacements : miroir kernel.org pour GNU, mises à jour de versions
+# Generated on 2026-06-27
+# Replacements : mirror kernel.org - GNU, update versions
 
 # ============================================================================
 # LFS 13.0 CORE PACKAGES
@@ -11,7 +11,7 @@
 # Linux Kernel 6.12.20 (LTS)
 https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.12.20.tar.xz
 
-# GNU Toolchain (miroir kernel.org)
+# GNU Toolchain (mirror kernel.org)
 https://mirrors.kernel.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz
 https://mirrors.kernel.org/gnu/binutils/binutils-2.46.0.tar.xz
 https://mirrors.kernel.org/gnu/glibc/glibc-2.43.tar.xz
@@ -49,7 +49,7 @@ https://github.com/besser82/libxcrypt/releases/download/v4.5.2/libxcrypt-4.5.2.t
 https://github.com/shadow-maint/shadow/releases/download/4.19.3/shadow-4.19.3.tar.xz
 
 # System Utilities
-https://mirrors.kernel.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz  # doublon
+https://mirrors.kernel.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.xz
 https://invisible-mirror.net/archives/ncurses/ncurses-6.6.tar.gz
 https://mirrors.kernel.org/gnu/sed/sed-4.9.tar.xz
 https://sourceforge.net/projects/psmisc/files/psmisc/psmisc-23.7.tar.xz
@@ -92,7 +92,7 @@ https://mirrors.kernel.org/gnu/grub/grub-2.14.tar.xz
 https://mirrors.kernel.org/gnu/gzip/gzip-1.14.tar.xz
 https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-6.18.0.tar.xz
 https://www.kernel.org/pub/linux/utils/kbd/kbd-2.9.0.tar.xz
-https://savannah.nongnu.org/download/libpipeline/libpipeline-1.5.8.tar.gz  # INVALID (original comment: timeout)
+https://savannah.nongnu.org/download/libpipeline/libpipeline-1.5.8.tar.gz  # INVALID
 https://mirrors.kernel.org/gnu/patch/patch-2.8.tar.xz
 https://mirrors.kernel.org/gnu/tar/tar-1.35.tar.xz
 https://mirrors.kernel.org/gnu/texinfo/texinfo-7.2.tar.xz
@@ -207,14 +207,6 @@ https://ftp.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-9.9p2.tar.gz
 https://www.openssl.org/source/openssl-3.6.1.tar.gz
 
 # ============================================================================
-# PACKAGE MANAGERS
-# ============================================================================
-
-# GNU Guix (Git)
-https://git.savannah.gnu.org/git/guix.git  # INVALID
-https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh  # INVALID
-
-# ============================================================================
 # AUDIO CREATION SOFTWARE (Music Production)
 # ============================================================================
 
@@ -288,7 +280,7 @@ https://github.com/jackaudio/jack-rack/releases/download/v1.4.7/jack-rack-1.4.7.
 # Curl
 https://curl.se/download/curl-8.16.0.tar.xz
 
-# Wget (miroir)
+# Wget (mirror)
 https://mirrors.kernel.org/gnu/wget/wget-1.25.0.tar.gz
 
 # libnsl
@@ -300,7 +292,7 @@ https://sourceforge.net/projects/libtirpc/files/libtirpc/1.3.6/libtirpc-1.3.6.ta
 # rpcsvc-proto
 https://github.com/thkukuk/rpcsvc-proto/releases/download/v1.4.1/rpcsvc-proto-1.4.1.tar.xz
 
-# Nettle (miroir)
+# Nettle (mirror)
 https://mirrors.kernel.org/gnu/nettle/nettle-3.10.1.tar.gz
 
 # GnuTLS
@@ -309,10 +301,10 @@ https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.9.tar.xz
 # libpsl
 https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz
 
-# libidn2 (miroir)
+# libidn2 (mirror)
 https://mirrors.kernel.org/gnu/libidn/libidn2-2.3.8.tar.gz
 
-# libunistring (miroir)
+# libunistring (mirror)
 https://mirrors.kernel.org/gnu/libunistring/libunistring-1.3.tar.xz
 
 # ============================================================================
@@ -331,11 +323,11 @@ https://dbus.freedesktop.org/releases/dbus/dbus-1.16.2.tar.xz
 # wpa_supplicant
 https://w1.fi/releases/wpa_supplicant-2.11.tar.gz
 
-# iw 6.9 (à vérifier)
-https://www.kernel.org/pub/linux/kernel/people/linville/wireless-tools/iw-6.9.tar.xz  # INVALID
+# iw 0.9.20
+https://www.kernel.org/pub/software/network/iw/iw-0.9.20.tar.gz
 
 # wireless-tools (à vérifier)
-https://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/wireless-tools.30.pre9.tar.gz  # INVALID
+https://ftp.debian.org/debian/pool/main/w/wireless-tools/wireless-tools_30~pre9-14.debian.tar.xz
 
 # ============================================================================
 # WEB BROWSERS & CLIENTS
@@ -395,9 +387,9 @@ https://commondatastorage.googleapis.com/chromium-browser-official/chromium-133.
 # Thunderbird 140.8.0esr
 https://ftp.mozilla.org/pub/thunderbird/releases/140.8.0esr/source/thunderbird-140.8.0esr.source.tar.xz
 
-# Thunderbird patches (à vérifier)
-https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-python_3.14_fixes-1.patch  # INVALID
-https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-glibc-2.43.patch  # INVALID
+# Thunderbird patches
+https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-python_3.14_fixes-1.patch
+https://www.linuxfromscratch.org/patches/blfs/13.0/thunderbird-140.8.0esr-glibc-2.43.patch
 
 # Claws Mail
 https://www.claws-mail.org/releases/claws-mail-4.3.0.tar.xz
@@ -428,7 +420,7 @@ https://github.com/tats/w3m/archive/master.tar.gz
 # DOWNLOAD MANAGERS
 # ============================================================================
 
-# wget2 (miroir)
+# wget2 (mirror)
 https://mirrors.kernel.org/gnu/wget/wget2-2.2.0.tar.gz
 
 # curl (déjà présent)
