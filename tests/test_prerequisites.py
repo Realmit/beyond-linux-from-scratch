@@ -3,20 +3,15 @@ import json
 import tempfile
 from unittest.mock import patch, MagicMock
 from pathlib import Path
+import logging
 
 from builder import LFSBuilder, ScriptExecutor, SourceDownloader
 
 
-# ============================================================================
-# FIXTURES (defined at module level)
-# ============================================================================
-
 @pytest.fixture
 def builder():
-    """Create a minimal LFSBuilder instance for testing."""
     output_dir = Path(tempfile.mkdtemp())
     config_file = Path("config/build.conf")
-    # Ensure config file exists with minimal valid content
     config_file.parent.mkdir(parents=True, exist_ok=True)
     if not config_file.exists():
         with open(config_file, 'w') as f:
@@ -30,67 +25,65 @@ def builder():
 
 @pytest.fixture
 def executor(builder):
-    """Return the ScriptExecutor from the builder."""
     return builder.executor
 
 
 @pytest.fixture
 def downloader(builder):
-    """Return the SourceDownloader from the builder."""
     return builder.downloader
 
 
 @pytest.fixture
 def stages():
-    """Return a sample list of build stages."""
     return [
         ('host-check', 'host/01-check-host.sh'),
         ('host-prepare', 'host/02-prepare-host.sh')
     ]
 
 
-# ============================================================================
-# TEST CLASS – covers missing branches
-# ============================================================================
-
 class TestCheckPrerequisites:
 
     def test_unsupported_os(self, builder):
-        with patch('platform.system', return_value='Unknown'):
-            assert builder.check_prerequisites() is False
+        builder.system = 'Unknown'
+        assert builder.check_prerequisites() is False
 
     def test_windows_os(self, builder):
-        with patch('platform.system', return_value='Windows'):
-            with patch('shutil.which', return_value=True):
-                with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
-                    assert builder.check_prerequisites() is True
+        builder.system = 'Windows'
+        with patch('shutil.which', return_value=True):
+            with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
+                assert builder.check_prerequisites() is True
 
     def test_missing_commands(self, builder):
-        with patch('platform.system', return_value='Linux'):
-            with patch('shutil.which', return_value=None):
-                assert builder.check_prerequisites() is False
+        builder.system = 'Linux'
+        with patch('shutil.which', return_value=None):
+            assert builder.check_prerequisites() is False
 
-    def test_low_disk_space(self, builder):
-        with patch('platform.system', return_value='Linux'):
-            with patch('shutil.which', return_value=True):
-                with patch('shutil.disk_usage', return_value=MagicMock(free=10*1024**3)):
-                    assert builder.check_prerequisites() is False
+    def test_low_disk_space(self, builder, caplog):
+        builder.system = 'Linux'
+        with patch('shutil.which', return_value=True):
+            with patch('shutil.disk_usage', return_value=MagicMock(free=10*1024**3)):
+                with caplog.at_level(logging.WARNING):
+                    result = builder.check_prerequisites()
+                assert result is True
+                assert "Low disk space" in caplog.text
 
     def test_cross_compile_missing_toolchain(self, builder):
+        builder.system = 'Linux'
         builder.config.set('cross_compile', True)
         builder.config.set('architecture', 'aarch64')
-        with patch('platform.system', return_value='Linux'):
-            with patch('shutil.which', return_value=None):
-                with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
-                    # The method returns True even with a warning
-                    assert builder.check_prerequisites() is True
+        def which_side_effect(cmd):
+            if cmd == 'aarch64-linux-gnu-gcc':
+                return None
+            return '/usr/bin/' + cmd
+        with patch('shutil.which', side_effect=which_side_effect):
+            with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
+                assert builder.check_prerequisites() is True
 
     def test_macos_non_docker(self, builder):
         with patch('os.path.exists', return_value=False):
-            with patch('platform.system', return_value='Darwin'):
-                with patch('shutil.which', return_value=True):
-                    with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
-                        assert builder.check_prerequisites() is True
+            with patch('shutil.which', return_value=True):
+                with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
+                    assert builder.check_prerequisites() is True
 
     def test_build_resume_from(self, builder):
         with patch.object(builder.executor, 'resume_from', return_value=True) as mock_resume:
