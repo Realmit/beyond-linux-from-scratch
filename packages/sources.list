@@ -22,7 +22,7 @@ https://www.python.org/ftp/python/3.14.3/Python-3.14.3.tar.xz
 # LFS Additional Required Packages
 https://www.kernel.org/pub/linux/docs/man-pages/man-pages-6.17.tar.xz
 https://www.iana.org/time-zones/repository/releases/tzdata2026b.tar.gz
-https://www.iana.org/assignments/iana-etc/iana-etc-20260602.tar.gz  # INVALID (original comment: mis à jour)
+https://www.iana.org/assignments/iana-etc/iana-etc-20250602.tar.gz
 https://zlib.net/zlib-1.3.2.tar.gz
 https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
 https://tukaani.org/xz/xz-5.8.2.tar.xz
@@ -32,7 +32,7 @@ https://astron.com/pub/file/file-5.46.tar.gz
 https://mirrors.kernel.org/gnu/readline/readline-8.3.tar.gz
 https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.bz2
 https://mirrors.kernel.org/gnu/m4/m4-1.4.21.tar.xz
-https://mirrors.kernel.org/gnu/bc/bc-7.0.3.tar.xz  # INVALID
+https://mirrors.kernel.org/gnu/bc/bc-1.08.2.tar.gz
 https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
 https://prdownloads.sourceforge.net/tcl/tcl8.6.17-src.tar.gz
 https://prdownloads.sourceforge.net/expect/expect5.45.4.tar.gz
@@ -57,7 +57,7 @@ https://mirrors.kernel.org/gnu/gettext/gettext-0.24.1.tar.xz
 https://mirrors.kernel.org/gnu/bison/bison-3.8.2.tar.xz
 https://mirrors.kernel.org/gnu/grep/grep-3.12.tar.xz
 https://mirrors.kernel.org/gnu/libtool/libtool-2.5.4.tar.xz
-https://www.gnu.org/software/gdbm/gdbm-1.26.tar.gz  # INVALID (original comment: GNU timeout, conservé)
+https://mirrors.kernel.org/gnu/gdbm/gdbm-1.26.tar.gz
 https://mirrors.kernel.org/gnu/gperf/gperf-3.3.tar.gz
 https://prdownloads.sourceforge.net/expat/expat-2.7.4.tar.xz
 https://mirrors.kernel.org/gnu/inetutils/inetutils-2.5.tar.xz
@@ -69,7 +69,7 @@ https://mirrors.kernel.org/gnu/autoconf/autoconf-2.72.tar.xz
 https://mirrors.kernel.org/gnu/automake/automake-1.18.1.tar.xz
 https://www.openssl.org/source/openssl-3.6.1.tar.gz
 https://sourceware.org/ftp/elfutils/0.192/elfutils-0.192.tar.bz2
-https://sourceware.org/libffi/libffi-3.5.2.tar.gz  # INVALID (original comment: 404, à vérifier)
+https://github.com/libffi/libffi/releases/download/v3.4.5/libffi-3.4.5.tar.gz
 https://sqlite.org/2024/sqlite-autoconf-3450000.tar.gz
 
 # Python and Build Tools
@@ -78,7 +78,7 @@ https://files.pythonhosted.org/packages/source/f/flit_core/flit_core-3.12.0.tar.
 https://files.pythonhosted.org/packages/source/p/packaging/packaging-26.0.tar.gz
 https://files.pythonhosted.org/packages/source/w/wheel/wheel-0.46.3.tar.gz
 https://files.pythonhosted.org/packages/source/s/setuptools/setuptools-82.0.0.tar.gz
-https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-1.13.2.tar.gz  # 404, vérifier version
+https://github.com/ninja-build/ninja/archive/refs/tags/v1.13.2.tar.gz
 https://github.com/mesonbuild/meson/releases/download/1.10.1/meson-1.10.1.tar.gz
 https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-34.2.tar.xz
 
@@ -100,11 +100,11 @@ https://github.com/vim/vim/archive/v9.2.0078/vim-9.2.0078.tar.gz
 https://files.pythonhosted.org/packages/source/M/MarkupSafe/markupsafe-3.0.3.tar.gz
 https://files.pythonhosted.org/packages/source/J/Jinja2/jinja2-3.1.6.tar.gz
 https://github.com/systemd/systemd/archive/v259.1/systemd-259.1.tar.gz
-https://savannah.nongnu.org/download/man-db/man-db-2.13.1.tar.xz  # INVALID (original comment: timeout)
+https://ftp.gnu.org/gnu/man-db/man-db-2.13.1.tar.xz
 https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-4.0.6.tar.xz
 https://www.kernel.org/pub/linux/utils/util-linux/v2.41/util-linux-2.41.3.tar.xz
 https://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v1.47.3/e2fsprogs-1.47.3.tar.gz
-https://www.infodrom.org/projects/sysklogd/download/sysklogd-2.7.2.tar.gz  # INVALID (original comment: 404)
+https://github.com/troglobit/sysklogd/archive/v2.7.2.tar.gz
 https://github.com/slicer69/sysvinit/releases/download/3.14/sysvinit-3.14.tar.xz
 
 # ============================================================================
@@ -141,8 +141,8 @@ https://github.com/canonical/lightdm/archive/refs/tags/1.32.0.tar.gz
 # Firefox 128.8.0esr
 https://ftp.mozilla.org/pub/firefox/releases/128.8.0esr/source/firefox-128.8.0esr.source.tar.xz
 
-# LibreOffice 25.8.1 (à vérifier)
-https://download.documentfoundation.org/libreoffice/stable/25.8.1/deb/x86_64/LibreOffice_25.8.1_Linux_x86-64_deb.tar.gz  # INVALID
+# LibreOffice 26.2.4
+https://download.documentfoundation.org/libreoffice/stable/26.2.4/deb/x86_64/LibreOffice_26.2.4_Linux_x86-64_deb.tar.gz
 
 # VLC 3.0.22
 https://get.videolan.org/vlc/3.0.22/vlc-3.0.22.tar.xz
@@ -160,8 +160,8 @@ https://github.com/obsproject/obs-studio/archive/32.0.0.tar.gz
 # Eclipse Temurin JDK 21.0.10
 https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.10_9.tar.gz
 
-# Maven 3.9.9 (à vérifier)
-https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz  # INVALID
+# Maven 3.9.16
+https://dlcdn.apache.org/maven/maven-3/3.9.16/source/apache-maven-3.9.16-src.tar.gz
 
 # Gradle 8.14
 https://services.gradle.org/distributions/gradle-8.14-bin.zip
@@ -178,8 +178,8 @@ https://download.docker.com/linux/static/stable/x86_64/docker-28.3.3.tgz
 # kubectl 1.32.4
 https://dl.k8s.io/release/v1.32.4/bin/linux/amd64/kubectl
 
-# Jenkins 2.500.1 LTS (à vérifier)
-https://get.jenkins.io/war-stable/2.500.1/jenkins.war  # INVALID
+# Jenkins (version 2.555.3)
+https://get.jenkins.io/war-stable/2.555.3/jenkins.war
 
 # JMeter (version 5.6.3)
 https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.6.3.tgz
@@ -360,11 +360,11 @@ https://download.gnome.org/sources/libxml2/2.14/libxml2-2.14.0.tar.xz
 # libxslt 1.1.42
 https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.42.tar.xz
 
-# MIT Kerberos 1.21.4 (à vérifier)
-https://web.mit.edu/kerberos/dist/krb5/1.21/krb5-1.21.4.tar.gz  # INVALID
+# MIT Kerberos 1.21.3
+https://web.mit.edu/kerberos/dist/krb5/1.21/krb5-1.21.3.tar.gz
 
-# c-ares 1.36.1 (à vérifier)
-https://c-ares.org/download/c-ares-1.36.1.tar.gz  # INVALID
+# c-ares 1.34.6
+https://github.com/c-ares/c-ares/releases/download/v1.34.6/c-ares-1.34.6.tar.gz
 
 # ============================================================================
 # WEB BROWSERS
@@ -422,7 +422,7 @@ https://download.gnome.org/sources/evolution-data-server/3.52/evolution-data-ser
 # Lynx (déjà présent)
 # Links (déjà présent)
 # w3m (à vérifier)
-https://github.com/tats/w3m/archive/v0.5.3.tar.gz  # INVALID
+https://github.com/tats/w3m/archive/master.tar.gz
 
 # ============================================================================
 # DOWNLOAD MANAGERS
@@ -460,8 +460,8 @@ https://aomediacodec.github.io/av1-spec/av1-spec.pdf  # INVALID
 # libwebp
 https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.5.0.tar.gz
 
-# startup-notification (à vérifier)
-https://www.freedesktop.org/software/startup-notification/releases/startup-notification-0.12.tar.gz  # INVALID
+# startup-notification
+https://www.freedesktop.org/software/startup-notification/releases/startup-notification-0.12.tar.gz
 
 # ============================================================================
 # REMOTE ACCESS TOOLS
