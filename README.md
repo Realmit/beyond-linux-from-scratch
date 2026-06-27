@@ -1231,6 +1231,26 @@ For more details, see the [Failed Step](troubleshoot.md).
 
 ![LFS Wallpaper with Logo](images/lfs-wallpaper-5.png)
 
+![LFS Wallpaper with Logo](images/lfs-wallpaper-6.png)
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-7.png)
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-8.png)
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-9.png)
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-10.png)
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-11.png)
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-12.png)
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-13.png)
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-14.png)
+
+![LFS Wallpaper with Logo](images/lfs-wallpaper-15.png)
+
 ---
 
 ## tests
