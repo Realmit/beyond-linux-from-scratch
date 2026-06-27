@@ -166,8 +166,8 @@ https://dlcdn.apache.org/maven/maven-3/3.9.16/source/apache-maven-3.9.16-src.tar
 # Gradle 8.14
 https://services.gradle.org/distributions/gradle-8.14-bin.zip
 
-# Tomcat 10.1.39 (à vérifier)
-https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.39/bin/apache-tomcat-10.1.39.tar.gz  # INVALID
+# Tomcat 10.1.56
+https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.56/bin/apache-tomcat-10.1.56.tar.gz
 
 # Node.js 22.15.0 LTS
 https://nodejs.org/dist/v22.15.0/node-v22.15.0-linux-x64.tar.xz
