@@ -1292,7 +1292,7 @@ chmod +x mac-lfs-builder.sh
 
 ```bash
 # Run all tests
-python -m pytest tests/ -v
+python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html
 ```
 
 **Built with ❤️ for the LFS community**
