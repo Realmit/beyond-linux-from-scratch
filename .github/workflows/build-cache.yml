@@ -37,40 +37,34 @@ jobs:
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
 
-      # Patcher les scripts pour ignorer texinfo/makeinfo (CI)
-      - name: Patch host-check.sh to skip texinfo/makeinfo checks in CI
+      # 1. Patcher host-check pour ignorer texinfo/makeinfo (CI)
+      - name: Patch host-check.sh
         run: |
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
 
-      # S'assurer que host/04-build-toolchain.sh se relance en tant que lfs si exécuté en root
-      # (ajouter le bloc si nécessaire)
-      - name: Ensure toolchain script switches to lfs user
+      # 2. Patcher host/04-build-toolchain.sh pour se relancer en lfs si exécuté en root
+      - name: Patch toolchain to switch to lfs
         run: |
-          if ! grep -q "exec sudo -E -u lfs" host/04-build-toolchain.sh; then
-            sed -i '1i if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Running as root, switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
-          fi
+          # Insère le bloc de commutation après la première ligne (shebang)
+          sed -i '1a if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
 
-      # Préparer l'hôte en root (crée l'utilisateur lfs et les répertoires)
+      # 3. Préparer l'hôte : créer l'utilisateur lfs et les répertoires (root)
       - name: Prepare host system (as root)
         run: |
           sudo -E host/02-prepare-host.sh
         env:
           LFS: /tmp/lfs-build/image
 
-      # Copier tout le dépôt dans un endroit accessible par lfs (et root)
-      - name: Copy repository to /tmp/lfs-builder
+      # 4. Rendre le dépôt accessible à l'utilisateur lfs (pour le moment où le script toolchain se relance)
+      - name: Set permissions for lfs user
         run: |
-          sudo mkdir -p /tmp/lfs-builder
-          sudo cp -a . /tmp/lfs-builder/
-          sudo chown -R lfs:lfs /tmp/lfs-builder
-          sudo chmod -R a+rX /tmp/lfs-builder
+          sudo chmod -R a+rX .
 
-      # Exécuter le builder en root (les scripts qui doivent être en lfs se relanceront)
+      # 5. Lancer le builder en root (les scripts qui nécessitent lfs basculeront automatiquement)
       - name: Build profile (as root)
         id: build
         run: |
-          cd /tmp/lfs-builder
           sudo python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
