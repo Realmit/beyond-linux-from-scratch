@@ -8,6 +8,7 @@ log_info()  { echo -e "\033[0;32m[INFO]\033[0m $1"; }
 log_success(){ echo -e "\033[0;34m[SUCCESS]\033[0m $1"; }
 log_error()  { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
 
+# Répertoires : utilise le même chemin que le builder
 SOURCES_DIR="/output/sources"
 INSTALL_DIR="/opt"
 JAVA_HOME="/opt/jdk"
@@ -30,21 +31,21 @@ install_java() {
 
     if [ ! -f "$SOURCES_DIR/$JDK_FILE" ]; then
         log_info "Downloading JDK..."
-        wget -q "$JDK_URL" -O "$SOURCES_DIR/$JDK_FILE"
+        sudo wget -q "$JDK_URL" -O "$SOURCES_DIR/$JDK_FILE"
     fi
 
-    tar -xzf "$SOURCES_DIR/$JDK_FILE" -C "$INSTALL_DIR"
-    # Le dossier extrait s'appelle jdk-21.0.9+10 (ou similaire)
+    # Extraire avec sudo dans /opt
+    sudo tar -xzf "$SOURCES_DIR/$JDK_FILE" -C "$INSTALL_DIR"
     EXTRACTED_DIR=$(tar -tf "$SOURCES_DIR/$JDK_FILE" | head -1 | cut -d/ -f1)
-    mv "$INSTALL_DIR/$EXTRACTED_DIR" "$JAVA_HOME"
+    sudo mv "$INSTALL_DIR/$EXTRACTED_DIR" "$JAVA_HOME"
 
-    # Set environment variables
-    cat > /etc/profile.d/java.sh << 'EOF'
+    # Variables d'environnement (accessibles à tous)
+    sudo tee /etc/profile.d/java.sh << 'EOF' > /dev/null
 export JAVA_HOME=/opt/jdk
 export PATH=$JAVA_HOME/bin:$PATH
 EOF
 
-    chmod +x /etc/profile.d/java.sh
+    sudo chmod +x /etc/profile.d/java.sh
     source /etc/profile.d/java.sh
 
     log_success "Java installed: $(java -version 2>&1 | head -n1)"
@@ -60,19 +61,19 @@ install_maven() {
 
     if [ ! -f "$SOURCES_DIR/$MVN_FILE" ]; then
         log_info "Downloading Maven..."
-        wget -q "$MVN_URL" -O "$SOURCES_DIR/$MVN_FILE"
+        sudo wget -q "$MVN_URL" -O "$SOURCES_DIR/$MVN_FILE"
     fi
 
-    tar -xzf "$SOURCES_DIR/$MVN_FILE" -C "$INSTALL_DIR"
+    sudo tar -xzf "$SOURCES_DIR/$MVN_FILE" -C "$INSTALL_DIR"
     EXTRACTED_DIR=$(tar -tf "$SOURCES_DIR/$MVN_FILE" | head -1 | cut -d/ -f1)
-    mv "$INSTALL_DIR/$EXTRACTED_DIR" "$MAVEN_HOME"
+    sudo mv "$INSTALL_DIR/$EXTRACTED_DIR" "$MAVEN_HOME"
 
-    cat > /etc/profile.d/maven.sh << 'EOF'
+    sudo tee /etc/profile.d/maven.sh << 'EOF' > /dev/null
 export MAVEN_HOME=/opt/maven
 export PATH=$MAVEN_HOME/bin:$PATH
 EOF
 
-    chmod +x /etc/profile.d/maven.sh
+    sudo chmod +x /etc/profile.d/maven.sh
     log_success "Maven installed"
 }
 
@@ -86,19 +87,19 @@ install_gradle() {
 
     if [ ! -f "$SOURCES_DIR/$GRADLE_FILE" ]; then
         log_info "Downloading Gradle..."
-        wget -q "$GRADLE_URL" -O "$SOURCES_DIR/$GRADLE_FILE"
+        sudo wget -q "$GRADLE_URL" -O "$SOURCES_DIR/$GRADLE_FILE"
     fi
 
-    unzip -q "$SOURCES_DIR/$GRADLE_FILE" -d "$INSTALL_DIR"
+    sudo unzip -q "$SOURCES_DIR/$GRADLE_FILE" -d "$INSTALL_DIR"
     EXTRACTED_DIR=$(unzip -l "$SOURCES_DIR/$GRADLE_FILE" | head -4 | tail -1 | awk '{print $4}' | cut -d/ -f1)
-    mv "$INSTALL_DIR/$EXTRACTED_DIR" "$GRADLE_HOME"
+    sudo mv "$INSTALL_DIR/$EXTRACTED_DIR" "$GRADLE_HOME"
 
-    cat > /etc/profile.d/gradle.sh << 'EOF'
+    sudo tee /etc/profile.d/gradle.sh << 'EOF' > /dev/null
 export GRADLE_HOME=/opt/gradle
 export PATH=$GRADLE_HOME/bin:$PATH
 EOF
 
-    chmod +x /etc/profile.d/gradle.sh
+    sudo chmod +x /etc/profile.d/gradle.sh
     log_success "Gradle installed"
 }
 
@@ -112,18 +113,18 @@ install_tomcat() {
 
     if [ ! -f "$SOURCES_DIR/$TOMCAT_FILE" ]; then
         log_info "Downloading Tomcat..."
-        wget -q "$TOMCAT_URL" -O "$SOURCES_DIR/$TOMCAT_FILE"
+        sudo wget -q "$TOMCAT_URL" -O "$SOURCES_DIR/$TOMCAT_FILE"
     fi
 
-    tar -xzf "$SOURCES_DIR/$TOMCAT_FILE" -C "$INSTALL_DIR"
+    sudo tar -xzf "$SOURCES_DIR/$TOMCAT_FILE" -C "$INSTALL_DIR"
     EXTRACTED_DIR=$(tar -tf "$SOURCES_DIR/$TOMCAT_FILE" | head -1 | cut -d/ -f1)
-    mv "$INSTALL_DIR/$EXTRACTED_DIR" "$TOMCAT_HOME"
+    sudo mv "$INSTALL_DIR/$EXTRACTED_DIR" "$TOMCAT_HOME"
 
-    groupadd -r tomcat 2>/dev/null || true
-    useradd -r -g tomcat -d "$TOMCAT_HOME" tomcat 2>/dev/null || true
-    chown -R tomcat:tomcat "$TOMCAT_HOME"
+    sudo groupadd -r tomcat 2>/dev/null || true
+    sudo useradd -r -g tomcat -d "$TOMCAT_HOME" tomcat 2>/dev/null || true
+    sudo chown -R tomcat:tomcat "$TOMCAT_HOME"
 
-    cat > /etc/systemd/system/tomcat.service << 'EOF'
+    sudo tee /etc/systemd/system/tomcat.service << 'EOF' > /dev/null
 [Unit]
 Description=Apache Tomcat Web Application Container
 After=network.target
@@ -143,7 +144,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 EOF
 
-    systemctl daemon-reload
+    sudo systemctl daemon-reload
     log_success "Tomcat installed"
 }
 
@@ -157,17 +158,17 @@ install_jenkins() {
 
     if [ ! -f "$SOURCES_DIR/$JENKINS_WAR" ]; then
         log_info "Downloading Jenkins..."
-        wget -q "$JENKINS_URL" -O "$SOURCES_DIR/$JENKINS_WAR"
+        sudo wget -q "$JENKINS_URL" -O "$SOURCES_DIR/$JENKINS_WAR"
     fi
 
-    mkdir -p "$JENKINS_HOME"
-    cp "$SOURCES_DIR/$JENKINS_WAR" "$JENKINS_HOME/"
+    sudo mkdir -p "$JENKINS_HOME"
+    sudo cp "$SOURCES_DIR/$JENKINS_WAR" "$JENKINS_HOME/"
 
-    groupadd -r jenkins 2>/dev/null || true
-    useradd -r -g jenkins -d "$JENKINS_HOME" jenkins 2>/dev/null || true
-    chown -R jenkins:jenkins "$JENKINS_HOME"
+    sudo groupadd -r jenkins 2>/dev/null || true
+    sudo useradd -r -g jenkins -d "$JENKINS_HOME" jenkins 2>/dev/null || true
+    sudo chown -R jenkins:jenkins "$JENKINS_HOME"
 
-    cat > /etc/systemd/system/jenkins.service << 'EOF'
+    sudo tee /etc/systemd/system/jenkins.service << 'EOF' > /dev/null
 [Unit]
 Description=Jenkins Continuous Integration Server
 After=network.target
@@ -184,7 +185,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 EOF
 
-    systemctl daemon-reload
+    sudo systemctl daemon-reload
     log_success "Jenkins installed"
 }
 
@@ -198,16 +199,16 @@ install_docker() {
 
     if [ ! -f "$SOURCES_DIR/$DOCKER_FILE" ]; then
         log_info "Downloading Docker..."
-        wget -q "$DOCKER_URL" -O "$SOURCES_DIR/$DOCKER_FILE"
+        sudo wget -q "$DOCKER_URL" -O "$SOURCES_DIR/$DOCKER_FILE"
     fi
 
-    tar -xzf "$SOURCES_DIR/$DOCKER_FILE" -C "$INSTALL_DIR"
-    mv "$INSTALL_DIR/docker" "$DOCKER_HOME"
+    sudo tar -xzf "$SOURCES_DIR/$DOCKER_FILE" -C "$INSTALL_DIR"
+    sudo mv "$INSTALL_DIR/docker" "$DOCKER_HOME"
 
-    ln -sf "$DOCKER_HOME/docker" /usr/local/bin/docker
-    ln -sf "$DOCKER_HOME/dockerd" /usr/local/bin/dockerd
+    sudo ln -sf "$DOCKER_HOME/docker" /usr/local/bin/docker
+    sudo ln -sf "$DOCKER_HOME/dockerd" /usr/local/bin/dockerd
 
-    groupadd -r docker 2>/dev/null || true
+    sudo groupadd -r docker 2>/dev/null || true
     log_success "Docker installed"
 }
 
@@ -220,10 +221,10 @@ install_kubectl() {
 
     if [ ! -f "$SOURCES_DIR/kubectl" ]; then
         log_info "Downloading kubectl..."
-        wget -q "$KUBECTL_URL" -O "$SOURCES_DIR/kubectl"
+        sudo wget -q "$KUBECTL_URL" -O "$SOURCES_DIR/kubectl"
     fi
 
-    install -m 755 "$SOURCES_DIR/kubectl" /usr/local/bin/kubectl
+    sudo install -m 755 "$SOURCES_DIR/kubectl" /usr/local/bin/kubectl
     log_success "kubectl installed"
 }
 
@@ -253,8 +254,8 @@ main() {
     echo "  - kubectl                : /usr/local/bin/kubectl"
     echo ""
     echo "To enable services:"
-    echo "  systemctl enable tomcat"
-    echo "  systemctl enable jenkins"
+    echo "  sudo systemctl enable tomcat"
+    echo "  sudo systemctl enable jenkins"
     echo "  # (Docker daemon is not auto-started; use 'dockerd' manually or set up a service)"
     echo ""
     echo "Environment variables are set in /etc/profile.d/ (java.sh, maven.sh, gradle.sh)"
