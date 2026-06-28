@@ -85,7 +85,6 @@ run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 # ------------------------------------------------------------------
 log_info "Copying /bin/bash and its dependencies (FORCED)"
 
-# 1. Copier bash
 BASH_SRC="/bin/bash"
 if [ ! -f "$BASH_SRC" ]; then
     BASH_SRC="/usr/bin/bash"
@@ -94,11 +93,12 @@ if [ ! -f "$BASH_SRC" ]; then
     log_error "bash not found on host"
     exit 1
 fi
+
 log_info "Copying $BASH_SRC -> $LFS/bin/bash"
 cp -L -v "$BASH_SRC" "$LFS/bin/bash"
 chmod +x "$LFS/bin/bash"
 
-# 2. Copier toutes les libs de bash
+# Copier toutes les libs de bash
 ldd "$BASH_SRC" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
     dest_dir="$LFS/lib"
     [[ "$lib" == *"/lib64/"* ]] && dest_dir="$LFS/lib64"
@@ -106,7 +106,7 @@ ldd "$BASH_SRC" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; d
     cp -v "$lib" "$dest_dir/"
 done
 
-# 3. Copier ld-linux (interpréteur)
+# Copier ld-linux (interpréteur)
 if [ -f "/lib64/ld-linux-x86-64.so.2" ]; then
     mkdir -p "$LFS/lib64"
     cp -v /lib64/ld-linux-x86-64.so.2 "$LFS/lib64/"
@@ -115,11 +115,11 @@ elif [ -f "/lib/ld-linux-x86-64.so.2" ]; then
     cp -v /lib/ld-linux-x86-64.so.2 "$LFS/lib/"
 fi
 
-# 4. Copier la glibc (au cas où)
+# Copier la glibc (au cas où)
 cp -rv /lib/x86_64-linux-gnu/* "$LFS/lib/" 2>/dev/null || true
 cp -rv /lib64/* "$LFS/lib64/" 2>/dev/null || true
 
-# 5. Vérification
+# Vérification
 if [ ! -f "$LFS/bin/bash" ]; then
     log_error "bash not found in $LFS/bin"
     exit 1
@@ -129,12 +129,12 @@ if [ ! -f "$LFS/lib64/ld-linux-x86-64.so.2" ] && [ ! -f "$LFS/lib/ld-linux-x86-6
     exit 1
 fi
 
-# 6. Fichiers de config
+# Fichiers de config
 cp -v /etc/passwd "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/group "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/hosts "$LFS/etc/" 2>/dev/null || true
 
-# 7. Script interne
+# Script interne
 cat > $LFS/build-basic.sh << 'INNEREOF'
 #!/bin/bash
 set -e
@@ -144,11 +144,11 @@ echo "Basic system build complete (placeholder)"
 INNEREOF
 chmod +x $LFS/build-basic.sh
 
-# 8. Chroot
+# Chroot
 log_info "Entering chroot..."
 run_privileged chroot "$LFS" /bin/bash /build-basic.sh
 
-# 9. Nettoyage
+# Nettoyage
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
 run_privileged umount $LFS/proc 2>/dev/null || true
