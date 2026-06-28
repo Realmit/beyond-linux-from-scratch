@@ -50,7 +50,6 @@ jobs:
       # 2. Patcher host/04-build-toolchain.sh pour se relancer en lfs si exécuté en root
       - name: Patch toolchain to switch to lfs
         run: |
-          # Insère le bloc de commutation après la première ligne (shebang)
           sed -i '1a if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
 
       # 3. Préparer l'hôte : créer l'utilisateur lfs et les répertoires (root)
@@ -60,12 +59,17 @@ jobs:
         env:
           LFS: /tmp/lfs-build/image
 
-      # 4. Rendre le dépôt accessible à l'utilisateur lfs (pour le moment où le script toolchain se relance)
-      - name: Set permissions for lfs user
+      # 4. Donner à l'utilisateur lfs la propriété du répertoire de sortie
+      - name: Set ownership of output directory for lfs
+        run: |
+          sudo chown -R lfs:lfs /tmp/lfs-build
+
+      # 5. Rendre le dépôt accessible à l'utilisateur lfs (pour le moment où le script toolchain se relance)
+      - name: Set repository permissions for lfs user
         run: |
           sudo chmod -R a+rX .
 
-      # 5. Lancer le builder en root (les scripts qui nécessitent lfs basculeront automatiquement)
+      # 6. Lancer le builder en root (les scripts qui nécessitent lfs basculeront automatiquement)
       - name: Build profile (as root)
         id: build
         run: |
