@@ -1,7 +1,9 @@
 #!/bin/bash
 # Build basic LFS system - Compatible with Docker and native Linux
 set -e
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 if [ -f "$SCRIPT_DIR/../common/utils.sh" ]; then
     source "$SCRIPT_DIR/../common/utils.sh"
 else
@@ -10,23 +12,38 @@ else
     log_warning() { echo "[WARNING] $*"; }
     log_success() { echo "[SUCCESS] $*"; }
 fi
+
 IN_DOCKER=false
 if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
     IN_DOCKER=true
     log_info "Running in Docker container"
 fi
+
 if [ "$IN_DOCKER" = true ]; then
     LFS=${LFS:-/output/image}
 else
     LFS=${LFS:-/mnt/lfs}
 fi
+
 if [ -z "$LFS" ]; then
     log_error "LFS variable not set"
     exit 1
 fi
+
+# Fonction pour exécuter les commandes privilégiées (avec sudo si nécessaire)
+run_privileged() {
+    if [ "$(whoami)" = "root" ]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
 log_info "========================================="
 log_info "Building basic LFS system"
 log_info "========================================="
+
+# Docker mode
 if [ "$IN_DOCKER" = true ]; then
     log_info "Running in Docker mode - creating minimal LFS structure"
     mkdir -pv $LFS/{bin,boot,dev,etc,home,lib,lib64,media,mnt,opt,proc,root,run,sbin,srv,sys,tmp,usr,var}
@@ -35,54 +52,98 @@ if [ "$IN_DOCKER" = true ]; then
     mkdir -pv $LFS/etc/{profile.d,sysconfig,skel,init.d}
     chmod -v 1777 $LFS/tmp 2>/dev/null || true
     chmod -v 1777 $LFS/var/tmp 2>/dev/null || true
+
     cat > $LFS/etc/passwd << 'PASSWD'
 root:x:0:0:root:/root:/bin/bash
 nobody:x:65534:65534:nobody:/:/bin/false
 PASSWD
+
     cat > $LFS/etc/group << 'GROUP'
 root:x:0:
 nobody:x:65534:
 GROUP
+
     cat > $LFS/etc/hosts << 'HOSTS'
 127.0.0.1 localhost
 ::1 localhost
 HOSTS
+
     log_success "Minimal LFS system structure created in Docker"
     exit 0
 fi
+
+# Native mode – full chroot environment
 log_info "Native mode - building basic LFS system with chroot"
-# (ici le code natif complet avec montages, copie des binaires, etc.)
-# Pour éviter la duplication, on peut juste laisser le reste mais il ne sera jamais atteint en Docker.
-# Mais je vais inclure une version simplifiée pour le mode natif.
+
 mkdir -pv $LFS/{dev,proc,sys,run,etc,home,root,boot,usr,var,lib64,bin,sbin,tmp}
 mkdir -pv $LFS/usr/{bin,lib,sbin,include,share}
-mount --bind /dev $LFS/dev 2>/dev/null || true
-mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
-mount -t proc proc $LFS/proc 2>/dev/null || true
-mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
-mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
-# Copie des binaires essentiels
-for tool in bash sh ls cp mv mkdir rm cat echo; do
-    if [ -f "/bin/$tool" ]; then cp -v /bin/$tool $LFS/bin/ 2>/dev/null || true; fi
+mkdir -pv $LFS/etc/{profile.d,sysconfig,skel,init.d}
+mkdir -pv $LFS/var/{cache,lib,local,lock,log,opt,run,spool,tmp}
+
+# Monter les systèmes de fichiers virtuels (avec sudo)
+run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
+run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
+run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
+run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
+run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
+
+# Copier les binaires et leurs dépendances
+log_info "Copying essential binaries and libraries..."
+
+binaries=("bash" "sh" "ls" "cp" "mv" "mkdir" "rm" "cat" "echo" "chmod" "chown" "ln" "sed" "grep" "find" "tar" "gzip")
+
+for tool in "${binaries[@]}"; do
+    src_path=$(which "$tool" 2>/dev/null || echo "/bin/$tool")
+    if [ -f "$src_path" ]; then
+        # Copier le vrai fichier (suivre les liens)
+        cp -L -v "$src_path" "$LFS/bin/" 2>/dev/null || true
+        # Copier les bibliothèques nécessaires
+        ldd "$src_path" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+            lib_name=$(basename "$lib")
+            dest_dir="$LFS/lib"
+            if [[ "$lib" == *"/lib64/"* ]]; then
+                dest_dir="$LFS/lib64"
+            fi
+            mkdir -p "$dest_dir"
+            cp -v "$lib" "$dest_dir/" 2>/dev/null || true
+        done
+    fi
 done
-# Copie de la libc
+
+# Copier la glibc
 if [ -d "/lib/x86_64-linux-gnu" ]; then
     cp -rv /lib/x86_64-linux-gnu/* $LFS/lib/ 2>/dev/null || true
 fi
-# Créer le script de build dans le chroot
+if [ -d "/lib64" ]; then
+    cp -rv /lib64/* $LFS/lib64/ 2>/dev/null || true
+fi
+
+# Copier les fichiers de configuration
+cp -v /etc/passwd "$LFS/etc/" 2>/dev/null || true
+cp -v /etc/group "$LFS/etc/" 2>/dev/null || true
+cp -v /etc/hosts "$LFS/etc/" 2>/dev/null || true
+
+# Créer le script de construction interne
 cat > $LFS/build-basic.sh << 'INNEREOF'
 #!/bin/bash
 set -e
 echo "Building basic system inside chroot..."
 cd /sources
-# (ici les commandes de build réelles si les sources existent)
-echo "Basic system build complete"
+# (Placez ici les vraies commandes de compilation si besoin)
+echo "Basic system build complete (placeholder)"
 INNEREOF
+
 chmod +x $LFS/build-basic.sh
-chroot "$LFS" /bin/bash /build-basic.sh
-umount $LFS/dev/pts 2>/dev/null || true
-umount $LFS/dev 2>/dev/null || true
-umount $LFS/proc 2>/dev/null || true
-umount $LFS/sys 2>/dev/null || true
-umount $LFS/run 2>/dev/null || true
+
+# Exécuter le chroot (avec sudo)
+log_info "Entering chroot and running build script..."
+run_privileged chroot "$LFS" /bin/bash /build-basic.sh
+
+# Nettoyer
+run_privileged umount $LFS/dev/pts 2>/dev/null || true
+run_privileged umount $LFS/dev 2>/dev/null || true
+run_privileged umount $LFS/proc 2>/dev/null || true
+run_privileged umount $LFS/sys 2>/dev/null || true
+run_privileged umount $LFS/run 2>/dev/null || true
+
 log_success "Basic LFS system build complete!"
