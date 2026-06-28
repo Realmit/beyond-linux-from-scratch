@@ -30,7 +30,6 @@ if [ -z "$LFS" ]; then
     exit 1
 fi
 
-# Fonction pour exécuter les commandes privilégiées
 run_privileged() {
     if [ "$(whoami)" = "root" ]; then
         "$@"
@@ -87,7 +86,7 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copier les binaires essentiels (en suivant les liens) et leurs bibliothèques
+# Copier les binaires essentiels et leurs dépendances
 log_info "Copying essential binaries and libraries..."
 
 binaries=("bash" "sh" "ls" "cp" "mv" "mkdir" "rm" "cat" "echo" "chmod" "chown" "ln" "sed" "grep" "find" "tar" "gzip")
@@ -108,6 +107,21 @@ for tool in "${binaries[@]}"; do
     fi
 done
 
+# Copier explicitement bash et ses dépendances (assure la présence)
+bash_src=$(which bash 2>/dev/null || echo "/bin/bash")
+if [ -f "$bash_src" ]; then
+    cp -L -v "$bash_src" "$LFS/bin/bash" 2>/dev/null || true
+    ldd "$bash_src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+        lib_name=$(basename "$lib")
+        dest_dir="$LFS/lib"
+        if [[ "$lib" == *"/lib64/"* ]]; then
+            dest_dir="$LFS/lib64"
+        fi
+        mkdir -p "$dest_dir"
+        cp -v "$lib" "$dest_dir/" 2>/dev/null || true
+    done
+fi
+
 # Copier la glibc
 if [ -d "/lib/x86_64-linux-gnu" ]; then
     cp -rv /lib/x86_64-linux-gnu/* $LFS/lib/ 2>/dev/null || true
@@ -120,6 +134,12 @@ fi
 cp -v /etc/passwd "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/group "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/hosts "$LFS/etc/" 2>/dev/null || true
+
+# Vérifier que /bin/bash existe dans le chroot
+if [ ! -f "$LFS/bin/bash" ]; then
+    log_error "/bin/bash not found in $LFS/bin"
+    exit 1
+fi
 
 # Créer le script de construction interne
 cat > $LFS/build-basic.sh << 'INNEREOF'
