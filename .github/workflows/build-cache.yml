@@ -46,7 +46,7 @@ jobs:
         id: build
         run: |
           mkdir -p /tmp/lfs-build
-          python3 builder.py \
+          sudo python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
             --output /tmp/lfs-build
