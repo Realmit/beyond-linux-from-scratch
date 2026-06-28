@@ -30,6 +30,14 @@ jobs:
       - name: Show disk space
         run: df -h
 
+      # Copier le dépôt dans un emplacement accessible par l'utilisateur lfs
+      - name: Copy repository to /tmp/lfs-builder
+        run: |
+          sudo mkdir -p /tmp/lfs-builder
+          sudo cp -a . /tmp/lfs-builder/
+          sudo chown -R lfs:lfs /tmp/lfs-builder
+          sudo chmod -R a+rX /tmp/lfs-builder
+
       - name: Cache LFS sources
         uses: actions/cache@v4
         with:
@@ -41,43 +49,26 @@ jobs:
         run: |
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
+        working-directory: /tmp/lfs-builder
 
-      # ------------------------------------------------------------
-      # 1. Préparer l'hôte en tant que root (crée l'utilisateur lfs,
-      #    le répertoire LFS, et les permissions de base)
-      #    La variable LFS est passée explicitement avec sudo -E
-      # ------------------------------------------------------------
+      # Préparer l'hôte (crée l'utilisateur lfs et les répertoires) en root
       - name: Prepare host system (as root)
         run: |
-          sudo -E host/02-prepare-host.sh
+          sudo -E /tmp/lfs-builder/host/02-prepare-host.sh
         env:
           LFS: /tmp/lfs-build/image
 
-      # ------------------------------------------------------------
-      # 2. Créer le répertoire de sortie parent et le donner à lfs
-      # ------------------------------------------------------------
+      # Créer le répertoire de sortie et le donner à lfs
       - name: Create output directory and set ownership
         run: |
           sudo mkdir -p /tmp/lfs-build
           sudo chown -R lfs:lfs /tmp/lfs-build
 
-      # ------------------------------------------------------------
-      # 3. Rendre tout le dépôt lisible/exécutable pour l'utilisateur lfs
-      #    (y compris le répertoire courant)
-      # ------------------------------------------------------------
-      - name: Fix repository permissions for lfs user
-        run: |
-          sudo chmod -R a+rX .
-          # Vérification : afficher les permissions de builder.py
-          ls -la builder.py || echo "builder.py not found"
-
-      # ------------------------------------------------------------
-      # 4. Lancer le builder en tant que lfs, en reprenant à disk-image
-      #    (host-check et host-prepare déjà effectués)
-      # ------------------------------------------------------------
+      # Lancer le builder en tant que lfs, depuis le répertoire copié
       - name: Build profile (as lfs user)
         id: build
         run: |
+          cd /tmp/lfs-builder
           sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
