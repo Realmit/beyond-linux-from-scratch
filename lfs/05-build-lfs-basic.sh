@@ -74,6 +74,7 @@ fi
 # Mode natif – environnement chroot complet
 log_info "Native mode - building basic LFS system with chroot"
 
+# Créer les répertoires de base
 mkdir -pv $LFS/{dev,proc,sys,run,etc,home,root,boot,usr,var,lib64,bin,sbin,tmp}
 mkdir -pv $LFS/usr/{bin,lib,sbin,include,share}
 mkdir -pv $LFS/etc/{profile.d,sysconfig,skel,init.d}
@@ -86,53 +87,39 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# --- Copie des binaires et dépendances (avec vérification) ---
-log_info "Copying essential binaries and libraries..."
+# ----------------------------------------------------------------------
+# COPIE EXPLICITE DE /bin/bash ET DE SES DÉPENDANCES
+# ----------------------------------------------------------------------
+log_info "Copying /bin/bash and its dependencies..."
 
-binaries=("bash" "sh" "ls" "cp" "mv" "mkdir" "rm" "cat" "echo" "chmod" "chown" "ln" "sed" "grep" "find" "tar" "gzip")
+# Source de bash : on utilise /bin/bash (existe toujours)
+BASH_SRC="/bin/bash"
+if [ ! -f "$BASH_SRC" ]; then
+    BASH_SRC="/usr/bin/bash"
+fi
 
-for tool in "${binaries[@]}"; do
-    src_path=$(which "$tool" 2>/dev/null || echo "/bin/$tool")
-    if [ -f "$src_path" ]; then
-        log_info "Copying $tool from $src_path"
-        cp -L -v "$src_path" "$LFS/bin/" || log_error "Failed to copy $tool"
-        ldd "$src_path" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
-            lib_name=$(basename "$lib")
-            dest_dir="$LFS/lib"
-            if [[ "$lib" == *"/lib64/"* ]]; then
-                dest_dir="$LFS/lib64"
-            fi
-            mkdir -p "$dest_dir"
-            cp -v "$lib" "$dest_dir/" || log_warning "Failed to copy $lib"
-        done
-    else
-        log_warning "Source not found: $src_path"
-    fi
-done
-
-# Copie explicite de /bin/bash (assure la présence)
-bash_src=$(which bash 2>/dev/null || echo "/bin/bash")
-if [ -f "$bash_src" ]; then
-    log_info "Copying bash from $bash_src"
-    cp -L -v "$bash_src" "$LFS/bin/bash" || log_error "Failed to copy bash"
+if [ -f "$BASH_SRC" ]; then
+    log_info "Found bash at $BASH_SRC"
+    # Copier le binaire (suivre les liens)
+    cp -L -v "$BASH_SRC" "$LFS/bin/bash"
     chmod +x "$LFS/bin/bash"
-    ldd "$bash_src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+    # Copier toutes les bibliothèques nécessaires (ldd)
+    ldd "$BASH_SRC" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
         lib_name=$(basename "$lib")
         dest_dir="$LFS/lib"
         if [[ "$lib" == *"/lib64/"* ]]; then
             dest_dir="$LFS/lib64"
         fi
         mkdir -p "$dest_dir"
-        cp -v "$lib" "$dest_dir/" || log_warning "Failed to copy $lib"
+        cp -v "$lib" "$dest_dir/"
     done
 else
     log_error "bash not found on host"
     exit 1
 fi
 
-# Copier l'interpréteur dynamique (ld-linux) explicitement
+# Copier l'interpréteur dynamique (ld-linux)
 if [ -f "/lib64/ld-linux-x86-64.so.2" ]; then
-    log_info "Copying ld-linux"
     mkdir -p "$LFS/lib64"
     cp -v /lib64/ld-linux-x86-64.so.2 "$LFS/lib64/"
 elif [ -f "/lib/ld-linux-x86-64.so.2" ]; then
@@ -140,7 +127,7 @@ elif [ -f "/lib/ld-linux-x86-64.so.2" ]; then
     cp -v /lib/ld-linux-x86-64.so.2 "$LFS/lib/"
 fi
 
-# Copier la glibc au complet (sécurité)
+# Copier la glibc au complet (pour être sûr)
 if [ -d "/lib/x86_64-linux-gnu" ]; then
     cp -rv /lib/x86_64-linux-gnu/* "$LFS/lib/" 2>/dev/null || true
 fi
@@ -148,22 +135,39 @@ if [ -d "/lib64" ]; then
     cp -rv /lib64/* "$LFS/lib64/" 2>/dev/null || true
 fi
 
-# Copier les fichiers de configuration
-cp -v /etc/passwd "$LFS/etc/" || log_warning "Could not copy passwd"
-cp -v /etc/group "$LFS/etc/" || log_warning "Could not copy group"
-cp -v /etc/hosts "$LFS/etc/" || log_warning "Could not copy hosts"
+# Copier quelques autres binaires utiles (optionnel)
+for tool in sh ls cp mv mkdir rm cat echo chmod chown ln sed grep find tar gzip; do
+    src=$(which "$tool" 2>/dev/null || echo "/bin/$tool")
+    if [ -f "$src" ]; then
+        cp -L -v "$src" "$LFS/bin/" 2>/dev/null || true
+        ldd "$src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+            lib_name=$(basename "$lib")
+            dest_dir="$LFS/lib"
+            if [[ "$lib" == *"/lib64/"* ]]; then
+                dest_dir="$LFS/lib64"
+            fi
+            mkdir -p "$dest_dir"
+            cp -v "$lib" "$dest_dir/" 2>/dev/null || true
+        done
+    fi
+done
 
-# Vérification avant chroot
+# Copier les fichiers de configuration
+cp -v /etc/passwd "$LFS/etc/" 2>/dev/null || true
+cp -v /etc/group "$LFS/etc/" 2>/dev/null || true
+cp -v /etc/hosts "$LFS/etc/" 2>/dev/null || true
+
+# Vérification finale
 if [ ! -f "$LFS/bin/bash" ]; then
-    log_error "/bin/bash not found in $LFS/bin"
+    log_error "/bin/bash still not present in $LFS/bin"
     exit 1
 fi
 if [ ! -f "$LFS/lib64/ld-linux-x86-64.so.2" ] && [ ! -f "$LFS/lib/ld-linux-x86-64.so.2" ]; then
-    log_error "ld-linux not found in $LFS (lib64 or lib)"
+    log_error "ld-linux not found in $LFS/lib64 or $LFS/lib"
     exit 1
 fi
 
-# Créer le script de construction interne
+# Créer le script de construction interne (placeholder)
 cat > $LFS/build-basic.sh << 'INNEREOF'
 #!/bin/bash
 set -e
@@ -171,7 +175,6 @@ echo "Building basic system inside chroot..."
 cd /sources
 echo "Basic system build complete (placeholder)"
 INNEREOF
-
 chmod +x $LFS/build-basic.sh
 
 # Exécuter le chroot
