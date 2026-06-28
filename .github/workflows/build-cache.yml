@@ -39,16 +39,12 @@ jobs:
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
 
-      - name: Patch host-check to skip texinfo verification in CI
+      - name: Debug texinfo
         run: |
-          # Sauvegarde du script original
-          cp host/01-check-host.sh host/01-check-host.sh.orig
-          # Ajout d'une condition au début du script pour sauter si GITHUB_ACTIONS est défini
-          sed -i '1i if [ -n "$GITHUB_ACTIONS" ]; then echo "GitHub Actions: skipping texinfo check"; exit 0; fi' host/01-check-host.sh
-          # Ou plus précisément : commenter l'appel à check_required_commands texinfo
-          # (selon la structure du script)
-          # Exemple : remplacer la ligne contenant "check_required_commands texinfo" par un echo
-          sed -i 's/check_required_commands texinfo/echo "Skipping texinfo check in CI"/' host/01-check-host.sh
+          echo "PATH=$PATH"
+          which texinfo || echo "texinfo not found"
+          which makeinfo || echo "makeinfo not found"
+          texinfo --version || echo "texinfo command failed"
 
       - name: Build profile (without sudo if possible)
         id: build
