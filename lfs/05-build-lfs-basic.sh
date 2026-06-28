@@ -80,11 +80,12 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# ------------------------------------------------------------------
-# COPIE FORCÉE DE /bin/bash ET DE L'INTERPRÉTEUR
-# ------------------------------------------------------------------
+# ============================================================
+# COPIE EXPLICITE DE BASH ET DE L'INTERPRÉTEUR
+# ============================================================
 log_info "Copying /bin/bash and its dependencies (FORCED)"
 
+# 1. Copier bash depuis /bin/bash (ou /usr/bin/bash)
 BASH_SRC="/bin/bash"
 if [ ! -f "$BASH_SRC" ]; then
     BASH_SRC="/usr/bin/bash"
@@ -98,15 +99,19 @@ log_info "Copying $BASH_SRC -> $LFS/bin/bash"
 cp -L -v "$BASH_SRC" "$LFS/bin/bash"
 chmod +x "$LFS/bin/bash"
 
-# Copier toutes les libs de bash
+# 2. Copier toutes les bibliothèques de bash
+log_info "Copying libraries for bash"
 ldd "$BASH_SRC" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
     dest_dir="$LFS/lib"
-    [[ "$lib" == *"/lib64/"* ]] && dest_dir="$LFS/lib64"
+    if [[ "$lib" == *"/lib64/"* ]]; then
+        dest_dir="$LFS/lib64"
+    fi
     mkdir -p "$dest_dir"
     cp -v "$lib" "$dest_dir/"
 done
 
-# Copier ld-linux (interpréteur)
+# 3. Copier l'interpréteur dynamique (ld-linux)
+log_info "Copying ld-linux interpreter"
 if [ -f "/lib64/ld-linux-x86-64.so.2" ]; then
     mkdir -p "$LFS/lib64"
     cp -v /lib64/ld-linux-x86-64.so.2 "$LFS/lib64/"
@@ -115,26 +120,30 @@ elif [ -f "/lib/ld-linux-x86-64.so.2" ]; then
     cp -v /lib/ld-linux-x86-64.so.2 "$LFS/lib/"
 fi
 
-# Copier la glibc (au cas où)
+# 4. Copier la glibc (au cas où)
+log_info "Copying glibc libraries"
 cp -rv /lib/x86_64-linux-gnu/* "$LFS/lib/" 2>/dev/null || true
 cp -rv /lib64/* "$LFS/lib64/" 2>/dev/null || true
 
-# Vérification
+# ============================================================
+# VÉRIFICATION OBLIGATOIRE AVANT CHROOT
+# ============================================================
 if [ ! -f "$LFS/bin/bash" ]; then
-    log_error "bash not found in $LFS/bin"
+    log_error "/bin/bash not found in $LFS/bin"
     exit 1
 fi
 if [ ! -f "$LFS/lib64/ld-linux-x86-64.so.2" ] && [ ! -f "$LFS/lib/ld-linux-x86-64.so.2" ]; then
-    log_error "ld-linux not found in $LFS"
+    log_error "ld-linux not found in $LFS (lib64 or lib)"
     exit 1
 fi
 
-# Fichiers de config
+# ============================================================
+# FICHIERS DE CONFIGURATION ET SCRIPT INTERNE
+# ============================================================
 cp -v /etc/passwd "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/group "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/hosts "$LFS/etc/" 2>/dev/null || true
 
-# Script interne
 cat > $LFS/build-basic.sh << 'INNEREOF'
 #!/bin/bash
 set -e
@@ -144,11 +153,13 @@ echo "Basic system build complete (placeholder)"
 INNEREOF
 chmod +x $LFS/build-basic.sh
 
-# Chroot
+# ============================================================
+# CHROOT
+# ============================================================
 log_info "Entering chroot..."
 run_privileged chroot "$LFS" /bin/bash /build-basic.sh
 
-# Nettoyage
+# Nettoyage des montages
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
 run_privileged umount $LFS/proc 2>/dev/null || true
