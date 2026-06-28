@@ -25,7 +25,6 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential bison flex gawk texinfo wget git python3 python3-pip \
             xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev
-          # Vérification : texinfo fournit makeinfo, pas une commande 'texinfo'
           command -v makeinfo || { echo "makeinfo not found"; exit 1; }
 
       - name: Show disk space
@@ -38,16 +37,13 @@ jobs:
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
 
-      - name: Patch host-check.sh to skip texinfo check in CI
+      - name: Patch host-check.sh to skip texinfo/makeinfo checks in CI
         run: |
-          # Supprimer les vérifications de texinfo et makeinfo (si présentes)
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
-          echo "--- host-check.sh modified ---"
 
       - name: Build profile
         id: build
-        continue-on-error: true
         run: |
           mkdir -p /tmp/lfs-build
           python3 builder.py \
@@ -55,22 +51,14 @@ jobs:
             --init ${{ matrix.init }} \
             --output /tmp/lfs-build
 
-      - name: Show host-check log if build failed
-        if: steps.build.outcome == 'failure'
-        run: |
-          echo "=== host-check.log ==="
-          cat /tmp/lfs-build/logs/host-check.log || echo "Log not found"
-          echo "======================="
-          exit 1
-
       - name: Upload rootfs
-        if: steps.build.outcome == 'success'
+        if: success()
         run: |
           cd /tmp/lfs-build/image
           tar -cJf /tmp/rootfs.tar.xz .
 
       - name: Upload to Release
-        if: steps.build.outcome == 'success'
+        if: success()
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -78,3 +66,14 @@ jobs:
           asset_name: lfs-rootfs-${{ matrix.profile }}-${{ matrix.init }}-${{ matrix.arch }}.tar.xz
           tag: v4.3.0-cache
           overwrite: true
+
+      - name: Show build logs on failure
+        if: failure()
+        run: |
+          echo "=== Global build.log (last 100 lines) ==="
+          tail -n 100 /tmp/lfs-build/logs/build.log 2>/dev/null || echo "build.log not found"
+          echo "=== Stage logs (last 20 lines each) ==="
+          for log in /tmp/lfs-build/logs/*.log; do
+            echo "--- $log ---"
+            tail -n 20 "$log" 2>/dev/null || echo "Cannot read $log"
+          done
