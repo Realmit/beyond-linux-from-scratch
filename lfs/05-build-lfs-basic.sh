@@ -30,7 +30,7 @@ if [ -z "$LFS" ]; then
     exit 1
 fi
 
-# Fonction pour exécuter les commandes privilégiées (avec sudo si nécessaire)
+# Fonction pour exécuter les commandes privilégiées
 run_privileged() {
     if [ "$(whoami)" = "root" ]; then
         "$@"
@@ -43,7 +43,7 @@ log_info "========================================="
 log_info "Building basic LFS system"
 log_info "========================================="
 
-# Docker mode
+# Docker mode – structure minimale
 if [ "$IN_DOCKER" = true ]; then
     log_info "Running in Docker mode - creating minimal LFS structure"
     mkdir -pv $LFS/{bin,boot,dev,etc,home,lib,lib64,media,mnt,opt,proc,root,run,sbin,srv,sys,tmp,usr,var}
@@ -72,7 +72,7 @@ HOSTS
     exit 0
 fi
 
-# Native mode – full chroot environment
+# Mode natif – environnement chroot complet
 log_info "Native mode - building basic LFS system with chroot"
 
 mkdir -pv $LFS/{dev,proc,sys,run,etc,home,root,boot,usr,var,lib64,bin,sbin,tmp}
@@ -80,14 +80,14 @@ mkdir -pv $LFS/usr/{bin,lib,sbin,include,share}
 mkdir -pv $LFS/etc/{profile.d,sysconfig,skel,init.d}
 mkdir -pv $LFS/var/{cache,lib,local,lock,log,opt,run,spool,tmp}
 
-# Monter les systèmes de fichiers virtuels (avec sudo)
+# Monter les systèmes de fichiers virtuels
 run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
 run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
 run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copier les binaires et leurs dépendances
+# Copier les binaires essentiels (en suivant les liens) et leurs bibliothèques
 log_info "Copying essential binaries and libraries..."
 
 binaries=("bash" "sh" "ls" "cp" "mv" "mkdir" "rm" "cat" "echo" "chmod" "chown" "ln" "sed" "grep" "find" "tar" "gzip")
@@ -95,9 +95,7 @@ binaries=("bash" "sh" "ls" "cp" "mv" "mkdir" "rm" "cat" "echo" "chmod" "chown" "
 for tool in "${binaries[@]}"; do
     src_path=$(which "$tool" 2>/dev/null || echo "/bin/$tool")
     if [ -f "$src_path" ]; then
-        # Copier le vrai fichier (suivre les liens)
         cp -L -v "$src_path" "$LFS/bin/" 2>/dev/null || true
-        # Copier les bibliothèques nécessaires
         ldd "$src_path" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
             lib_name=$(basename "$lib")
             dest_dir="$LFS/lib"
@@ -129,17 +127,16 @@ cat > $LFS/build-basic.sh << 'INNEREOF'
 set -e
 echo "Building basic system inside chroot..."
 cd /sources
-# (Placez ici les vraies commandes de compilation si besoin)
 echo "Basic system build complete (placeholder)"
 INNEREOF
 
 chmod +x $LFS/build-basic.sh
 
-# Exécuter le chroot (avec sudo)
-log_info "Entering chroot and running build script..."
+# Exécuter le chroot
+log_info "Entering chroot..."
 run_privileged chroot "$LFS" /bin/bash /build-basic.sh
 
-# Nettoyer
+# Nettoyer les montages
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
 run_privileged umount $LFS/proc 2>/dev/null || true
