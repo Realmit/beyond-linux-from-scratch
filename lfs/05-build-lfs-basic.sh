@@ -86,7 +86,7 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copier les binaires essentiels et leurs dépendances
+# --- Copie des binaires et dépendances (avec vérification) ---
 log_info "Copying essential binaries and libraries..."
 
 binaries=("bash" "sh" "ls" "cp" "mv" "mkdir" "rm" "cat" "echo" "chmod" "chown" "ln" "sed" "grep" "find" "tar" "gzip")
@@ -94,7 +94,8 @@ binaries=("bash" "sh" "ls" "cp" "mv" "mkdir" "rm" "cat" "echo" "chmod" "chown" "
 for tool in "${binaries[@]}"; do
     src_path=$(which "$tool" 2>/dev/null || echo "/bin/$tool")
     if [ -f "$src_path" ]; then
-        cp -L -v "$src_path" "$LFS/bin/" 2>/dev/null || true
+        log_info "Copying $tool from $src_path"
+        cp -L -v "$src_path" "$LFS/bin/" || log_error "Failed to copy $tool"
         ldd "$src_path" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
             lib_name=$(basename "$lib")
             dest_dir="$LFS/lib"
@@ -102,15 +103,19 @@ for tool in "${binaries[@]}"; do
                 dest_dir="$LFS/lib64"
             fi
             mkdir -p "$dest_dir"
-            cp -v "$lib" "$dest_dir/" 2>/dev/null || true
+            cp -v "$lib" "$dest_dir/" || log_warning "Failed to copy $lib"
         done
+    else
+        log_warning "Source not found: $src_path"
     fi
 done
 
-# Copier explicitement bash et ses dépendances (assure la présence)
+# Copie explicite de /bin/bash (assure la présence)
 bash_src=$(which bash 2>/dev/null || echo "/bin/bash")
 if [ -f "$bash_src" ]; then
-    cp -L -v "$bash_src" "$LFS/bin/bash" 2>/dev/null || true
+    log_info "Copying bash from $bash_src"
+    cp -L -v "$bash_src" "$LFS/bin/bash" || log_error "Failed to copy bash"
+    chmod +x "$LFS/bin/bash"
     ldd "$bash_src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
         lib_name=$(basename "$lib")
         dest_dir="$LFS/lib"
@@ -118,26 +123,43 @@ if [ -f "$bash_src" ]; then
             dest_dir="$LFS/lib64"
         fi
         mkdir -p "$dest_dir"
-        cp -v "$lib" "$dest_dir/" 2>/dev/null || true
+        cp -v "$lib" "$dest_dir/" || log_warning "Failed to copy $lib"
     done
+else
+    log_error "bash not found on host"
+    exit 1
 fi
 
-# Copier la glibc
+# Copier l'interpréteur dynamique (ld-linux) explicitement
+if [ -f "/lib64/ld-linux-x86-64.so.2" ]; then
+    log_info "Copying ld-linux"
+    mkdir -p "$LFS/lib64"
+    cp -v /lib64/ld-linux-x86-64.so.2 "$LFS/lib64/"
+elif [ -f "/lib/ld-linux-x86-64.so.2" ]; then
+    mkdir -p "$LFS/lib"
+    cp -v /lib/ld-linux-x86-64.so.2 "$LFS/lib/"
+fi
+
+# Copier la glibc au complet (sécurité)
 if [ -d "/lib/x86_64-linux-gnu" ]; then
-    cp -rv /lib/x86_64-linux-gnu/* $LFS/lib/ 2>/dev/null || true
+    cp -rv /lib/x86_64-linux-gnu/* "$LFS/lib/" 2>/dev/null || true
 fi
 if [ -d "/lib64" ]; then
-    cp -rv /lib64/* $LFS/lib64/ 2>/dev/null || true
+    cp -rv /lib64/* "$LFS/lib64/" 2>/dev/null || true
 fi
 
 # Copier les fichiers de configuration
-cp -v /etc/passwd "$LFS/etc/" 2>/dev/null || true
-cp -v /etc/group "$LFS/etc/" 2>/dev/null || true
-cp -v /etc/hosts "$LFS/etc/" 2>/dev/null || true
+cp -v /etc/passwd "$LFS/etc/" || log_warning "Could not copy passwd"
+cp -v /etc/group "$LFS/etc/" || log_warning "Could not copy group"
+cp -v /etc/hosts "$LFS/etc/" || log_warning "Could not copy hosts"
 
-# Vérifier que /bin/bash existe dans le chroot
+# Vérification avant chroot
 if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin"
+    exit 1
+fi
+if [ ! -f "$LFS/lib64/ld-linux-x86-64.so.2" ] && [ ! -f "$LFS/lib/ld-linux-x86-64.so.2" ]; then
+    log_error "ld-linux not found in $LFS (lib64 or lib)"
     exit 1
 fi
 
