@@ -66,7 +66,7 @@ HOSTS
     exit 0
 fi
 
-# Mode natif
+# Native mode
 log_info "Native mode - building basic LFS system with chroot"
 
 mkdir -pv $LFS/{dev,proc,sys,run,etc,home,root,boot,usr,var,lib64,bin,sbin,tmp}
@@ -74,18 +74,11 @@ mkdir -pv $LFS/usr/{bin,lib,sbin,include,share}
 mkdir -pv $LFS/etc/{profile.d,sysconfig,skel,init.d}
 mkdir -pv $LFS/var/{cache,lib,local,lock,log,opt,run,spool,tmp}
 
-run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
-run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
-run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
-run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
-run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
-
 # ============================================================
-# COPIE EXPLICITE DE BASH ET DE L'INTERPRÉTEUR
+# COPIE EXPLICITE DE BASH ET DE L'INTERPRÉTEUR (AVANT MOUNTS)
 # ============================================================
-log_info "Copying /bin/bash and its dependencies (FORCED)"
+log_info "STEP 1: Copying /bin/bash and its dependencies (FORCED)"
 
-# 1. Copier bash depuis /bin/bash (ou /usr/bin/bash)
 BASH_SRC="/bin/bash"
 if [ ! -f "$BASH_SRC" ]; then
     BASH_SRC="/usr/bin/bash"
@@ -99,7 +92,6 @@ log_info "Copying $BASH_SRC -> $LFS/bin/bash"
 cp -L -v "$BASH_SRC" "$LFS/bin/bash"
 chmod +x "$LFS/bin/bash"
 
-# 2. Copier toutes les bibliothèques de bash
 log_info "Copying libraries for bash"
 ldd "$BASH_SRC" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
     dest_dir="$LFS/lib"
@@ -110,7 +102,6 @@ ldd "$BASH_SRC" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; d
     cp -v "$lib" "$dest_dir/"
 done
 
-# 3. Copier l'interpréteur dynamique (ld-linux)
 log_info "Copying ld-linux interpreter"
 if [ -f "/lib64/ld-linux-x86-64.so.2" ]; then
     mkdir -p "$LFS/lib64"
@@ -120,14 +111,11 @@ elif [ -f "/lib/ld-linux-x86-64.so.2" ]; then
     cp -v /lib/ld-linux-x86-64.so.2 "$LFS/lib/"
 fi
 
-# 4. Copier la glibc (au cas où)
 log_info "Copying glibc libraries"
 cp -rv /lib/x86_64-linux-gnu/* "$LFS/lib/" 2>/dev/null || true
 cp -rv /lib64/* "$LFS/lib64/" 2>/dev/null || true
 
-# ============================================================
-# VÉRIFICATION OBLIGATOIRE AVANT CHROOT
-# ============================================================
+# VÉRIFICATION OBLIGATOIRE
 if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin"
     exit 1
@@ -137,13 +125,21 @@ if [ ! -f "$LFS/lib64/ld-linux-x86-64.so.2" ] && [ ! -f "$LFS/lib/ld-linux-x86-6
     exit 1
 fi
 
-# ============================================================
-# FICHIERS DE CONFIGURATION ET SCRIPT INTERNE
-# ============================================================
+log_success "Bash and interpreter copied successfully"
+
+# Montages
+run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
+run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
+run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
+run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
+run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
+
+# Fichiers de configuration
 cp -v /etc/passwd "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/group "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/hosts "$LFS/etc/" 2>/dev/null || true
 
+# Script interne
 cat > $LFS/build-basic.sh << 'INNEREOF'
 #!/bin/bash
 set -e
@@ -153,13 +149,11 @@ echo "Basic system build complete (placeholder)"
 INNEREOF
 chmod +x $LFS/build-basic.sh
 
-# ============================================================
-# CHROOT
-# ============================================================
+# Chroot
 log_info "Entering chroot..."
 run_privileged chroot "$LFS" /bin/bash /build-basic.sh
 
-# Nettoyage des montages
+# Nettoyage
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
 run_privileged umount $LFS/proc 2>/dev/null || true
