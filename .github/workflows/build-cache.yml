@@ -19,38 +19,53 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Update APT cache and install dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential bison flex gawk texinfo wget git \
-            python3 python3-pip xorriso isolinux mtools dosfstools \
-            parted rsync bc cpio libssl-dev libelf-dev
-          # Vérification explicite
-          command -v texinfo || { echo "texinfo not found!"; exit 1; }
-          command -v xorriso || { echo "xorriso not found!"; exit 1; }
+            build-essential bison flex gawk texinfo wget git python3 python3-pip \
+            xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev
+          # Vérification
+          command -v texinfo || echo "texinfo missing"
+          command -v makeinfo || echo "makeinfo missing"   # souvent fourni par texinfo
 
-      - name: Cache LFS sources (optional)
+      - name: Show disk space
+        run: df -h
+
+      - name: Cache LFS sources
         uses: actions/cache@v4
         with:
           path: /tmp/lfs-build/sources
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
 
-      - name: Build profile
+      - name: Build profile (without sudo if possible)
+        id: build
+        continue-on-error: true   # Pour capturer le log même en échec
         run: |
           mkdir -p /tmp/lfs-build
-          # Lancement du builder avec sudo (si nécessaire)
-          sudo python3 builder.py \
+          # Essayer sans sudo
+          python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
             --output /tmp/lfs-build
 
-          # Compression du système racine
+      - name: Show host-check log if build failed
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "=== host-check.log ==="
+          cat /tmp/lfs-build/logs/host-check.log || echo "Log not found"
+          echo "======================="
+          exit 1   # Marquer l'échec
+
+      - name: Upload rootfs
+        if: steps.build.outcome == 'success'
+        run: |
           cd /tmp/lfs-build/image
           tar -cJf /tmp/rootfs.tar.xz .
 
       - name: Upload to Release
+        if: steps.build.outcome == 'success'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
