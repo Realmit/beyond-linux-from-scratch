@@ -172,3 +172,22 @@ https://github.com/webmproject/libvpx/archive/v1.15.0/libvpx-1.15.0.tar.gz
 https://github.com/TigerVNC/tigervnc/archive/v1.15.0/tigervnc-1.15.0.tar.gz
 https://www.claws-mail.org/releases/claws-mail-4.3.0.tar.xz
 https://community.ardour.org/src/Ardour-9.7.0.tar.bz2
+
+# ============================================================================
+# PRIVACY TOOLS (blfs/16-privacy-tools.sh)
+# ============================================================================
+
+# Tor 0.4.8.13
+https://dist.torproject.org/tor-0.4.8.13.tar.gz
+
+# WireGuard-tools 1.0.20210914
+https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-1.0.20210914.tar.xz
+
+# DNSCrypt-proxy 2.1.16
+https://github.com/DNSCrypt/dnscrypt-proxy/archive/refs/tags/2.1.16.tar.gz
+
+# I2P 2.7.0 (installateur Java)
+https://download.i2p2.de/releases/2.7.0/i2pinstall_2.7.0.jar
+
+# Mat2 0.13.4 (nettoyeur de métadonnées)
+https://0xacab.org/jvoisin/mat2/-/archive/0.13.4/mat2-0.13.4.tar.gz
