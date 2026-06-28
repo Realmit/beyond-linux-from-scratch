@@ -42,26 +42,25 @@ jobs:
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
 
-      # Ensure output directory exists and is owned by the lfs user
-      - name: Create output directory and set ownership
-        run: |
-          sudo mkdir -p /tmp/lfs-build
-          sudo chown lfs:lfs /tmp/lfs-build
-
-      # Prepare host system (creates lfs user, directories, etc.) as root
+      # 1. Créer l'utilisateur lfs et le répertoire LFS (root)
       - name: Prepare host system (as root)
         run: |
           sudo host/02-prepare-host.sh
         env:
           LFS: /tmp/lfs-build/image
 
-      # Make the source code readable and traversable by the lfs user
+      # 2. Créer le répertoire de sortie parent et le donner à l'utilisateur lfs
+      - name: Create output directory and set ownership
+        run: |
+          sudo mkdir -p /tmp/lfs-build
+          sudo chown -R lfs:lfs /tmp/lfs-build
+
+      # 3. Rendre le dépôt lisible par l'utilisateur lfs
       - name: Fix permissions for lfs user
         run: |
           sudo chmod -R a+rX .
 
-      # Run the builder as the lfs user, starting from disk-image stage
-      # (host-check and host-prepare already done manually above)
+      # 4. Lancer le builder en tant que lfs, en reprenant à disk-image
       - name: Build profile (as lfs user)
         id: build
         run: |
