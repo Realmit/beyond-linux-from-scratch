@@ -30,7 +30,20 @@ jobs:
       - name: Show disk space
         run: df -h
 
-      # Copier le dépôt dans un emplacement accessible par l'utilisateur lfs
+      # ------------------------------------------------------------
+      # 1. Préparer l'hôte : crée l'utilisateur lfs et les répertoires LFS
+      #    (root, avec LFS=/tmp/lfs-build/image)
+      # ------------------------------------------------------------
+      - name: Prepare host system (as root)
+        run: |
+          sudo -E host/02-prepare-host.sh
+        env:
+          LFS: /tmp/lfs-build/image
+
+      # ------------------------------------------------------------
+      # 2. Copier le dépôt dans /tmp/lfs-builder et le donner à lfs
+      #    L'utilisateur lfs existe maintenant, le chown fonctionne
+      # ------------------------------------------------------------
       - name: Copy repository to /tmp/lfs-builder
         run: |
           sudo mkdir -p /tmp/lfs-builder
@@ -38,33 +51,28 @@ jobs:
           sudo chown -R lfs:lfs /tmp/lfs-builder
           sudo chmod -R a+rX /tmp/lfs-builder
 
-      - name: Cache LFS sources
-        uses: actions/cache@v4
-        with:
-          path: /tmp/lfs-build/sources
-          key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
-          restore-keys: lfs-sources-
-
+      # ------------------------------------------------------------
+      # 3. Patcher les scripts (dans la copie)
+      # ------------------------------------------------------------
       - name: Patch host-check.sh to skip texinfo/makeinfo checks in CI
         run: |
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
         working-directory: /tmp/lfs-builder
 
-      # Préparer l'hôte (crée l'utilisateur lfs et les répertoires) en root
-      - name: Prepare host system (as root)
-        run: |
-          sudo -E /tmp/lfs-builder/host/02-prepare-host.sh
-        env:
-          LFS: /tmp/lfs-build/image
-
-      # Créer le répertoire de sortie et le donner à lfs
+      # ------------------------------------------------------------
+      # 4. Créer le répertoire de sortie parent et le donner à lfs
+      #    (host-prepare a déjà créé image/, mais pas forcément /tmp/lfs-build)
+      # ------------------------------------------------------------
       - name: Create output directory and set ownership
         run: |
           sudo mkdir -p /tmp/lfs-build
           sudo chown -R lfs:lfs /tmp/lfs-build
 
-      # Lancer le builder en tant que lfs, depuis le répertoire copié
+      # ------------------------------------------------------------
+      # 5. Lancer le builder en tant que lfs, depuis la copie,
+      #    en reprenant à disk-image (host-check et host-prepare déjà faits)
+      # ------------------------------------------------------------
       - name: Build profile (as lfs user)
         id: build
         run: |
