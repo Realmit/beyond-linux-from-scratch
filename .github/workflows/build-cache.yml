@@ -34,6 +34,12 @@ jobs:
       - name: Show disk space
         run: df -h
 
+      # --- 1. Créer le répertoire de sortie AVANT la préparation (root) ---
+      - name: Create output directory and set ownership for lfs
+        run: |
+          sudo mkdir -p /tmp/lfs-build
+          sudo chown -R lfs:lfs /tmp/lfs-build
+
       - name: Cache LFS sources
         uses: actions/cache@v4
         with:
@@ -41,35 +47,40 @@ jobs:
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
 
-      # 1. Patcher host-check pour ignorer texinfo/makeinfo (CI)
+      # --- 2. Patcher les scripts (comme avant, ça ne pose pas de problème) ---
       - name: Patch host-check.sh
         run: |
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
 
-      # 2. Patcher host/04-build-toolchain.sh pour se relancer en lfs si exécuté en root
       - name: Patch toolchain to switch to lfs
         run: |
-          # Insère le bloc de commutation après la première ligne (shebang)
           sed -i '1a if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
 
-      # 3. Préparer l'hôte : créer l'utilisateur lfs et les répertoires (root)
+      # --- 3. Préparer l'hôte (root, crée l'utilisateur lfs et /tmp/lfs-build/image) ---
       - name: Prepare host system (as root)
         run: |
           sudo -E host/02-prepare-host.sh
         env:
           LFS: /tmp/lfs-build/image
 
-      # 4. Rendre le dépôt accessible à l'utilisateur lfs (pour le moment où le script toolchain se relance)
-      - name: Set permissions for lfs user
+      # --- 4. Redonner la propriété à lfs (APRÈS la préparation) ---
+      #    C'EST L'ÉTAPE QUI MANQUAIT – elle résout le problème de permission sur tools/ et sources/
+      - name: Reassign ownership of output directory to lfs
+        run: |
+          sudo chown -R lfs:lfs /tmp/lfs-build
+
+      # --- 5. Permissions du dépôt pour que lfs puisse lire les scripts ---
+      - name: Set repository permissions for lfs user
         run: |
           sudo chmod -R a+rX .
 
-      # 5. Lancer le builder en root (les scripts qui nécessitent lfs basculeront automatiquement)
-      - name: Build profile (as root)
+      # --- 6. Lancer le builder EN TANT QUE LFS (comme tu le fais localement) ---
+      #    On utilise sudo -u lfs, ce n'est PAS "sudo python3" – c'est le changement d'utilisateur.
+      - name: Build profile (as lfs user)
         id: build
         run: |
-          sudo python3 builder.py \
+          sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
             --output /tmp/lfs-build
