@@ -1,6 +1,6 @@
 #!/bin/bash
 # blfs/12-install-java-dev.sh
-# Java Development Tools Installation for LFS/BLFS
+# Java Development Tools Installation for LFS/BLFS (sysvinit compatible)
 
 set -e
 
@@ -8,7 +8,6 @@ log_info()  { echo -e "\033[0;32m[INFO]\033[0m $1"; }
 log_success(){ echo -e "\033[0;34m[SUCCESS]\033[0m $1"; }
 log_error()  { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
 
-# Répertoires : utilise le même chemin que le builder
 SOURCES_DIR="/output/sources"
 INSTALL_DIR="/opt"
 JAVA_HOME="/opt/jdk"
@@ -34,21 +33,29 @@ install_java() {
         sudo wget -q "$JDK_URL" -O "$SOURCES_DIR/$JDK_FILE"
     fi
 
-    # Extraire avec sudo dans /opt
+    # Extract with sudo
     sudo tar -xzf "$SOURCES_DIR/$JDK_FILE" -C "$INSTALL_DIR"
-    EXTRACTED_DIR=$(tar -tf "$SOURCES_DIR/$JDK_FILE" | head -1 | cut -d/ -f1)
+    # Find the extracted directory name
+    EXTRACTED_DIR=$(sudo tar -tf "$SOURCES_DIR/$JDK_FILE" | head -1 | cut -d/ -f1)
+    log_info "Extracted directory: $EXTRACTED_DIR"
     sudo mv "$INSTALL_DIR/$EXTRACTED_DIR" "$JAVA_HOME"
 
-    # Variables d'environnement (accessibles à tous)
+    # Verify installation
+    if [ ! -f "$JAVA_HOME/bin/java" ]; then
+        log_error "Java binary not found at $JAVA_HOME/bin/java"
+        exit 1
+    fi
+
+    # Set environment variables
     sudo tee /etc/profile.d/java.sh << 'EOF' > /dev/null
 export JAVA_HOME=/opt/jdk
 export PATH=$JAVA_HOME/bin:$PATH
 EOF
-
     sudo chmod +x /etc/profile.d/java.sh
+    # Source for current shell
     source /etc/profile.d/java.sh
 
-    log_success "Java installed: $(java -version 2>&1 | head -n1)"
+    log_success "Java installed: $($JAVA_HOME/bin/java -version 2>&1 | head -n1)"
 }
 
 # ============================================================================
@@ -65,14 +72,13 @@ install_maven() {
     fi
 
     sudo tar -xzf "$SOURCES_DIR/$MVN_FILE" -C "$INSTALL_DIR"
-    EXTRACTED_DIR=$(tar -tf "$SOURCES_DIR/$MVN_FILE" | head -1 | cut -d/ -f1)
+    EXTRACTED_DIR=$(sudo tar -tf "$SOURCES_DIR/$MVN_FILE" | head -1 | cut -d/ -f1)
     sudo mv "$INSTALL_DIR/$EXTRACTED_DIR" "$MAVEN_HOME"
 
     sudo tee /etc/profile.d/maven.sh << 'EOF' > /dev/null
 export MAVEN_HOME=/opt/maven
 export PATH=$MAVEN_HOME/bin:$PATH
 EOF
-
     sudo chmod +x /etc/profile.d/maven.sh
     log_success "Maven installed"
 }
@@ -98,13 +104,12 @@ install_gradle() {
 export GRADLE_HOME=/opt/gradle
 export PATH=$GRADLE_HOME/bin:$PATH
 EOF
-
     sudo chmod +x /etc/profile.d/gradle.sh
     log_success "Gradle installed"
 }
 
 # ============================================================================
-# 4. Install Apache Tomcat
+# 4. Install Apache Tomcat (sysvinit compatible)
 # ============================================================================
 install_tomcat() {
     log_info "Installing Apache Tomcat..."
@@ -117,39 +122,53 @@ install_tomcat() {
     fi
 
     sudo tar -xzf "$SOURCES_DIR/$TOMCAT_FILE" -C "$INSTALL_DIR"
-    EXTRACTED_DIR=$(tar -tf "$SOURCES_DIR/$TOMCAT_FILE" | head -1 | cut -d/ -f1)
+    EXTRACTED_DIR=$(sudo tar -tf "$SOURCES_DIR/$TOMCAT_FILE" | head -1 | cut -d/ -f1)
     sudo mv "$INSTALL_DIR/$EXTRACTED_DIR" "$TOMCAT_HOME"
 
     sudo groupadd -r tomcat 2>/dev/null || true
     sudo useradd -r -g tomcat -d "$TOMCAT_HOME" tomcat 2>/dev/null || true
     sudo chown -R tomcat:tomcat "$TOMCAT_HOME"
 
-    sudo tee /etc/systemd/system/tomcat.service << 'EOF' > /dev/null
-[Unit]
-Description=Apache Tomcat Web Application Container
-After=network.target
+    # Créer un script de démarrage sysvinit (au lieu de systemd)
+    sudo tee /etc/init.d/tomcat << 'EOF' > /dev/null
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          tomcat
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $network $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Apache Tomcat
+### END INIT INFO
 
-[Service]
-Type=forking
-User=tomcat
-Group=tomcat
-Environment=JAVA_HOME=/opt/jdk
-Environment=CATALINA_HOME=/opt/tomcat
-Environment=CATALINA_BASE=/opt/tomcat
-ExecStart=/opt/tomcat/bin/startup.sh
-ExecStop=/opt/tomcat/bin/shutdown.sh
-Restart=on-failure
+export JAVA_HOME=/opt/jdk
+export CATALINA_HOME=/opt/tomcat
+export CATALINA_BASE=/opt/tomcat
 
-[Install]
-WantedBy=multi-user.target
+case "$1" in
+    start)
+        $CATALINA_HOME/bin/startup.sh
+        ;;
+    stop)
+        $CATALINA_HOME/bin/shutdown.sh
+        ;;
+    restart)
+        $CATALINA_HOME/bin/shutdown.sh
+        $CATALINA_HOME/bin/startup.sh
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
 EOF
+    sudo chmod +x /etc/init.d/tomcat
 
-    sudo systemctl daemon-reload
-    log_success "Tomcat installed"
+    log_success "Tomcat installed (sysvinit script available)"
 }
 
 # ============================================================================
-# 5. Install Jenkins
+# 5. Install Jenkins (sysvinit compatible)
 # ============================================================================
 install_jenkins() {
     log_info "Installing Jenkins..."
@@ -168,25 +187,41 @@ install_jenkins() {
     sudo useradd -r -g jenkins -d "$JENKINS_HOME" jenkins 2>/dev/null || true
     sudo chown -R jenkins:jenkins "$JENKINS_HOME"
 
-    sudo tee /etc/systemd/system/jenkins.service << 'EOF' > /dev/null
-[Unit]
-Description=Jenkins Continuous Integration Server
-After=network.target
+    # Script de démarrage sysvinit
+    sudo tee /etc/init.d/jenkins << 'EOF' > /dev/null
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          jenkins
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $network $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Jenkins CI Server
+### END INIT INFO
 
-[Service]
-User=jenkins
-Group=jenkins
-Environment=JAVA_HOME=/opt/jdk
-Environment=JENKINS_HOME=/opt/jenkins
-ExecStart=/opt/jdk/bin/java -jar /opt/jenkins/jenkins.war --httpPort=8080
-Restart=on-failure
+export JAVA_HOME=/opt/jdk
+export JENKINS_HOME=/opt/jenkins
 
-[Install]
-WantedBy=multi-user.target
+case "$1" in
+    start)
+        su - jenkins -c "nohup $JAVA_HOME/bin/java -jar $JENKINS_HOME/jenkins.war --httpPort=8080 > /var/log/jenkins.log 2>&1 &"
+        ;;
+    stop)
+        pkill -f "jenkins.war" || true
+        ;;
+    restart)
+        pkill -f "jenkins.war" || true
+        su - jenkins -c "nohup $JAVA_HOME/bin/java -jar $JENKINS_HOME/jenkins.war --httpPort=8080 > /var/log/jenkins.log 2>&1 &"
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
 EOF
+    sudo chmod +x /etc/init.d/jenkins
 
-    sudo systemctl daemon-reload
-    log_success "Jenkins installed"
+    log_success "Jenkins installed (sysvinit script available)"
 }
 
 # ============================================================================
@@ -202,9 +237,13 @@ install_docker() {
         sudo wget -q "$DOCKER_URL" -O "$SOURCES_DIR/$DOCKER_FILE"
     fi
 
-    sudo tar -xzf "$SOURCES_DIR/$DOCKER_FILE" -C "$INSTALL_DIR"
-    sudo mv "$INSTALL_DIR/docker" "$DOCKER_HOME"
+    # Supprimer l'ancienne installation
+    sudo rm -rf "$DOCKER_HOME"
 
+    # Extraire directement dans /opt (cela crée /opt/docker)
+    sudo tar -xzf "$SOURCES_DIR/$DOCKER_FILE" -C "$INSTALL_DIR"
+
+    # Créer les liens symboliques
     sudo ln -sf "$DOCKER_HOME/docker" /usr/local/bin/docker
     sudo ln -sf "$DOCKER_HOME/dockerd" /usr/local/bin/dockerd
 
@@ -253,10 +292,13 @@ main() {
     echo "  - Docker                 : $DOCKER_HOME"
     echo "  - kubectl                : /usr/local/bin/kubectl"
     echo ""
-    echo "To enable services:"
-    echo "  sudo systemctl enable tomcat"
-    echo "  sudo systemctl enable jenkins"
-    echo "  # (Docker daemon is not auto-started; use 'dockerd' manually or set up a service)"
+    echo "To enable Tomcat and Jenkins at boot (sysvinit):"
+    echo "  sudo update-rc.d tomcat defaults"
+    echo "  sudo update-rc.d jenkins defaults"
+    echo ""
+    echo "To start manually:"
+    echo "  sudo /etc/init.d/tomcat start"
+    echo "  sudo /etc/init.d/jenkins start"
     echo ""
     echo "Environment variables are set in /etc/profile.d/ (java.sh, maven.sh, gradle.sh)"
     echo "Source them or log out/in to apply."
