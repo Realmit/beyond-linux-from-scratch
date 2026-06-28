@@ -177,8 +177,8 @@ https://community.ardour.org/src/Ardour-9.7.0.tar.bz2
 # PRIVACY TOOLS (blfs/16-privacy-tools.sh)
 # ============================================================================
 
-# Tor 0.4.8.13
-https://dist.torproject.org/tor-0.4.8.13.tar.gz
+# Tor 0.4.9.8
+https://dist.torproject.org/tor-0.4.9.7.tar.gz
 
 # WireGuard-tools 1.0.20210914
 https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-1.0.20210914.tar.xz
@@ -186,8 +186,8 @@ https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-1.0.20210914.tar.
 # DNSCrypt-proxy 2.1.16
 https://github.com/DNSCrypt/dnscrypt-proxy/archive/refs/tags/2.1.16.tar.gz
 
-# I2P 2.7.0 (installateur Java)
-https://download.i2p2.de/releases/2.7.0/i2pinstall_2.7.0.jar
+# I2P 2.12.0
+https://github.com/i2p/i2p.i2p/archive/refs/tags/i2p-2.12.0.tar.gz
 
 # Mat2 0.13.4 (nettoyeur de métadonnées)
 https://0xacab.org/jvoisin/mat2/-/archive/0.13.4/mat2-0.13.4.tar.gz
