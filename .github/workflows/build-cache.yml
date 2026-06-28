@@ -42,23 +42,29 @@ jobs:
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
 
-      # --------------------------------------------
-      # 1. Prepare the host as root (creates lfs user & directories)
-      # --------------------------------------------
+      # Ensure output directory exists and is owned by the lfs user
+      - name: Create output directory and set ownership
+        run: |
+          sudo mkdir -p /tmp/lfs-build
+          sudo chown lfs:lfs /tmp/lfs-build
+
+      # Prepare host system (creates lfs user, directories, etc.) as root
       - name: Prepare host system (as root)
         run: |
           sudo host/02-prepare-host.sh
         env:
-          LFS: /tmp/lfs-build/image   # Must match the builder's output
+          LFS: /tmp/lfs-build/image
 
-      # --------------------------------------------
-      # 2. Run the builder as lfs, resume from disk-image
-      #    (host-check and host-prepare are already done)
-      # --------------------------------------------
+      # Make the source code readable and traversable by the lfs user
+      - name: Fix permissions for lfs user
+        run: |
+          sudo chmod -R a+rX .
+
+      # Run the builder as the lfs user, starting from disk-image stage
+      # (host-check and host-prepare already done manually above)
       - name: Build profile (as lfs user)
         id: build
         run: |
-          mkdir -p /tmp/lfs-build
           sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
