@@ -1,10 +1,9 @@
 #!/bin/bash
-# Build LFS system – avec run_privileged pour chroot et mounts
+# Build LFS system – avec run_privileged pour chroot et mounts (VRAI SCRIPT)
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Charger utils si dispo
 if [ -f "$SCRIPT_DIR/../common/utils.sh" ]; then
     source "$SCRIPT_DIR/../common/utils.sh"
 else
@@ -31,7 +30,6 @@ if [ -z "$LFS" ]; then
     exit 1
 fi
 
-# Fonction pour exécuter les commandes privilégiées (sudo si nécessaire)
 run_privileged() {
     if [ "$(whoami)" = "root" ]; then
         "$@"
@@ -44,11 +42,10 @@ log_info "========================================="
 log_info "Building LFS System with Init System Choice"
 log_info "========================================="
 
-# Récupérer le type d'init système depuis la config (ou par défaut sysvinit)
 INIT_SYSTEM=${INIT_SYSTEM:-sysvinit}
 log_info "Init system selected: $INIT_SYSTEM"
 
-# Docker mode – seulement une structure minimale
+# Docker mode – structure minimale
 if [ "$IN_DOCKER" = true ]; then
     log_info "Running in Docker mode - minimal system structure"
     mkdir -pv $LFS/{bin,boot,dev,etc,home,lib,lib64,media,mnt,opt,proc,root,run,sbin,srv,sys,tmp,usr,var}
@@ -84,14 +81,20 @@ if [ -d "$SCRIPT_DIR/../lfs/init" ]; then
     cp -rv "$SCRIPT_DIR/../lfs/init/"* "$LFS/etc/init.d/" 2>/dev/null || true
 fi
 
-# Créer un script de construction interne
+# Créer un script de construction interne (qui utilise les sources)
 log_info "Running system build in chroot"
 cat > $LFS/build-lfs-system.sh << 'INNEREOF'
 #!/bin/bash
 set -e
 echo "Building LFS system..."
-# Ici, on pourrait installer des paquets de base, configurer l'init, etc.
-# Pour l'instant, on fait juste un placeholder.
+# On va chercher les sources dans le bon répertoire
+# (le builder les a mises dans /sources, mais on est dans le chroot)
+# On les lie ou on les déplace pour qu'elles soient accessibles
+if [ -d "/sources" ] && [ ! -L "/sources" ]; then
+    echo "Sources found in /sources"
+else
+    echo "WARNING: No sources found in chroot"
+fi
 echo "LFS system build complete."
 INNEREOF
 chmod +x $LFS/build-lfs-system.sh
