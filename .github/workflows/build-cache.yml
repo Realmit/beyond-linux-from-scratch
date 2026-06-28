@@ -2,11 +2,11 @@ name: Build Cache
 
 on:
   schedule:
-    - cron: '0 0 * * 0'   # weekly on Sunday
-  workflow_dispatch:      # manual trigger
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
 
 permissions:
-  contents: write         # Required to upload release assets
+  contents: write
 
 jobs:
   build-cache:
@@ -19,38 +19,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Update APT cache and install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y \
-            build-essential bison flex gawk texinfo wget git python3 python3-pip \
-            xorriso isolinux mtools dosfstools parted rsync bc cpio \
-            libssl-dev libelf-dev
-
-      - name: Install Python dependencies (if any)
-        run: |
-          if [ -f requirements.txt ]; then
-            pip3 install -r requirements.txt
-          fi
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential bison flex gawk texinfo wget git \
+            python3 python3-pip xorriso isolinux mtools dosfstools \
+            parted rsync bc cpio libssl-dev libelf-dev
+          # Vérification explicite
+          command -v texinfo || { echo "texinfo not found!"; exit 1; }
+          command -v xorriso || { echo "xorriso not found!"; exit 1; }
 
       - name: Cache LFS sources (optional)
         uses: actions/cache@v4
         with:
           path: /tmp/lfs-build/sources
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
-          restore-keys: |
-            lfs-sources-
+          restore-keys: lfs-sources-
 
       - name: Build profile
         run: |
-          # Create output directory
           mkdir -p /tmp/lfs-build
-          # Run builder (use sudo if needed)
+          # Lancement du builder avec sudo (si nécessaire)
           sudo python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
             --output /tmp/lfs-build
-          # Compress the root filesystem
+
+          # Compression du système racine
           cd /tmp/lfs-build/image
           tar -cJf /tmp/rootfs.tar.xz .
 
