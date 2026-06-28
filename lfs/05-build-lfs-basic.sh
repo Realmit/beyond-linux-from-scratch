@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build basic LFS system – COPIE COMPLÈTE DES BIBLIOTHÈQUES ET TEST DU CHROOT
+# Build basic LFS system – COPIE COMPLÈTE DES BIBLIOTHÈQUES AVEC NETTOYAGE DES LIENS
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -75,11 +75,11 @@ mkdir -pv $LFS/etc/{profile.d,sysconfig,skel,init.d}
 mkdir -pv $LFS/var/{cache,lib,local,lock,log,opt,run,spool,tmp}
 
 # ============================================================
-# COPIE DE /bin/bash ET DE TOUT LE SYSTÈME DE BIBLIOTHÈQUES
+# 1. COPIE DE /bin/bash AVEC NETTOYAGE DES LIENS
 # ============================================================
 log_info "Copying /bin/bash and all host libraries"
 
-# 1. Copier bash
+# Copier bash (suivre les liens)
 BASH_SRC="/bin/bash"
 if [ ! -f "$BASH_SRC" ]; then
     BASH_SRC="/usr/bin/bash"
@@ -89,55 +89,76 @@ if [ ! -f "$BASH_SRC" ]; then
     exit 1
 fi
 
+# Supprimer tout ancien fichier ou lien
+rm -f "$LFS/bin/bash"
 cp -L -v "$BASH_SRC" "$LFS/bin/bash"
 chmod +x "$LFS/bin/bash"
 
-# 2. Copier toutes les bibliothèques de l'hôte (complet)
+# ============================================================
+# 2. COPIE DE TOUTES LES BIBLIOTHÈQUES (AVEC NETTOYAGE)
+# ============================================================
 log_info "Copying entire /lib/x86_64-linux-gnu and /lib64"
-cp -rv /lib/x86_64-linux-gnu/* "$LFS/lib/" 2>/dev/null || true
-cp -rv /lib64/* "$LFS/lib64/" 2>/dev/null || true
 
-# 3. Copier ld-linux explicitement
+# Nettoyer les destinations pour éviter les liens pendants
+rm -rf "$LFS/lib" "$LFS/lib64" 2>/dev/null || true
+mkdir -p "$LFS/lib" "$LFS/lib64"
+
+# Copier les bibliothèques (suivre les liens pour les fichiers individuels)
+cp -rvL /lib/x86_64-linux-gnu/* "$LFS/lib/" 2>/dev/null || true
+cp -rvL /lib64/* "$LFS/lib64/" 2>/dev/null || true
+
+# ============================================================
+# 3. COPIE DE L'INTERPRÉTEUR DYNAMIQUE (ld-linux)
+# ============================================================
+log_info "Copying ld-linux interpreter"
 if [ -f "/lib64/ld-linux-x86-64.so.2" ]; then
-    cp -v /lib64/ld-linux-x86-64.so.2 "$LFS/lib64/"
+    # Supprimer tout lien existant, puis copier le vrai fichier
+    rm -f "$LFS/lib64/ld-linux-x86-64.so.2"
+    cp -L -v /lib64/ld-linux-x86-64.so.2 "$LFS/lib64/"
 elif [ -f "/lib/ld-linux-x86-64.so.2" ]; then
-    cp -v /lib/ld-linux-x86-64.so.2 "$LFS/lib/"
+    rm -f "$LFS/lib/ld-linux-x86-64.so.2"
+    cp -L -v /lib/ld-linux-x86-64.so.2 "$LFS/lib/"
 fi
 
-# Vérification
+# ============================================================
+# 4. VÉRIFICATION OBLIGATOIRE
+# ============================================================
 if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin"
     exit 1
 fi
 if [ ! -f "$LFS/lib64/ld-linux-x86-64.so.2" ] && [ ! -f "$LFS/lib/ld-linux-x86-64.so.2" ]; then
-    log_error "ld-linux not found in $LFS"
+    log_error "ld-linux not found in $LFS (lib64 or lib)"
     exit 1
 fi
 
-# 4. Vérifier que le chroot fonctionne (test de bash)
+# ============================================================
+# 5. TEST DU CHROOT
+# ============================================================
 log_info "Testing chroot with /bin/bash"
 if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     log_error "chroot test failed - /bin/bash cannot be executed"
-    # Afficher plus d'infos
     run_privileged chroot "$LFS" /bin/bash -c "exit 0" || true
-    log_error "Test failed. Check that all libraries are present."
     exit 1
 fi
 log_success "chroot test passed"
 
-# Montages
+# ============================================================
+# 6. MONTAGES ET FICHIERS DE CONFIGURATION
+# ============================================================
 run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
 run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
 run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Fichiers de configuration
 cp -v /etc/passwd "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/group "$LFS/etc/" 2>/dev/null || true
 cp -v /etc/hosts "$LFS/etc/" 2>/dev/null || true
 
-# Script interne
+# ============================================================
+# 7. SCRIPT INTERNE ET CHROOT
+# ============================================================
 cat > $LFS/build-basic.sh << 'INNEREOF'
 #!/bin/bash
 set -e
@@ -147,11 +168,10 @@ echo "Basic system build complete (placeholder)"
 INNEREOF
 chmod +x $LFS/build-basic.sh
 
-# Chroot
 log_info "Entering chroot..."
 run_privileged chroot "$LFS" /bin/bash /build-basic.sh
 
-# Nettoyage
+# Nettoyage des montages
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
 run_privileged umount $LFS/proc 2>/dev/null || true
