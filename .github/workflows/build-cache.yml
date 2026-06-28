@@ -31,8 +31,16 @@ jobs:
         run: df -h
 
       # ------------------------------------------------------------
-      # 1. Préparer l'hôte : crée l'utilisateur lfs et les répertoires LFS
-      #    (root, avec LFS=/tmp/lfs-build/image)
+      # 1. Patcher les scripts (dans le dépôt original, avec droits d'écriture)
+      # ------------------------------------------------------------
+      - name: Patch host-check.sh to skip texinfo/makeinfo checks in CI
+        run: |
+          sed -i '/texinfo/d' host/01-check-host.sh
+          sed -i '/makeinfo/d' host/01-check-host.sh
+
+      # ------------------------------------------------------------
+      # 2. Préparer l'hôte (crée l'utilisateur lfs et les répertoires LFS)
+      #    Utilise les scripts originaux (déjà patchés)
       # ------------------------------------------------------------
       - name: Prepare host system (as root)
         run: |
@@ -41,8 +49,8 @@ jobs:
           LFS: /tmp/lfs-build/image
 
       # ------------------------------------------------------------
-      # 2. Copier le dépôt dans /tmp/lfs-builder et le donner à lfs
-      #    L'utilisateur lfs existe maintenant, le chown fonctionne
+      # 3. Copier le dépôt (patché) dans /tmp/lfs-builder
+      #    et le donner à l'utilisateur lfs
       # ------------------------------------------------------------
       - name: Copy repository to /tmp/lfs-builder
         run: |
@@ -52,17 +60,8 @@ jobs:
           sudo chmod -R a+rX /tmp/lfs-builder
 
       # ------------------------------------------------------------
-      # 3. Patcher les scripts (dans la copie)
-      # ------------------------------------------------------------
-      - name: Patch host-check.sh to skip texinfo/makeinfo checks in CI
-        run: |
-          sed -i '/texinfo/d' host/01-check-host.sh
-          sed -i '/makeinfo/d' host/01-check-host.sh
-        working-directory: /tmp/lfs-builder
-
-      # ------------------------------------------------------------
       # 4. Créer le répertoire de sortie parent et le donner à lfs
-      #    (host-prepare a déjà créé image/, mais pas forcément /tmp/lfs-build)
+      #    (host-prepare a déjà créé image/, mais pas /tmp/lfs-build)
       # ------------------------------------------------------------
       - name: Create output directory and set ownership
         run: |
