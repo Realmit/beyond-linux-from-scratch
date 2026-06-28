@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build basic LFS system – COPIE FORCÉE DE /bin/bash
+# Build basic LFS system – COPIE COMPLÈTE DES BIBLIOTHÈQUES ET TEST DU CHROOT
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -75,10 +75,11 @@ mkdir -pv $LFS/etc/{profile.d,sysconfig,skel,init.d}
 mkdir -pv $LFS/var/{cache,lib,local,lock,log,opt,run,spool,tmp}
 
 # ============================================================
-# COPIE EXPLICITE DE BASH ET DE L'INTERPRÉTEUR (AVANT MOUNTS)
+# COPIE DE /bin/bash ET DE TOUT LE SYSTÈME DE BIBLIOTHÈQUES
 # ============================================================
-log_info "STEP 1: Copying /bin/bash and its dependencies (FORCED)"
+log_info "Copying /bin/bash and all host libraries"
 
+# 1. Copier bash
 BASH_SRC="/bin/bash"
 if [ ! -f "$BASH_SRC" ]; then
     BASH_SRC="/usr/bin/bash"
@@ -88,44 +89,41 @@ if [ ! -f "$BASH_SRC" ]; then
     exit 1
 fi
 
-log_info "Copying $BASH_SRC -> $LFS/bin/bash"
 cp -L -v "$BASH_SRC" "$LFS/bin/bash"
 chmod +x "$LFS/bin/bash"
 
-log_info "Copying libraries for bash"
-ldd "$BASH_SRC" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
-    dest_dir="$LFS/lib"
-    if [[ "$lib" == *"/lib64/"* ]]; then
-        dest_dir="$LFS/lib64"
-    fi
-    mkdir -p "$dest_dir"
-    cp -v "$lib" "$dest_dir/"
-done
-
-log_info "Copying ld-linux interpreter"
-if [ -f "/lib64/ld-linux-x86-64.so.2" ]; then
-    mkdir -p "$LFS/lib64"
-    cp -v /lib64/ld-linux-x86-64.so.2 "$LFS/lib64/"
-elif [ -f "/lib/ld-linux-x86-64.so.2" ]; then
-    mkdir -p "$LFS/lib"
-    cp -v /lib/ld-linux-x86-64.so.2 "$LFS/lib/"
-fi
-
-log_info "Copying glibc libraries"
+# 2. Copier toutes les bibliothèques de l'hôte (complet)
+log_info "Copying entire /lib/x86_64-linux-gnu and /lib64"
 cp -rv /lib/x86_64-linux-gnu/* "$LFS/lib/" 2>/dev/null || true
 cp -rv /lib64/* "$LFS/lib64/" 2>/dev/null || true
 
-# VÉRIFICATION OBLIGATOIRE
+# 3. Copier ld-linux explicitement
+if [ -f "/lib64/ld-linux-x86-64.so.2" ]; then
+    cp -v /lib64/ld-linux-x86-64.so.2 "$LFS/lib64/"
+elif [ -f "/lib/ld-linux-x86-64.so.2" ]; then
+    cp -v /lib/ld-linux-x86-64.so.2 "$LFS/lib/"
+fi
+
+# Vérification
 if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin"
     exit 1
 fi
 if [ ! -f "$LFS/lib64/ld-linux-x86-64.so.2" ] && [ ! -f "$LFS/lib/ld-linux-x86-64.so.2" ]; then
-    log_error "ld-linux not found in $LFS (lib64 or lib)"
+    log_error "ld-linux not found in $LFS"
     exit 1
 fi
 
-log_success "Bash and interpreter copied successfully"
+# 4. Vérifier que le chroot fonctionne (test de bash)
+log_info "Testing chroot with /bin/bash"
+if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
+    log_error "chroot test failed - /bin/bash cannot be executed"
+    # Afficher plus d'infos
+    run_privileged chroot "$LFS" /bin/bash -c "exit 0" || true
+    log_error "Test failed. Check that all libraries are present."
+    exit 1
+fi
+log_success "chroot test passed"
 
 # Montages
 run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
