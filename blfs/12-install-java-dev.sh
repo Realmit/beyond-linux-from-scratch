@@ -8,7 +8,7 @@ log_info()  { echo -e "\033[0;32m[INFO]\033[0m $1"; }
 log_success(){ echo -e "\033[0;34m[SUCCESS]\033[0m $1"; }
 log_error()  { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
 
-SOURCES_DIR="/sources"
+SOURCES_DIR="/output/sources"
 INSTALL_DIR="/opt"
 JAVA_HOME="/opt/jdk"
 MAVEN_HOME="/opt/maven"
@@ -17,7 +17,7 @@ TOMCAT_HOME="/opt/tomcat"
 JENKINS_HOME="/opt/jenkins"
 DOCKER_HOME="/opt/docker"
 
-mkdir -p "$INSTALL_DIR"
+mkdir -p "$SOURCES_DIR" "$INSTALL_DIR"
 cd "$SOURCES_DIR"
 
 # ============================================================================
@@ -25,7 +25,7 @@ cd "$SOURCES_DIR"
 # ============================================================================
 install_java() {
     log_info "Installing Eclipse Temurin JDK 21..."
-    JDK_FILE="OpenJDK21U-jdk_x64_linux_hotspot_21.0.9_10.tar.gz"
+    JDK_FILE="OpenJDK21U-jdk_x64_alpine-linux_hotspot_21.0.9_10.tar.gz"
     JDK_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.9%2B10/${JDK_FILE}"
 
     if [ ! -f "$SOURCES_DIR/$JDK_FILE" ]; then
@@ -34,7 +34,9 @@ install_java() {
     fi
 
     tar -xzf "$SOURCES_DIR/$JDK_FILE" -C "$INSTALL_DIR"
-    mv "$INSTALL_DIR/jdk-21.0.9+10" "$JAVA_HOME"
+    # Le dossier extrait s'appelle jdk-21.0.9+10 (ou similaire)
+    EXTRACTED_DIR=$(tar -tf "$SOURCES_DIR/$JDK_FILE" | head -1 | cut -d/ -f1)
+    mv "$INSTALL_DIR/$EXTRACTED_DIR" "$JAVA_HOME"
 
     # Set environment variables
     cat > /etc/profile.d/java.sh << 'EOF'
@@ -62,7 +64,8 @@ install_maven() {
     fi
 
     tar -xzf "$SOURCES_DIR/$MVN_FILE" -C "$INSTALL_DIR"
-    mv "$INSTALL_DIR/apache-maven-3.9.16" "$MAVEN_HOME"
+    EXTRACTED_DIR=$(tar -tf "$SOURCES_DIR/$MVN_FILE" | head -1 | cut -d/ -f1)
+    mv "$INSTALL_DIR/$EXTRACTED_DIR" "$MAVEN_HOME"
 
     cat > /etc/profile.d/maven.sh << 'EOF'
 export MAVEN_HOME=/opt/maven
@@ -87,7 +90,8 @@ install_gradle() {
     fi
 
     unzip -q "$SOURCES_DIR/$GRADLE_FILE" -d "$INSTALL_DIR"
-    mv "$INSTALL_DIR/gradle-8.14" "$GRADLE_HOME"
+    EXTRACTED_DIR=$(unzip -l "$SOURCES_DIR/$GRADLE_FILE" | head -4 | tail -1 | awk '{print $4}' | cut -d/ -f1)
+    mv "$INSTALL_DIR/$EXTRACTED_DIR" "$GRADLE_HOME"
 
     cat > /etc/profile.d/gradle.sh << 'EOF'
 export GRADLE_HOME=/opt/gradle
@@ -112,14 +116,13 @@ install_tomcat() {
     fi
 
     tar -xzf "$SOURCES_DIR/$TOMCAT_FILE" -C "$INSTALL_DIR"
-    mv "$INSTALL_DIR/apache-tomcat-10.1.56" "$TOMCAT_HOME"
+    EXTRACTED_DIR=$(tar -tf "$SOURCES_DIR/$TOMCAT_FILE" | head -1 | cut -d/ -f1)
+    mv "$INSTALL_DIR/$EXTRACTED_DIR" "$TOMCAT_HOME"
 
-    # Create a dedicated user
     groupadd -r tomcat 2>/dev/null || true
     useradd -r -g tomcat -d "$TOMCAT_HOME" tomcat 2>/dev/null || true
     chown -R tomcat:tomcat "$TOMCAT_HOME"
 
-    # Systemd service (optional)
     cat > /etc/systemd/system/tomcat.service << 'EOF'
 [Unit]
 Description=Apache Tomcat Web Application Container
@@ -145,7 +148,7 @@ EOF
 }
 
 # ============================================================================
-# 5. Install Jenkins (standalone WAR)
+# 5. Install Jenkins
 # ============================================================================
 install_jenkins() {
     log_info "Installing Jenkins..."
@@ -160,12 +163,10 @@ install_jenkins() {
     mkdir -p "$JENKINS_HOME"
     cp "$SOURCES_DIR/$JENKINS_WAR" "$JENKINS_HOME/"
 
-    # Create a dedicated user
     groupadd -r jenkins 2>/dev/null || true
     useradd -r -g jenkins -d "$JENKINS_HOME" jenkins 2>/dev/null || true
     chown -R jenkins:jenkins "$JENKINS_HOME"
 
-    # Systemd service for Jenkins
     cat > /etc/systemd/system/jenkins.service << 'EOF'
 [Unit]
 Description=Jenkins Continuous Integration Server
@@ -188,7 +189,7 @@ EOF
 }
 
 # ============================================================================
-# 6. Install Docker (static binary)
+# 6. Install Docker
 # ============================================================================
 install_docker() {
     log_info "Installing Docker..."
@@ -203,17 +204,15 @@ install_docker() {
     tar -xzf "$SOURCES_DIR/$DOCKER_FILE" -C "$INSTALL_DIR"
     mv "$INSTALL_DIR/docker" "$DOCKER_HOME"
 
-    # Add symlinks
     ln -sf "$DOCKER_HOME/docker" /usr/local/bin/docker
     ln -sf "$DOCKER_HOME/dockerd" /usr/local/bin/dockerd
 
-    # Create docker group
     groupadd -r docker 2>/dev/null || true
     log_success "Docker installed"
 }
 
 # ============================================================================
-# 7. Install kubectl (static binary)
+# 7. Install kubectl
 # ============================================================================
 install_kubectl() {
     log_info "Installing kubectl..."
