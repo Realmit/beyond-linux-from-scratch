@@ -5,6 +5,10 @@ on:
     - cron: '0 0 * * 0'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -30,6 +34,10 @@ jobs:
       - name: Show disk space
         run: df -h
 
+      # ---- 1. Créer le répertoire de sortie (root) ----
+      - name: Create output directory
+        run: sudo mkdir -p /tmp/lfs-build
+
       - name: Cache LFS sources
         uses: actions/cache@v4
         with:
@@ -37,16 +45,44 @@ jobs:
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
 
-      - name: Patch host-check.sh to skip texinfo/makeinfo checks in CI
+      # ---- 2. Patcher les scripts DANS LE DÉPÔT ORIGINAL ----
+      - name: Patch host-check.sh
         run: |
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
 
-      - name: Build profile
+      - name: Patch toolchain to switch to lfs
+        run: |
+          sed -i '1a if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
+
+      # ---- 3. PRÉPARER L'HÔTE (root) ----
+      #    Crée l'utilisateur lfs et /tmp/lfs-build/image
+      - name: Prepare host system (as root)
+        run: |
+          sudo -E host/02-prepare-host.sh
+        env:
+          LFS: /tmp/lfs-build/image
+
+      # ---- 4. MAINTENANT lfs existe ----
+      #    On copie le dépôt dans /tmp/lfs-builder et on donne la propriété à lfs
+      - name: Copy repository to /tmp/lfs-builder
+        run: |
+          sudo mkdir -p /tmp/lfs-builder
+          sudo cp -a . /tmp/lfs-builder/
+          sudo chown -R lfs:lfs /tmp/lfs-builder
+          sudo chmod -R a+rX /tmp/lfs-builder
+
+      # ---- 5. Redonner la propriété du répertoire de sortie à lfs ----
+      - name: Reassign ownership of output directory to lfs
+        run: |
+          sudo chown -R lfs:lfs /tmp/lfs-build
+
+      # ---- 6. Lancer le builder EN TANT QUE LFS depuis la copie ----
+      - name: Build profile (as lfs user)
         id: build
         run: |
-          mkdir -p /tmp/lfs-build
-          sudo python3 builder.py \
+          cd /tmp/lfs-builder
+          sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
             --output /tmp/lfs-build
