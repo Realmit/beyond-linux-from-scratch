@@ -42,14 +42,28 @@ jobs:
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
 
-      - name: Build profile
+      # --------------------------------------------
+      # 1. Prepare the host as root (creates lfs user & directories)
+      # --------------------------------------------
+      - name: Prepare host system (as root)
+        run: |
+          sudo host/02-prepare-host.sh
+        env:
+          LFS: /tmp/lfs-build/image   # Must match the builder's output
+
+      # --------------------------------------------
+      # 2. Run the builder as lfs, resume from disk-image
+      #    (host-check and host-prepare are already done)
+      # --------------------------------------------
+      - name: Build profile (as lfs user)
         id: build
         run: |
           mkdir -p /tmp/lfs-build
-          sudo python3 builder.py \
+          sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
-            --output /tmp/lfs-build
+            --output /tmp/lfs-build \
+            --resume-from disk-image
 
       - name: Upload rootfs
         if: success()
