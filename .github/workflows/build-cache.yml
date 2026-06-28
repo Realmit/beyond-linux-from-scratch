@@ -42,25 +42,39 @@ jobs:
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
 
-      # 1. Créer l'utilisateur lfs et le répertoire LFS (root)
+      # ------------------------------------------------------------
+      # 1. Préparer l'hôte en tant que root (crée l'utilisateur lfs,
+      #    le répertoire LFS, et les permissions de base)
+      #    La variable LFS est passée explicitement avec sudo -E
+      # ------------------------------------------------------------
       - name: Prepare host system (as root)
         run: |
-          sudo host/02-prepare-host.sh
+          sudo -E host/02-prepare-host.sh
         env:
           LFS: /tmp/lfs-build/image
 
-      # 2. Créer le répertoire de sortie parent et le donner à l'utilisateur lfs
+      # ------------------------------------------------------------
+      # 2. Créer le répertoire de sortie parent et le donner à lfs
+      # ------------------------------------------------------------
       - name: Create output directory and set ownership
         run: |
           sudo mkdir -p /tmp/lfs-build
           sudo chown -R lfs:lfs /tmp/lfs-build
 
-      # 3. Rendre le dépôt lisible par l'utilisateur lfs
-      - name: Fix permissions for lfs user
+      # ------------------------------------------------------------
+      # 3. Rendre tout le dépôt lisible/exécutable pour l'utilisateur lfs
+      #    (y compris le répertoire courant)
+      # ------------------------------------------------------------
+      - name: Fix repository permissions for lfs user
         run: |
           sudo chmod -R a+rX .
+          # Vérification : afficher les permissions de builder.py
+          ls -la builder.py || echo "builder.py not found"
 
+      # ------------------------------------------------------------
       # 4. Lancer le builder en tant que lfs, en reprenant à disk-image
+      #    (host-check et host-prepare déjà effectués)
+      # ------------------------------------------------------------
       - name: Build profile (as lfs user)
         id: build
         run: |
