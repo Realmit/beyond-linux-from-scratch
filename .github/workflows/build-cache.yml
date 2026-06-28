@@ -5,10 +5,6 @@ on:
     - cron: '0 0 * * 0'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
-
 permissions:
   contents: write
 
@@ -34,10 +30,6 @@ jobs:
       - name: Show disk space
         run: df -h
 
-      # ---- 1. Créer le répertoire de sortie (root, sans chown) ----
-      - name: Create output directory
-        run: sudo mkdir -p /tmp/lfs-build
-
       - name: Cache LFS sources
         uses: actions/cache@v4
         with:
@@ -45,39 +37,16 @@ jobs:
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
 
-      # ---- 2. Patcher les scripts (dans le dépôt original) ----
-      - name: Patch host-check.sh
+      - name: Patch host-check.sh to skip texinfo/makeinfo checks in CI
         run: |
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
 
-      - name: Patch toolchain to switch to lfs
-        run: |
-          sed -i '1a if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
-
-      # ---- 3. PRÉPARER L'HÔTE (root) ----
-      #    Crée l'utilisateur lfs ET les répertoires /tmp/lfs-build/image
-      - name: Prepare host system (as root)
-        run: |
-          sudo -E host/02-prepare-host.sh
-        env:
-          LFS: /tmp/lfs-build/image
-
-      # ---- 4. MAINTENANT on peut faire chown car lfs existe ----
-      - name: Reassign ownership to lfs
-        run: |
-          sudo chown -R lfs:lfs /tmp/lfs-build
-
-      # ---- 5. Permissions du dépôt pour que lfs puisse lire ----
-      - name: Set repository permissions
-        run: |
-          sudo chmod -R a+rX .
-
-      # ---- 6. Lancer le builder EN TANT QUE LFS ----
-      - name: Build profile (as lfs user)
+      - name: Build profile
         id: build
         run: |
-          sudo -u lfs python3 builder.py \
+          mkdir -p /tmp/lfs-build
+          sudo python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
             --output /tmp/lfs-build
