@@ -34,11 +34,9 @@ jobs:
       - name: Show disk space
         run: df -h
 
-      # --- 1. Créer le répertoire de sortie AVANT la préparation (root) ---
-      - name: Create output directory and set ownership for lfs
-        run: |
-          sudo mkdir -p /tmp/lfs-build
-          sudo chown -R lfs:lfs /tmp/lfs-build
+      # --- 1. Créer le répertoire de sortie (root) sans chown ---
+      - name: Create output directory
+        run: sudo mkdir -p /tmp/lfs-build
 
       - name: Cache LFS sources
         uses: actions/cache@v4
@@ -47,7 +45,7 @@ jobs:
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
 
-      # --- 2. Patcher les scripts (comme avant, ça ne pose pas de problème) ---
+      # --- 2. Patcher les scripts (root) ---
       - name: Patch host-check.sh
         run: |
           sed -i '/texinfo/d' host/01-check-host.sh
@@ -57,15 +55,14 @@ jobs:
         run: |
           sed -i '1a if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
 
-      # --- 3. Préparer l'hôte (root, crée l'utilisateur lfs et /tmp/lfs-build/image) ---
+      # --- 3. Préparer l'hôte (root) – crée l'utilisateur lfs et /tmp/lfs-build/image ---
       - name: Prepare host system (as root)
         run: |
           sudo -E host/02-prepare-host.sh
         env:
           LFS: /tmp/lfs-build/image
 
-      # --- 4. Redonner la propriété à lfs (APRÈS la préparation) ---
-      #    C'EST L'ÉTAPE QUI MANQUAIT – elle résout le problème de permission sur tools/ et sources/
+      # --- 4. Redonner la propriété à lfs (APRÈS que l'utilisateur existe) ---
       - name: Reassign ownership of output directory to lfs
         run: |
           sudo chown -R lfs:lfs /tmp/lfs-build
@@ -75,8 +72,7 @@ jobs:
         run: |
           sudo chmod -R a+rX .
 
-      # --- 6. Lancer le builder EN TANT QUE LFS (comme tu le fais localement) ---
-      #    On utilise sudo -u lfs, ce n'est PAS "sudo python3" – c'est le changement d'utilisateur.
+      # --- 6. Lancer le builder EN TANT QUE LFS (sudo -u lfs, PAS sudo python3) ---
       - name: Build profile (as lfs user)
         id: build
         run: |
