@@ -30,28 +30,35 @@ jobs:
       - name: Show disk space
         run: df -h
 
-      # ------------------------------------------------------------
-      # 1. Patcher les scripts (dans le dépôt original, avec droits d'écriture)
-      # ------------------------------------------------------------
+      - name: Cache LFS sources
+        uses: actions/cache@v4
+        with:
+          path: /tmp/lfs-build/sources
+          key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
+          restore-keys: lfs-sources-
+
+      # Patcher les scripts pour ignorer texinfo/makeinfo (CI)
       - name: Patch host-check.sh to skip texinfo/makeinfo checks in CI
         run: |
           sed -i '/texinfo/d' host/01-check-host.sh
           sed -i '/makeinfo/d' host/01-check-host.sh
 
-      # ------------------------------------------------------------
-      # 2. Préparer l'hôte (crée l'utilisateur lfs et les répertoires LFS)
-      #    Utilise les scripts originaux (déjà patchés)
-      # ------------------------------------------------------------
+      # S'assurer que host/04-build-toolchain.sh se relance en tant que lfs si exécuté en root
+      # (ajouter le bloc si nécessaire)
+      - name: Ensure toolchain script switches to lfs user
+        run: |
+          if ! grep -q "exec sudo -E -u lfs" host/04-build-toolchain.sh; then
+            sed -i '1i if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Running as root, switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
+          fi
+
+      # Préparer l'hôte en root (crée l'utilisateur lfs et les répertoires)
       - name: Prepare host system (as root)
         run: |
           sudo -E host/02-prepare-host.sh
         env:
           LFS: /tmp/lfs-build/image
 
-      # ------------------------------------------------------------
-      # 3. Copier le dépôt (patché) dans /tmp/lfs-builder
-      #    et le donner à l'utilisateur lfs
-      # ------------------------------------------------------------
+      # Copier tout le dépôt dans un endroit accessible par lfs (et root)
       - name: Copy repository to /tmp/lfs-builder
         run: |
           sudo mkdir -p /tmp/lfs-builder
@@ -59,28 +66,15 @@ jobs:
           sudo chown -R lfs:lfs /tmp/lfs-builder
           sudo chmod -R a+rX /tmp/lfs-builder
 
-      # ------------------------------------------------------------
-      # 4. Créer le répertoire de sortie parent et le donner à lfs
-      #    (host-prepare a déjà créé image/, mais pas /tmp/lfs-build)
-      # ------------------------------------------------------------
-      - name: Create output directory and set ownership
-        run: |
-          sudo mkdir -p /tmp/lfs-build
-          sudo chown -R lfs:lfs /tmp/lfs-build
-
-      # ------------------------------------------------------------
-      # 5. Lancer le builder en tant que lfs, depuis la copie,
-      #    en reprenant à disk-image (host-check et host-prepare déjà faits)
-      # ------------------------------------------------------------
-      - name: Build profile (as lfs user)
+      # Exécuter le builder en root (les scripts qui doivent être en lfs se relanceront)
+      - name: Build profile (as root)
         id: build
         run: |
           cd /tmp/lfs-builder
-          sudo -u lfs python3 builder.py \
+          sudo python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
-            --output /tmp/lfs-build \
-            --resume-from disk-image
+            --output /tmp/lfs-build
 
       - name: Upload rootfs
         if: success()
