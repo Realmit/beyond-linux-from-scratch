@@ -1,154 +1,115 @@
 #!/bin/bash
-# Service Management Abstraction Layer
-# Compatible with Docker and native Linux
-
+# Service management abstraction layer - sysvinit/systemd compatibility
 set -e
 
-# Functions
-log_info() { echo "[INFO] $1"; }
-log_warning() { echo "[WARNING] $1"; }
-log_success() { echo "[SUCCESS] $1"; }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Detect Docker
+if [ -f "$SCRIPT_DIR/../common/utils.sh" ]; then
+    source "$SCRIPT_DIR/../common/utils.sh"
+else
+    log_info() { echo "[INFO] $*"; }
+    log_error() { echo "[ERROR] $*" >&2; }
+    log_warning() { echo "[WARNING] $*"; }
+    log_success() { echo "[SUCCESS] $*"; }
+fi
+
 IN_DOCKER=false
 if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
     IN_DOCKER=true
     log_info "Running in Docker container"
 fi
 
-# Set LFS and PREFIX
 if [ "$IN_DOCKER" = true ]; then
     LFS=${LFS:-/output/image}
-    PREFIX="$LFS"
 else
     LFS=${LFS:-/mnt/lfs}
-    PREFIX=""
 fi
 
-log_info "LFS: $LFS"
-log_info "PREFIX: $PREFIX"
+if [ -z "$LFS" ]; then
+    log_error "LFS variable not set"
+    exit 1
+fi
 
-# Find init.conf - MULTIPLE PATHS
-INIT_SYSTEM="sysvinit"
-INIT_CONF_FOUND=false
-
-# Try all possible paths
-for path in "/lfs-builder/config/init.conf" "$SCRIPT_DIR/../config/init.conf" "$(pwd)/config/init.conf" "config/init.conf" "/config/init.conf"; do
-    if [ -f "$path" ]; then
-        log_info "Found init.conf at: $path"
-        source "$path"
-        INIT_CONF_FOUND=true
-        break
+run_privileged() {
+    if [ "$(whoami)" = "root" ]; then
+        "$@"
+    else
+        sudo "$@"
     fi
-done
+}
 
-if [ "$INIT_CONF_FOUND" = false ]; then
-    log_warning "init.conf not found, using sysvinit"
-    INIT_SYSTEM="sysvinit"
+log_info "========================================="
+log_info "Service Management Abstraction Layer"
+log_info "========================================="
+
+# Récupérer l'init système depuis la config
+INIT_SYSTEM=${INIT_SYSTEM:-sysvinit}
+if [ -f "$SCRIPT_DIR/../config/init.conf" ]; then
+    source "$SCRIPT_DIR/../config/init.conf"
 fi
+log_info "Detected init system: $INIT_SYSTEM"
 
-log_info "Init system: $INIT_SYSTEM"
-
-# Create directories
-mkdir -pv $PREFIX/usr/local/bin
-mkdir -pv $PREFIX/etc/profile.d
-mkdir -pv $PREFIX/etc/init.d
-
-# If in Docker - SIMPLE VERSION
+# Docker mode – minimal
 if [ "$IN_DOCKER" = true ]; then
-    log_info "Docker mode - creating minimal service wrapper"
-    
-    cat > $PREFIX/usr/local/bin/svc << 'DOCKER_SVC'
-#!/bin/bash
-echo "Service $2: $1 (Docker mode)"
-exit 0
-DOCKER_SVC
-    chmod 755 $PREFIX/usr/local/bin/svc
-    
-    cat > $PREFIX/etc/profile.d/svc-aliases.sh << 'DOCKER_ALIAS'
-alias sv-start='svc start'
-alias sv-stop='svc stop'
-alias sv-restart='svc restart'
-alias sv-status='svc status'
-DOCKER_ALIAS
-    chmod 644 $PREFIX/etc/profile.d/svc-aliases.sh
-    
-    log_success "Service management configured for Docker"
+    log_info "Docker mode – creating minimal service scripts inside $LFS"
+    run_privileged mkdir -p "$LFS/etc/profile.d"
+    run_privileged tee "$LFS/etc/profile.d/svc-aliases.sh" << 'EOF'
+# Service aliases for both sysvinit and systemd
+alias start='sudo /etc/init.d/'
+alias stop='sudo /etc/init.d/'
+alias restart='sudo /etc/init.d/'
+alias status='sudo /etc/init.d/'
+EOF
+    run_privileged chmod +x "$LFS/etc/profile.d/svc-aliases.sh"
+    log_success "Service aliases created in Docker mode"
     exit 0
 fi
 
-# Native mode - FULL VERSION
+# Native mode – installer les scripts de gestion de services
 log_info "Native mode - installing full service management"
 
-# Detect actual init
-if [ -f /usr/lib/systemd/systemd ] && command -v systemctl >/dev/null 2>&1; then
-    ACTUAL_INIT="systemd"
-elif [ -f /sbin/init ] && strings /sbin/init 2>/dev/null | grep -q "sysvinit"; then
-    ACTUAL_INIT="sysvinit"
-elif [ -d /etc/rc.d/init.d ] && [ -f /etc/inittab ]; then
-    ACTUAL_INIT="sysvinit"
-else
-    ACTUAL_INIT="$INIT_SYSTEM"
+# Monter les FS si nécessaire
+run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
+run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
+run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
+
+# Créer le répertoire profile.d dans le chroot
+run_privileged mkdir -p "$LFS/etc/profile.d"
+
+# Créer le fichier d'aliases dans le chroot
+log_info "Writing service aliases to $LFS/etc/profile.d/svc-aliases.sh"
+run_privileged tee "$LFS/etc/profile.d/svc-aliases.sh" << 'EOF'
+# Service management aliases
+if [ -d /etc/init.d ] && [ -x /etc/init.d/rc ]; then
+    # sysvinit style
+    alias start='sudo /etc/init.d/'
+    alias stop='sudo /etc/init.d/'
+    alias restart='sudo /etc/init.d/'
+    alias status='sudo /etc/init.d/'
+elif command -v systemctl >/dev/null 2>&1; then
+    # systemd style
+    alias start='sudo systemctl start'
+    alias stop='sudo systemctl stop'
+    alias restart='sudo systemctl restart'
+    alias status='sudo systemctl status'
+    alias enable='sudo systemctl enable'
+    alias disable='sudo systemctl disable'
+fi
+EOF
+run_privileged chmod +x "$LFS/etc/profile.d/svc-aliases.sh"
+
+# Si systemd, créer les liens symboliques pour les commandes legacy
+if [ "$INIT_SYSTEM" = "systemd" ]; then
+    log_info "Creating legacy symlinks for systemd"
+    run_privileged chroot "$LFS" /bin/bash -c "
+        ln -sf /usr/lib/systemd/systemd /sbin/init 2>/dev/null || true
+        ln -sf /usr/bin/systemctl /sbin/service 2>/dev/null || true
+    "
 fi
 
-log_info "Detected init system: $ACTUAL_INIT"
+# Nettoyer les montages
+run_privileged umount $LFS/dev 2>/dev/null || true
+run_privileged umount $LFS/proc 2>/dev/null || true
+run_privileged umount $LFS/sys 2>/dev/null || true
 
-# Create svc command
-cat > /usr/local/bin/svc << 'NATIVE_SVC'
-#!/bin/bash
-# Service management wrapper
-
-# Detect init
-if [ -f /usr/lib/systemd/systemd ] && command -v systemctl >/dev/null 2>&1; then
-    INIT="systemd"
-elif [ -f /sbin/init ] && strings /sbin/init 2>/dev/null | grep -q "sysvinit"; then
-    INIT="sysvinit"
-elif [ -d /etc/rc.d/init.d ] && [ -f /etc/inittab ]; then
-    INIT="sysvinit"
-else
-    INIT="sysvinit"
-fi
-
-case "$INIT" in
-    systemd)
-        systemctl "$@"
-        ;;
-    sysvinit)
-        SVC_DIR=""
-        [ -d "/etc/rc.d/init.d" ] && SVC_DIR="/etc/rc.d/init.d"
-        [ -d "/etc/init.d" ] && SVC_DIR="/etc/init.d"
-        
-        if [ -z "$SVC_DIR" ]; then
-            echo "No service directory found"
-            exit 1
-        fi
-        
-        case "$1" in
-            start|stop|restart|status)
-                if [ -x "$SVC_DIR/$2" ]; then
-                    "$SVC_DIR/$2" "$1"
-                else
-                    echo "Service $2 not found"
-                    exit 1
-                fi
-                ;;
-            *)
-                echo "Usage: svc {start|stop|restart|status} service"
-                ;;
-        esac
-        ;;
-esac
-NATIVE_SVC
-
-chmod 755 /usr/local/bin/svc
-
-# Aliases
-cat > /etc/profile.d/svc-aliases.sh << 'NATIVE_ALIAS'
-alias sv-start='svc start'
-alias sv-stop='svc stop'
-alias sv-restart='svc restart'
-alias sv-status='svc status'
-NATIVE_ALIAS
-chmod 644 /etc/profile.d/svc-aliases.sh
-
-log_success "Service management installed"
+log_success "Service management abstraction layer installed"
