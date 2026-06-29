@@ -1,11 +1,9 @@
 #!/bin/bash
 # Configure LFS system - Compatible with Docker and native Linux
-
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Fallback functions if utils.sh doesn't exist
 if [ -f "$SCRIPT_DIR/../common/utils.sh" ]; then
     source "$SCRIPT_DIR/../common/utils.sh"
 else
@@ -15,14 +13,12 @@ else
     log_success() { echo "[SUCCESS] $*"; }
 fi
 
-# Detect if running in Docker
 IN_DOCKER=false
 if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
     IN_DOCKER=true
     log_info "Running in Docker container"
 fi
 
-# Set LFS directory
 if [ "$IN_DOCKER" = true ]; then
     LFS=${LFS:-/output/image}
 else
@@ -34,90 +30,73 @@ if [ -z "$LFS" ]; then
     exit 1
 fi
 
+run_privileged() {
+    if [ "$(whoami)" = "root" ]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
 log_info "========================================="
 log_info "Configuring LFS system"
 log_info "========================================="
 
-# If in Docker, create minimal configuration inside $LFS
 if [ "$IN_DOCKER" = true ]; then
-    log_info "Running in Docker mode - creating minimal configuration inside $LFS"
-    
-    # Create directories inside LFS
-    mkdir -pv $LFS/etc/X11/xorg.conf.d
-    mkdir -pv $LFS/usr/local/bin
-    
-    # Create configure script that operates inside $LFS
-    cat > $LFS/configure-system.sh << 'INNEREOF'
+    log_info "Docker mode – minimal config inside $LFS"
+    run_privileged mkdir -pv "$LFS"/etc/X11/xorg.conf.d
+    run_privileged mkdir -pv "$LFS"/usr/local/bin
+
+    cat > "$LFS/configure-system.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
-
 echo "Configuring LFS system (Docker mode)..."
-
-# Create user inside LFS
-if ! chroot $LFS id lfsuser &>/dev/null; then
-    chroot $LFS groupadd -g 1000 lfsuser 2>/dev/null || true
-    chroot $LFS useradd -u 1000 -g 1000 -G wheel,audio,video,storage -m lfsuser 2>/dev/null || true
-    chroot $LFS sh -c 'echo "lfsuser:password123" | chpasswd' 2>/dev/null || true
+if ! chroot . id lfsuser &>/dev/null; then
+    chroot . groupadd -g 1000 lfsuser 2>/dev/null || true
+    chroot . useradd -u 1000 -g 1000 -G wheel,audio,video,storage -m lfsuser 2>/dev/null || true
+    chroot . sh -c 'echo "lfsuser:password123" | chpasswd' 2>/dev/null || true
 fi
-
-# Setup sudo inside LFS
-echo "lfsuser ALL=(ALL) ALL" >> $LFS/etc/sudoers 2>/dev/null || true
-
-# Keyboard configuration inside LFS
-cat > $LFS/etc/X11/xorg.conf.d/00-keyboard.conf << "XORG"
+echo "lfsuser ALL=(ALL) ALL" >> ./etc/sudoers 2>/dev/null || true
+cat > ./etc/X11/xorg.conf.d/00-keyboard.conf << "XORG"
 Section "InputClass"
     Identifier "system-keyboard"
     MatchIsKeyboard "on"
     Option "XkbLayout" "us"
 EndSection
 XORG
-
-# Start desktop script inside LFS
-cat > $LFS/usr/local/bin/start-desktop << "START"
+cat > ./usr/local/bin/start-desktop << "START"
 #!/bin/bash
-echo "Starting desktop (Docker mode)..."
 exec startx
 START
-chmod +x $LFS/usr/local/bin/start-desktop
-
-# Hostname inside LFS
-cat > $LFS/etc/hostname << "HOSTNAME"
-lfs-desktop
-HOSTNAME
-
-# Hosts inside LFS
-cat > $LFS/etc/hosts << "HOSTS"
+chmod +x ./usr/local/bin/start-desktop
+echo "lfs-desktop" > ./etc/hostname
+cat > ./etc/hosts << "HOSTS"
 127.0.0.1   localhost.localdomain localhost
 ::1         localhost ip6-localhost ip6-loopback
 127.0.1.1   lfs-desktop
 HOSTS
-
 echo "System configuration complete (Docker mode)!"
 INNEREOF
-
-    chmod +x $LFS/configure-system.sh
-    
-    # Run the configuration script inside the LFS environment
-    log_info "Running configuration inside LFS"
-    cd $LFS && ./configure-system.sh
-    
+    run_privileged chmod +x "$LFS/configure-system.sh"
+    cd "$LFS" && run_privileged ./configure-system.sh
     log_success "LFS configuration complete (Docker mode)"
     exit 0
 fi
 
-# Native mode - full configuration
-log_info "Running in native mode - full configuration"
+# Native mode
+log_info "Native mode – full configuration"
 
-# Create configure script for chroot
-cat > $LFS/configure-system.sh << 'INNEREOF'
+run_privileged mkdir -p "$LFS"/etc/X11/xorg.conf.d
+run_privileged mkdir -p "$LFS"/usr/local/bin
+
+cat > "$LFS/configure-system.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
-
 echo "========================================="
 echo "Configuring LFS System"
 echo "========================================="
 
-# Create initramfs
+# Create initramfs if mkinitcpio exists
 if command -v mkinitcpio &> /dev/null; then
     echo "Creating initramfs..."
     mkinitcpio -p linux 2>/dev/null || true
@@ -141,21 +120,16 @@ if command -v systemctl &> /dev/null; then
 fi
 
 # Create user
-echo "Creating user..."
 if ! id lfsuser &>/dev/null; then
     groupadd -g 1000 lfsuser 2>/dev/null || true
     useradd -u 1000 -g 1000 -G wheel,audio,video,storage -m lfsuser 2>/dev/null || true
     echo "lfsuser:password123" | chpasswd 2>/dev/null || true
-else
-    echo "User lfsuser already exists"
 fi
 
 # Setup sudo
-echo "Configuring sudo..."
 echo "lfsuser ALL=(ALL) ALL" >> /etc/sudoers 2>/dev/null || true
 
-# Create Xorg configuration
-echo "Configuring Xorg..."
+# Keyboard config
 mkdir -pv /etc/X11/xorg.conf.d
 cat > /etc/X11/xorg.conf.d/00-keyboard.conf << "XORG"
 Section "InputClass"
@@ -165,18 +139,15 @@ Section "InputClass"
 EndSection
 XORG
 
-# Create start-desktop script
+# Desktop starter
 cat > /usr/local/bin/start-desktop << "START"
 #!/bin/bash
 exec startx
 START
 chmod +x /usr/local/bin/start-desktop
 
-# Basic network configuration
-cat > /etc/hostname << "HOSTNAME"
-lfs-desktop
-HOSTNAME
-
+# Network config
+echo "lfs-desktop" > /etc/hostname
 cat > /etc/hosts << "HOSTS"
 127.0.0.1   localhost.localdomain localhost
 ::1         localhost ip6-localhost ip6-loopback
@@ -202,31 +173,24 @@ echo "System configuration complete!"
 echo "========================================="
 INNEREOF
 
-chmod +x $LFS/configure-system.sh
+run_privileged chmod +x "$LFS/configure-system.sh"
 
-# Mount virtual filesystems if needed
-log_info "Mounting virtual filesystems"
-mount -v --bind /dev $LFS/dev 2>/dev/null || true
-mount -vt devpts devpts $LFS/dev/pts 2>/dev/null || true
-mount -vt proc proc $LFS/proc 2>/dev/null || true
-mount -vt sysfs sysfs $LFS/sys 2>/dev/null || true
-mount -vt tmpfs tmpfs $LFS/run 2>/dev/null || true
+# Monter les systèmes de fichiers virtuels
+run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
+run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
+run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
+run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
+run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Run configuration in chroot
-log_info "Running configuration in chroot"
-chroot "$LFS" /usr/bin/env -i \
-    HOME=/root \
-    TERM="$TERM" \
-    PS1='(lfs chroot) \u:\w\$ ' \
-    PATH=/usr/bin:/usr/sbin:/bin \
-    /bin/bash /configure-system.sh
+# Exécuter la configuration dans le chroot
+log_info "Running configuration in chroot..."
+run_privileged chroot "$LFS" /bin/bash /configure-system.sh
 
-# Unmount virtual filesystems
-log_info "Unmounting virtual filesystems"
-umount -v $LFS/dev/pts 2>/dev/null || true
-umount -v $LFS/dev 2>/dev/null || true
-umount -v $LFS/proc 2>/dev/null || true
-umount -v $LFS/sys 2>/dev/null || true
-umount -v $LFS/run 2>/dev/null || true
+# Démontage
+run_privileged umount $LFS/dev/pts 2>/dev/null || true
+run_privileged umount $LFS/dev 2>/dev/null || true
+run_privileged umount $LFS/proc 2>/dev/null || true
+run_privileged umount $LFS/sys 2>/dev/null || true
+run_privileged umount $LFS/run 2>/dev/null || true
 
 log_success "LFS configuration complete!"
