@@ -1,5 +1,5 @@
 #!/bin/bash
-# First-boot service – avec run_privileged
+# First-boot service – avec run_privileged pour toutes les écritures
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,11 +42,10 @@ log_info "========================================="
 log_info "Setting up first-boot service"
 log_info "========================================="
 
-# Docker mode – structure minimale
 if [ "$IN_DOCKER" = true ]; then
     log_info "Docker mode – creating first-boot script inside $LFS"
     run_privileged mkdir -pv "$LFS/usr/local/sbin"
-    cat > "$LFS/usr/local/sbin/first-boot.sh" << 'EOF'
+    run_privileged tee "$LFS/usr/local/sbin/first-boot.sh" << 'EOF' > /dev/null
 #!/bin/bash
 echo "First-boot script running (Docker mode)"
 touch /var/log/first-boot-done
@@ -66,10 +65,12 @@ run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 
 # Créer le répertoire et le script dans le chroot
 run_privileged mkdir -pv "$LFS/usr/local/sbin"
-cat > "$LFS/usr/local/sbin/first-boot.sh" << 'EOF'
+
+# Utiliser run_privileged tee pour écrire le fichier
+run_privileged tee "$LFS/usr/local/sbin/first-boot.sh" << 'EOF' > /dev/null
 #!/bin/bash
 echo "Running first-boot configuration..."
-# Ajouter ici les tâches du premier démarrage (création d'utilisateurs, etc.)
+# Ajouter ici les tâches du premier démarrage
 touch /var/log/first-boot-done
 echo "First-boot done."
 EOF
@@ -77,7 +78,7 @@ run_privileged chmod +x "$LFS/usr/local/sbin/first-boot.sh"
 
 # Créer un service systemd si systemd est l'init, ou un script rc pour sysvinit
 if [ -d "$LFS/usr/lib/systemd/system" ]; then
-    cat > "$LFS/usr/lib/systemd/system/first-boot.service" << 'SERVICE'
+    run_privileged tee "$LFS/usr/lib/systemd/system/first-boot.service" << 'SERVICE' > /dev/null
 [Unit]
 Description=First Boot Configuration
 After=network.target
@@ -92,7 +93,7 @@ WantedBy=multi-user.target
 SERVICE
     run_privileged chroot "$LFS" systemctl enable first-boot.service 2>/dev/null || true
 elif [ -d "$LFS/etc/init.d" ]; then
-    cat > "$LFS/etc/init.d/first-boot" << 'INIT'
+    run_privileged tee "$LFS/etc/init.d/first-boot" << 'INIT' > /dev/null
 #!/bin/sh
 case "$1" in
     start)
