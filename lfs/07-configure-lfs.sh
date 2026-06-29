@@ -1,5 +1,5 @@
 #!/bin/bash
-# Configure LFS system - Compatible with Docker and native Linux
+# Configure LFS system – copie des binaires et configuration minimale
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -36,6 +36,26 @@ run_privileged() {
     else
         sudo "$@"
     fi
+}
+
+copy_binaries() {
+    local dest="$1"
+    shift
+    for tool in "$@"; do
+        src=$(which "$tool" 2>/dev/null || echo "/bin/$tool")
+        if [ -f "$src" ]; then
+            run_privileged cp -L -v "$src" "$dest/bin/"
+            # Copier les bibliothèques
+            ldd "$src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+                lib_dir="$dest/lib"
+                [[ "$lib" == *"/lib64/"* ]] && lib_dir="$dest/lib64"
+                run_privileged mkdir -p "$lib_dir"
+                run_privileged cp -v "$lib" "$lib_dir/"
+            done
+        else
+            log_warning "Command not found: $tool"
+        fi
+    done
 }
 
 log_info "========================================="
@@ -86,51 +106,57 @@ fi
 # Native mode
 log_info "Native mode – full configuration"
 
-run_privileged mkdir -p "$LFS"/etc/X11/xorg.conf.d
-run_privileged mkdir -p "$LFS"/usr/local/bin
+# Monter les systèmes de fichiers virtuels
+run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
+run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
+run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
+run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
+run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
+# Copier les binaires essentiels dans le chroot
+log_info "Copying essential binaries to chroot"
+run_privileged mkdir -p "$LFS/bin" "$LFS/usr/bin" "$LFS/sbin"
+copy_binaries "$LFS" mkdir chmod chown ln cat echo cp mv rm sed grep which
+# Copier aussi les outils de gestion d'utilisateurs si présents (optionnel)
+for tool in groupadd useradd chpasswd; do
+    src=$(which "$tool" 2>/dev/null || echo "/usr/sbin/$tool")
+    if [ -f "$src" ]; then
+        run_privileged cp -L -v "$src" "$LFS/usr/sbin/"
+        ldd "$src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+            lib_dir="$LFS/lib"
+            [[ "$lib" == *"/lib64/"* ]] && lib_dir="$LFS/lib64"
+            run_privileged mkdir -p "$lib_dir"
+            run_privileged cp -v "$lib" "$lib_dir/"
+        done
+    fi
+done
+
+# Créer un script de configuration simplifié (sans dépendre de grub, systemd, etc.)
 cat > "$LFS/configure-system.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
 echo "========================================="
-echo "Configuring LFS System"
+echo "Configuring LFS System (minimal)"
 echo "========================================="
 
-# Create initramfs if mkinitcpio exists
-if command -v mkinitcpio &> /dev/null; then
-    echo "Creating initramfs..."
-    mkinitcpio -p linux 2>/dev/null || true
-fi
-
-# Setup bootloader
-if command -v grub-install &> /dev/null; then
-    echo "Setting up GRUB bootloader..."
-    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=LFS --recheck 2>/dev/null || true
-    grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
-fi
-
-# Enable services based on init system
-if command -v systemctl &> /dev/null; then
-    echo "Enabling systemd services..."
-    systemctl enable systemd-networkd 2>/dev/null || true
-    systemctl enable systemd-resolved 2>/dev/null || true
-    systemctl enable systemd-timesyncd 2>/dev/null || true
-    systemctl enable sshd 2>/dev/null || true
-    systemctl enable dbus 2>/dev/null || true
-fi
-
-# Create user
-if ! id lfsuser &>/dev/null; then
-    groupadd -g 1000 lfsuser 2>/dev/null || true
-    useradd -u 1000 -g 1000 -G wheel,audio,video,storage -m lfsuser 2>/dev/null || true
-    echo "lfsuser:password123" | chpasswd 2>/dev/null || true
-fi
-
-# Setup sudo
-echo "lfsuser ALL=(ALL) ALL" >> /etc/sudoers 2>/dev/null || true
-
-# Keyboard config
+# Fichiers de base
+mkdir -pv /etc
+mkdir -pv /usr/local/bin
 mkdir -pv /etc/X11/xorg.conf.d
+
+# Créer les utilisateurs si absents
+if ! grep -q lfsuser /etc/passwd; then
+    echo "lfsuser:x:1000:1000::/home/lfsuser:/bin/bash" >> /etc/passwd
+    echo "lfsuser:x:1000:" >> /etc/group
+    echo "lfsuser:password123" | chpasswd 2>/dev/null || echo "Warning: chpasswd failed"
+    mkdir -pv /home/lfsuser
+    chown -R lfsuser:lfsuser /home/lfsuser
+fi
+
+# Sudoers
+echo "lfsuser ALL=(ALL) ALL" >> /etc/sudoers 2>/dev/null || echo "Warning: sudoers not updated"
+
+# Clavier
 cat > /etc/X11/xorg.conf.d/00-keyboard.conf << "XORG"
 Section "InputClass"
     Identifier "system-keyboard"
@@ -139,14 +165,14 @@ Section "InputClass"
 EndSection
 XORG
 
-# Desktop starter
+# Lanceur de bureau
 cat > /usr/local/bin/start-desktop << "START"
 #!/bin/bash
 exec startx
 START
 chmod +x /usr/local/bin/start-desktop
 
-# Network config
+# Hostname
 echo "lfs-desktop" > /etc/hostname
 cat > /etc/hosts << "HOSTS"
 127.0.0.1   localhost.localdomain localhost
@@ -154,7 +180,7 @@ cat > /etc/hosts << "HOSTS"
 127.0.1.1   lfs-desktop
 HOSTS
 
-# Timezone
+# Fuseau horaire
 ln -sfv /usr/share/zoneinfo/UTC /etc/localtime
 
 # Locale
@@ -174,13 +200,6 @@ echo "========================================="
 INNEREOF
 
 run_privileged chmod +x "$LFS/configure-system.sh"
-
-# Monter les systèmes de fichiers virtuels
-run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
-run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
-run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
-run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
-run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
 # Exécuter la configuration dans le chroot
 log_info "Running configuration in chroot..."
