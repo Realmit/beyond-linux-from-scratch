@@ -92,7 +92,12 @@ jobs:
         if: success()
         run: |
           cd /tmp/lfs-build/image
-          tar -cJf /tmp/rootfs.tar.xz .
+          tar -cJf /tmp/rootfs.tar.xz \
+            --exclude='proc' \
+            --exclude='sys' \
+            --exclude='dev' \
+            --exclude='run' \
+            .
 
       - name: Upload to Release
         if: success()
