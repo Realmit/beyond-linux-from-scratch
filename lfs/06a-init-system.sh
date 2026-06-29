@@ -1,11 +1,9 @@
 #!/bin/bash
-# Install init system - Compatible with Docker and native
-
+# Install init system (sysvinit or systemd) – REAL BUILD
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Fallback functions
 if [ -f "$SCRIPT_DIR/../common/utils.sh" ]; then
     source "$SCRIPT_DIR/../common/utils.sh"
 else
@@ -15,134 +13,145 @@ else
     log_success() { echo "[SUCCESS] $*"; }
 fi
 
-# Detect Docker
 IN_DOCKER=false
 if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
     IN_DOCKER=true
     log_info "Running in Docker container"
 fi
 
-# Set LFS
 if [ "$IN_DOCKER" = true ]; then
     LFS=${LFS:-/output/image}
 else
     LFS=${LFS:-/mnt/lfs}
 fi
 
+if [ -z "$LFS" ]; then
+    log_error "LFS variable not set"
+    exit 1
+fi
+
+run_privileged() {
+    if [ "$(whoami)" = "root" ]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
 log_info "========================================="
 log_info "Installing init system"
 log_info "========================================="
 
-# IMPORTANT: Chercher init.conf au bon endroit
-INIT_CONF=""
-if [ "$IN_DOCKER" = true ]; then
-    # En Docker, le fichier est dans /lfs-builder/config/
-    if [ -f "/lfs-builder/config/init.conf" ]; then
-        INIT_CONF="/lfs-builder/config/init.conf"
-        log_info "Found init.conf at: $INIT_CONF"
-    fi
-else
-    # En natif, chercher dans le répertoire courant
-    if [ -f "config/init.conf" ]; then
-        INIT_CONF="config/init.conf"
-        log_info "Found init.conf at: $INIT_CONF"
-    fi
+# Lire le choix de l'init depuis la config (fichier ou variable)
+INIT_SYSTEM=${INIT_SYSTEM:-sysvinit}
+if [ -f "$SCRIPT_DIR/../config/init.conf" ]; then
+    source "$SCRIPT_DIR/../config/init.conf"
 fi
-
-# Si trouvé, charger
-if [ -n "$INIT_CONF" ]; then
-    log_info "Loading init system config from: $INIT_CONF"
-    source "$INIT_CONF"
-else
-    log_warning "init.conf not found, using sysvinit as default"
-    INIT_SYSTEM="sysvinit"
-fi
-
 log_info "Init system selected: $INIT_SYSTEM"
 
-# Si en Docker, ne pas compiler, juste créer les scripts
+# Docker mode – structure minimale
 if [ "$IN_DOCKER" = true ]; then
-    log_info "Running in Docker mode - creating minimal init system"
-    
-    mkdir -pv $LFS/etc/init.d
-    mkdir -pv $LFS/etc/rc.d
-    
-    cat > $LFS/etc/inittab << 'INITTAB'
-id:3:initdefault:
-si::sysinit:/etc/init.d/rcS
-l0:0:wait:/etc/init.d/rc 0
-l1:1:wait:/etc/init.d/rc 1
-l2:2:wait:/etc/init.d/rc 2
-l3:3:wait:/etc/init.d/rc 3
-l4:4:wait:/etc/init.d/rc 4
-l5:5:wait:/etc/init.d/rc 5
-l6:6:wait:/etc/init.d/rc 6
-ca::ctrlaltdel:/sbin/shutdown -t3 -r now
-pf::powerfail:/sbin/shutdown -f -h +2 "Power Failure; System Shutting Down"
-INITTAB
-
-    cat > $LFS/etc/init.d/rcS << 'RCS'
+    log_info "Docker mode – creating minimal init structure"
+    mkdir -pv $LFS/{etc/init.d,bin,sbin,usr/sbin}
+    # Créer un script simple pour que le système démarre
+    cat > $LFS/etc/init.d/rcS << 'EOF'
 #!/bin/sh
-echo "Starting system..."
-mount -o remount,rw /
-mount -a
-echo "System started."
-RCS
+echo "Starting minimal init..."
+exec /bin/bash
+EOF
     chmod +x $LFS/etc/init.d/rcS
-
-    cat > $LFS/etc/init.d/rc << 'RC'
-#!/bin/sh
-echo "Runlevel $1"
-RC
-    chmod +x $LFS/etc/init.d/rc
-    
-    log_success "Init system (sysvinit) configured in Docker"
+    ln -sf /etc/init.d/rcS $LFS/sbin/init
+    log_success "Minimal init created for Docker"
     exit 0
 fi
 
-# Mode natif - build from sources
-log_info "Building init system from sources"
-
-if [ ! -d "$LFS/sources" ]; then
-    log_error "Sources directory not found: $LFS/sources"
+# Vérifier que le chroot est fonctionnel
+if [ ! -f "$LFS/bin/bash" ]; then
+    log_error "/bin/bash not found in $LFS/bin – run lfs-basic first"
+    exit 1
+fi
+if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
+    log_error "chroot not working – run lfs-basic first"
     exit 1
 fi
 
-cd "$LFS/sources" || exit 1
+# Monter les FS si nécessaire
+run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
+run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
+run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
+run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
+run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-case "$INIT_SYSTEM" in
-    sysvinit|sysv)
-        log_info "Installing sysvinit"
-        if ls sysvinit-*.tar.xz 1>/dev/null 2>&1; then
-            tar -xf sysvinit-*.tar.xz
-            cd sysvinit-*
-            make -j$(nproc)
-            make install
-            cd ..
-            rm -rf sysvinit-*
-            log_success "sysvinit installed"
-        else
-            log_warning "sysvinit source not found"
-        fi
-        ;;
-    systemd)
-        log_info "Installing systemd"
-        if ls systemd-*.tar.gz 1>/dev/null 2>&1; then
-            tar -xf systemd-*.tar.gz
-            cd systemd-*
-            meson setup build
-            meson compile -C build
-            meson install -C build
-            cd ..
-            rm -rf systemd-*
-            log_success "systemd installed"
-        else
-            log_warning "systemd source not found"
-        fi
-        ;;
-    *)
-        log_warning "Unknown init system: $INIT_SYSTEM, using sysvinit"
-        ;;
-esac
+# Copier les sources depuis /tmp/lfs-build/sources vers $LFS/sources
+SOURCES_HOST="/tmp/lfs-build/sources"
+if [ -d "$SOURCES_HOST" ] && [ "$(ls -A $SOURCES_HOST 2>/dev/null)" ]; then
+    log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
+    run_privileged mkdir -p "$LFS/sources"
+    run_privileged cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
+    run_privileged chown -R lfs:lfs "$LFS/sources"
+else
+    log_warning "No sources found in $SOURCES_HOST – will try to use existing sources in chroot"
+fi
 
-log_success "Init system setup complete!"
+# Créer le script de compilation interne
+log_info "Creating internal build script for init system"
+cat > $LFS/build-init.sh << 'INNEREOF'
+#!/bin/bash
+set -e
+cd /sources
+
+# Fonction pour compiler un paquet avec gestion des archives
+compile_package() {
+    local pattern=$1
+    local archive=$(ls -1 $pattern 2>/dev/null | head -n1)
+    if [ -z "$archive" ]; then
+        echo "WARNING: No source found for $pattern"
+        return 1
+    fi
+    local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
+    echo "=== Building $dir ==="
+    tar -xf "$archive"
+    cd "$dir"
+    # Détection du type de build
+    if [ -f "configure" ]; then
+        ./configure --prefix=/usr --sysconfdir=/etc
+    elif [ -f "Makefile" ]; then
+        # déjà prêt
+        true
+    fi
+    make -j$(nproc)
+    make install
+    cd /sources
+    rm -rf "$dir"
+    echo "=== $dir done ==="
+}
+
+# Installer sysvinit
+if [ "$INIT_SYSTEM" = "sysvinit" ]; then
+    echo "Building sysvinit..."
+    compile_package "sysvinit-*.tar.xz" || compile_package "sysvinit-*.tar.gz"
+    # Créer le lien /sbin/init
+    ln -sf /sbin/init /sbin/init
+
+elif [ "$INIT_SYSTEM" = "systemd" ]; then
+    echo "Building systemd..."
+    compile_package "systemd-*.tar.xz" || compile_package "systemd-*.tar.gz"
+fi
+
+echo "Init system installation complete."
+INNEREOF
+
+run_privileged chmod +x $LFS/build-init.sh
+
+# Exécuter le chroot
+log_info "Entering chroot and building init system..."
+run_privileged chroot "$LFS" /bin/bash /build-init.sh
+
+# Nettoyer les montages
+run_privileged umount $LFS/dev/pts 2>/dev/null || true
+run_privileged umount $LFS/dev 2>/dev/null || true
+run_privileged umount $LFS/proc 2>/dev/null || true
+run_privileged umount $LFS/sys 2>/dev/null || true
+run_privileged umount $LFS/run 2>/dev/null || true
+
+log_success "Init system ($INIT_SYSTEM) installed successfully"
