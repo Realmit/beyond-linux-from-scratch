@@ -89,18 +89,23 @@ jobs:
             --output /tmp/lfs-build
 
       - name: Upload rootfs
-        if: success()
+        id: upload_rootfs
+        if: success() || failure()
         run: |
+          set -e
           cd /tmp/lfs-build/image
+          # Exclure les répertoires virtuels
           tar -cJf /tmp/rootfs.tar.xz \
             --exclude='proc' \
             --exclude='sys' \
             --exclude='dev' \
             --exclude='run' \
+            --exclude='sources' \
             .
+          ls -lh /tmp/rootfs.tar.xz
 
       - name: Upload to Release
-        if: success()
+        if: success() && steps.upload_rootfs.outcome == 'success'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
