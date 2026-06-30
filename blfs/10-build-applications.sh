@@ -1,5 +1,5 @@
 #!/bin/bash
-# Applications (Firefox, LibreOffice, GIMP, VLC, etc.) – compatible Docker et native
+# Applications – with dynamic source path
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,7 +42,6 @@ log_info "========================================="
 log_info "Building applications (Firefox, LibreOffice, etc.)"
 log_info "========================================="
 
-# Docker mode – structure minimale
 if [ "$IN_DOCKER" = true ]; then
     log_info "Docker mode – creating minimal applications skeleton inside $LFS"
     run_privileged mkdir -pv "$LFS/usr/share/applications"
@@ -51,7 +50,6 @@ if [ "$IN_DOCKER" = true ]; then
     exit 0
 fi
 
-# Native mode – compilation réelle
 log_info "Native mode – building applications from sources"
 
 if [ ! -f "$LFS/bin/bash" ]; then
@@ -63,24 +61,21 @@ if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     exit 1
 fi
 
-# Monter les FS virtuels
 run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
 run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
 run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copier les sources
-SOURCES_HOST="/tmp/lfs-build/sources"
-if [ -d "$SOURCES_HOST" ] && [ "$(ls -A $SOURCES_HOST 2>/dev/null)" ]; then
+# --- DYNAMIC SOURCE PATH ---
+SOURCES_HOST="$(dirname "$LFS")/sources"
+if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
     run_privileged mkdir -p "$LFS/sources"
     run_privileged cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
     run_privileged chown -R lfs:lfs "$LFS/sources"
 fi
 
-# Créer le script de compilation interne
-log_info "Creating internal build script for applications"
 cat > "$LFS/build-apps.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
@@ -109,7 +104,6 @@ compile_package() {
     echo "=== $dir done ==="
 }
 
-# Compiler les applications si les sources sont présentes
 for pkg in "firefox-*.tar.xz" "firefox-*.tar.gz" \
            "libreoffice-*.tar.xz" "libreoffice-*.tar.gz" \
            "gimp-*.tar.xz" "gimp-*.tar.gz" \
@@ -121,12 +115,8 @@ echo "Applications installation complete."
 INNEREOF
 
 run_privileged chmod +x "$LFS/build-apps.sh"
-
-# Exécuter dans le chroot
-log_info "Entering chroot and building applications..."
 run_privileged chroot "$LFS" /bin/bash /build-apps.sh
 
-# Nettoyer les montages
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
 run_privileged umount $LFS/proc 2>/dev/null || true

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build BLFS base packages (minimal set) – with proper chroot handling
+# Build BLFS base packages (minimal set) – with dynamic source path
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,7 +42,6 @@ log_info "========================================="
 log_info "Building BLFS base packages"
 log_info "========================================="
 
-# Docker mode – minimal
 if [ "$IN_DOCKER" = true ]; then
     log_info "Docker mode – creating minimal BLFS structure inside $LFS"
     run_privileged mkdir -pv "$LFS/usr/share/doc"
@@ -51,10 +50,8 @@ if [ "$IN_DOCKER" = true ]; then
     exit 0
 fi
 
-# Native mode
 log_info "Native mode – building BLFS base packages"
 
-# Vérifier que le chroot est fonctionnel
 if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin – run lfs-basic first"
     exit 1
@@ -64,30 +61,26 @@ if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     exit 1
 fi
 
-# Monter les FS
 run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
 run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
 run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copier les sources BLFS (si présentes)
-SOURCES_HOST="/tmp/lfs-build/sources"
-if [ -d "$SOURCES_HOST" ] && [ "$(ls -A $SOURCES_HOST 2>/dev/null)" ]; then
+# --- DYNAMIC SOURCE PATH ---
+SOURCES_HOST="$(dirname "$LFS")/sources"
+if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
     run_privileged mkdir -p "$LFS/sources"
     run_privileged cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
     run_privileged chown -R lfs:lfs "$LFS/sources"
 fi
 
-# Créer le script de construction BLFS
-log_info "Creating BLFS build script"
 cat > "$LFS/build-blfs-base.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
 cd /sources
 
-# Fonction pour compiler un paquet
 compile_package() {
     local pattern=$1
     local archive=$(ls -1 $pattern 2>/dev/null | head -n1)
@@ -102,7 +95,6 @@ compile_package() {
     if [ -f "configure" ]; then
         ./configure --prefix=/usr --sysconfdir=/etc
     elif [ -f "Makefile" ]; then
-        # rien de spécial
         true
     fi
     make -j$(nproc)
@@ -112,7 +104,6 @@ compile_package() {
     echo "=== $dir done ==="
 }
 
-# Compiler quelques paquets de base BLFS (minimal)
 for pkg in "curl-*.tar.xz" "openssl-*.tar.gz" "expat-*.tar.xz" "libxml2-*.tar.xz"; do
     compile_package "$pkg" || true
 done
@@ -121,12 +112,8 @@ echo "BLFS base packages built."
 INNEREOF
 
 run_privileged chmod +x "$LFS/build-blfs-base.sh"
-
-# Exécuter dans le chroot
-log_info "Entering chroot and building BLFS base..."
 run_privileged chroot "$LFS" /bin/bash /build-blfs-base.sh
 
-# Nettoyer les montages
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
 run_privileged umount $LFS/proc 2>/dev/null || true

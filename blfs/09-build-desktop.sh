@@ -1,5 +1,5 @@
 #!/bin/bash
-# Desktop environment (XFCE) – avec copie des binaires head/cut
+# Desktop environment (XFCE) – avec copie des binaires head/cut et dynamic source path
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -62,10 +62,8 @@ SESSION
     exit 0
 fi
 
-# Native mode
 log_info "Native mode – installing XFCE desktop from sources"
 
-# Copier head et cut dans le chroot (nécessaires pour le script)
 log_info "Copying head and cut into chroot"
 for tool in head cut; do
     src=$(which "$tool" 2>/dev/null || echo "/usr/bin/$tool")
@@ -80,7 +78,6 @@ for tool in head cut; do
     fi
 done
 
-# Vérifier le chroot
 if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin"
     exit 1
@@ -92,16 +89,15 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copier les sources
-SOURCES_HOST="/tmp/lfs-build/sources"
-if [ -d "$SOURCES_HOST" ] && [ "$(ls -A $SOURCES_HOST 2>/dev/null)" ]; then
+# --- DYNAMIC SOURCE PATH ---
+SOURCES_HOST="$(dirname "$LFS")/sources"
+if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
     run_privileged mkdir -p "$LFS/sources"
     run_privileged cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
     run_privileged chown -R lfs:lfs "$LFS/sources"
 fi
 
-# Créer le script de compilation (avec head/cut maintenant disponibles)
 cat > "$LFS/build-xfce.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
