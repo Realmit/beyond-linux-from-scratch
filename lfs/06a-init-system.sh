@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install init system – FINAL FIX: respects INIT_SYSTEM
+# Install init system – FINAL FIX: pass INIT_SYSTEM correctly
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,11 +30,12 @@ if [ -z "$LFS" ]; then
     exit 1
 fi
 
+# --- MODIFICATION : utiliser sudo -E pour préserver l'environnement ---
 run_privileged() {
     if [ "$(whoami)" = "root" ]; then
         "$@"
     else
-        sudo "$@"
+        sudo -E "$@"
     fi
 }
 
@@ -42,7 +43,6 @@ log_info "========================================="
 log_info "Installing init system"
 log_info "========================================="
 
-# --- Crucial: use the value from the builder, default to sysvinit ---
 export INIT_SYSTEM="${INIT_SYSTEM:-sysvinit}"
 log_info "Init system selected: $INIT_SYSTEM"
 
@@ -75,7 +75,7 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copy head and cut (needed for compile_package)
+# Copy head and cut
 for tool in head cut; do
     src=$(which "$tool" 2>/dev/null || echo "/usr/bin/$tool")
     if [ -f "$src" ]; then
@@ -98,13 +98,11 @@ if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     run_privileged chown -R lfs:lfs "$LFS/sources"
 fi
 
-# Create the internal build script (it will use the exported INIT_SYSTEM)
 cat > "$LFS/build-init.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
 cd /sources
 
-# Use the exported variable from the parent environment
 INIT_SYSTEM="${INIT_SYSTEM:-sysvinit}"
 
 compile_package() {
@@ -146,9 +144,9 @@ INNEREOF
 
 run_privileged chmod +x "$LFS/build-init.sh"
 
-# --- Run the chroot with the environment variable set ---
+# --- CORRECTION : utiliser env pour forcer la variable ---
 log_info "Entering chroot and building init system..."
-run_privileged chroot "$LFS" /bin/bash -c "INIT_SYSTEM=$INIT_SYSTEM /build-init.sh"
+run_privileged chroot "$LFS" env INIT_SYSTEM="$INIT_SYSTEM" /bin/bash /build-init.sh
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
