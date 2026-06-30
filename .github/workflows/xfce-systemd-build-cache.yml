@@ -1,0 +1,123 @@
+name: Build Cache
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-cache:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        profile: [xfce]
+        init: [systemd]
+        arch: [x86_64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential bison flex gawk texinfo wget git python3 python3-pip \
+            xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev
+          command -v makeinfo || { echo "makeinfo not found"; exit 1; }
+
+      - name: Show disk space
+        run: df -h
+
+      - name: Create output directory
+        run: sudo mkdir -p /tmp/lfs-build
+
+      - name: Cache LFS sources
+        uses: actions/cache@v4
+        with:
+          path: /tmp/lfs-build/sources
+          key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
+          restore-keys: lfs-sources-
+
+      - name: Patch host-check.sh
+        run: |
+          sed -i '/texinfo/d' host/01-check-host.sh
+          sed -i '/makeinfo/d' host/01-check-host.sh
+
+      - name: Patch toolchain to switch to lfs
+        run: |
+          sed -i '1a if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
+
+      - name: Prepare host system (as root)
+        run: |
+          sudo -E host/02-prepare-host.sh
+        env:
+          LFS: /tmp/lfs-build/image
+
+      - name: Copy repository to /tmp/lfs-builder
+        run: |
+          sudo mkdir -p /tmp/lfs-builder
+          sudo cp -a . /tmp/lfs-builder/
+          sudo chown -R lfs:lfs /tmp/lfs-builder
+          sudo chmod -R a+rX /tmp/lfs-builder
+
+      - name: Reassign ownership of output directory to lfs
+        run: |
+          sudo chown -R lfs:lfs /tmp/lfs-build
+
+      - name: Build profile (as lfs user)
+        id: build
+        run: |
+          cd /tmp/lfs-builder
+          sudo -u lfs python3 builder.py \
+            --profile ${{ matrix.profile }} \
+            --init ${{ matrix.init }} \
+            --output /tmp/lfs-build
+
+      - name: Compress rootfs (exclude virtual filesystems)
+        id: compress
+        if: success() || failure()
+        run: |
+          set -e
+          cd /tmp/lfs-build/image
+          sudo tar -cJf /tmp/rootfs.tar.xz \
+            --exclude='proc' \
+            --exclude='sys' \
+            --exclude='dev' \
+            --exclude='run' \
+            --exclude='sources' \
+            .
+          sudo chown $USER:$USER /tmp/rootfs.tar.xz
+          ls -lh /tmp/rootfs.tar.xz
+
+      - name: Create Release and Upload Rootfs
+        if: success() && steps.compress.outcome == 'success'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v4.3.0-cache
+          name: LFS Cache v4.3.0
+          body: |
+            Cache pour LFS/BLFS 13.0
+            Profil : ${{ matrix.profile }}
+            Init   : ${{ matrix.init }}
+            Arch   : ${{ matrix.arch }}
+          files: /tmp/rootfs.tar.xz
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show build logs on failure
+        if: failure()
+        run: |
+          echo "=== Global build.log (last 100 lines) ==="
+          tail -n 100 /tmp/lfs-build/logs/build.log 2>/dev/null || echo "build.log not found"
+          echo "=== Stage logs (last 20 lines each) ==="
+          for log in /tmp/lfs-build/logs/*.log; do
+            echo "--- $log ---"
+            tail -n 20 "$log" 2>/dev/null || echo "Cannot read $log"
+          done
