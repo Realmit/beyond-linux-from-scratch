@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install init system – FINAL FIX: pass INIT_SYSTEM correctly
+# Install init system – hardcode INIT_SYSTEM in internal script
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,7 +30,6 @@ if [ -z "$LFS" ]; then
     exit 1
 fi
 
-# --- MODIFICATION : utiliser sudo -E pour préserver l'environnement ---
 run_privileged() {
     if [ "$(whoami)" = "root" ]; then
         "$@"
@@ -43,7 +42,8 @@ log_info "========================================="
 log_info "Installing init system"
 log_info "========================================="
 
-export INIT_SYSTEM="${INIT_SYSTEM:-sysvinit}"
+# Récupérer la valeur depuis l’environnement (ou défaut sysvinit)
+INIT_SYSTEM="${INIT_SYSTEM:-sysvinit}"
 log_info "Init system selected: $INIT_SYSTEM"
 
 if [ "$IN_DOCKER" = true ]; then
@@ -75,7 +75,7 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copy head and cut
+# Copy head and cut (needed for compile_package)
 for tool in head cut; do
     src=$(which "$tool" 2>/dev/null || echo "/usr/bin/$tool")
     if [ -f "$src" ]; then
@@ -98,44 +98,47 @@ if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     run_privileged chown -R lfs:lfs "$LFS/sources"
 fi
 
-cat > "$LFS/build-init.sh" << 'INNEREOF'
+# --- Créer le script interne avec la valeur hardcodée ---
+log_info "Creating internal build script with INIT_SYSTEM=$INIT_SYSTEM"
+cat > "$LFS/build-init.sh" << INNEREOF
 #!/bin/bash
 set -e
 cd /sources
 
-INIT_SYSTEM="${INIT_SYSTEM:-sysvinit}"
+# Valeur figée au moment de la génération
+INIT_SYSTEM="$INIT_SYSTEM"
 
 compile_package() {
-    local pattern=$1
-    local archive=$(ls -1 $pattern 2>/dev/null | head -n1)
-    if [ -z "$archive" ]; then
-        echo "WARNING: No source found for $pattern"
+    local pattern=\$1
+    local archive=\$(ls -1 \$pattern 2>/dev/null | head -n1)
+    if [ -z "\$archive" ]; then
+        echo "WARNING: No source found for \$pattern"
         return 1
     fi
-    local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
-    echo "=== Building $dir ==="
-    tar -xf "$archive"
-    cd "$dir"
+    local dir=\$(tar -tf "\$archive" | head -1 | cut -d/ -f1)
+    echo "=== Building \$dir ==="
+    tar -xf "\$archive"
+    cd "\$dir"
     if [ -f "configure" ]; then
         ./configure --prefix=/usr --sysconfdir=/etc
     elif [ -f "Makefile" ]; then
         true
     fi
-    make -j$(nproc)
+    make -j\$(nproc)
     make install
     cd /sources
-    rm -rf "$dir"
-    echo "=== $dir done ==="
+    rm -rf "\$dir"
+    echo "=== \$dir done ==="
 }
 
-if [ "$INIT_SYSTEM" = "sysvinit" ]; then
+if [ "\$INIT_SYSTEM" = "sysvinit" ]; then
     echo "Building sysvinit..."
     compile_package "sysvinit-*.tar.xz" || compile_package "sysvinit-*.tar.gz"
-elif [ "$INIT_SYSTEM" = "systemd" ]; then
+elif [ "\$INIT_SYSTEM" = "systemd" ]; then
     echo "Building systemd..."
     compile_package "systemd-*.tar.xz" || compile_package "systemd-*.tar.gz"
 else
-    echo "ERROR: Unknown init system $INIT_SYSTEM"
+    echo "ERROR: Unknown init system \$INIT_SYSTEM"
     exit 1
 fi
 
@@ -144,9 +147,9 @@ INNEREOF
 
 run_privileged chmod +x "$LFS/build-init.sh"
 
-# --- CORRECTION : utiliser env pour forcer la variable ---
+# Exécuter le chroot (plus besoin de passer la variable)
 log_info "Entering chroot and building init system..."
-run_privileged chroot "$LFS" /bin/bash -c "INIT_SYSTEM=$INIT_SYSTEM /build-init.sh"
+run_privileged chroot "$LFS" /bin/bash /build-init.sh
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
