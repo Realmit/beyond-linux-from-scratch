@@ -94,14 +94,14 @@ jobs:
         run: |
           set -e
           cd /tmp/lfs-build/image
-          # Exclure les répertoires virtuels
-          tar -cJf /tmp/rootfs.tar.xz \
+          sudo tar -cJf /tmp/rootfs.tar.xz \
             --exclude='proc' \
             --exclude='sys' \
             --exclude='dev' \
             --exclude='run' \
             --exclude='sources' \
             .
+          sudo chown $USER:$USER /tmp/rootfs.tar.xz
           ls -lh /tmp/rootfs.tar.xz
 
       - name: Debug – list image contents
