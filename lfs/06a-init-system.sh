@@ -148,7 +148,7 @@ run_privileged chmod +x "$LFS/build-init.sh"
 
 # --- Run the chroot with the environment variable set ---
 log_info "Entering chroot and building init system..."
-run_privileged chroot "$LFS" /bin/bash -c "export INIT_SYSTEM=$INIT_SYSTEM; /build-init.sh"
+run_privileged chroot "$LFS" /bin/bash -c "INIT_SYSTEM=$INIT_SYSTEM /build-init.sh"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
