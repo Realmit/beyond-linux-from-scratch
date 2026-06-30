@@ -1,0 +1,10 @@
+---
+engines:
+  pylint:
+    enabled: false
+  pep8:
+    enabled: false
+  bandit:
+    enabled: true
+  semgrep:
+    enabled: true
