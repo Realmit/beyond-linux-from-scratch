@@ -1,4 +1,4 @@
-name: Build Cache
+name: KDE Build Cache
 
 on:
   schedule:

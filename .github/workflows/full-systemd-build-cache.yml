@@ -1,4 +1,4 @@
-name: Build Cache
+name: FULL Build Cache
 
 on:
   schedule:

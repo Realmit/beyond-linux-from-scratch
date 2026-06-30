@@ -1,4 +1,4 @@
-name: Build Cache
+name: XFCE Build Cache
 
 on:
   schedule:

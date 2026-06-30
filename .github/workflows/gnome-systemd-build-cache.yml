@@ -1,4 +1,4 @@
-name: Build Cache
+name: Gnome Build Cache
 
 on:
   schedule:
