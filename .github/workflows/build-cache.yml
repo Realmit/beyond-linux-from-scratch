@@ -104,15 +104,26 @@ jobs:
             .
           ls -lh /tmp/rootfs.tar.xz
 
-      - name: Upload to Release
+      - name: Debug – list image contents
+        run: |
+          ls -la /tmp/lfs-build/image
+          du -sh /tmp/lfs-build/image
+
+      - name: Create Release and Upload Rootfs
         if: success() && steps.upload_rootfs.outcome == 'success'
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: /tmp/rootfs.tar.xz
-          asset_name: lfs-rootfs-${{ matrix.profile }}-${{ matrix.init }}-${{ matrix.arch }}.tar.xz
-          tag: v4.3.0-cache
-          overwrite: true
+          tag_name: v4.3.0-cache
+          name: LFS Cache v4.3.0
+          body: |
+            Cache pour LFS/BLFS 13.0
+            Profil : ${{ matrix.profile }}
+            Init   : ${{ matrix.init }}
+            Arch   : ${{ matrix.arch }}
+          files: /tmp/rootfs.tar.xz
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Show build logs on failure
         if: failure()
