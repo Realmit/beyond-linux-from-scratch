@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install init system – pass INIT_SYSTEM as argument
+# Install init system – utilise le globbing Bash, pas de ls/head/cut
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,7 +42,6 @@ log_info "========================================="
 log_info "Installing init system"
 log_info "========================================="
 
-# Récupérer la valeur depuis l’environnement (ou défaut sysvinit)
 INIT_SYSTEM="${INIT_SYSTEM:-sysvinit}"
 log_info "Init system selected: $INIT_SYSTEM"
 
@@ -75,45 +74,27 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copy head and cut (nécessaires pour compile_package)
-for tool in head cut; do
-    src=$(which "$tool" 2>/dev/null || echo "/usr/bin/$tool")
-    if [ -f "$src" ]; then
-        run_privileged cp -L -v "$src" "$LFS/usr/bin/" 2>/dev/null || true
-        ldd "$src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
-            lib_dir="$LFS/lib"
-            [[ "$lib" == *"/lib64/"* ]] && lib_dir="$LFS/lib64"
-            run_privileged mkdir -p "$lib_dir"
-            run_privileged cp -v "$lib" "$lib_dir/"
-        done
-    fi
-done
-
-# Dynamic source path
+# Chemin dynamique des sources
 SOURCES_HOST="$(dirname "$LFS")/sources"
 if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
     run_privileged mkdir -p "$LFS/sources"
     run_privileged cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
     run_privileged chown -R lfs:lfs "$LFS/sources"
+else
+    log_warning "No sources found in $SOURCES_HOST – might still be available inside chroot"
 fi
 
-# --- Créer le script interne qui accepte un argument ---
+# --- Créer le script interne qui utilise le globbing Bash (pas de ls/head/cut) ---
 cat > "$LFS/build-init.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
 cd /sources
 
-# Lire l'argument passé
 INIT_SYSTEM="${1:-sysvinit}"
 
 compile_package() {
-    local pattern=$1
-    local archive=$(ls -1 $pattern 2>/dev/null | head -n1)
-    if [ -z "$archive" ]; then
-        echo "WARNING: No source found for $pattern"
-        return 1
-    fi
+    local archive="$1"
     local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
     echo "=== Building $dir ==="
     tar -xf "$archive"
@@ -132,10 +113,30 @@ compile_package() {
 
 if [ "$INIT_SYSTEM" = "sysvinit" ]; then
     echo "Building sysvinit..."
-    compile_package "sysvinit-*.tar.xz" || compile_package "sysvinit-*.tar.gz"
+    found=0
+    for archive in sysvinit-*.tar.*; do
+        if [ -f "$archive" ]; then
+            compile_package "$archive"
+            found=1
+            break
+        fi
+    done
+    if [ $found -eq 0 ]; then
+        echo "WARNING: No source found for sysvinit"
+    fi
 elif [ "$INIT_SYSTEM" = "systemd" ]; then
     echo "Building systemd..."
-    compile_package "systemd-*.tar.xz" || compile_package "systemd-*.tar.gz"
+    found=0
+    for archive in systemd-*.tar.*; do
+        if [ -f "$archive" ]; then
+            compile_package "$archive"
+            found=1
+            break
+        fi
+    done
+    if [ $found -eq 0 ]; then
+        echo "WARNING: No source found for systemd"
+    fi
 else
     echo "ERROR: Unknown init system $INIT_SYSTEM"
     exit 1
