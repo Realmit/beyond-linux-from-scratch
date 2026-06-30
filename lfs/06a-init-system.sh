@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install init system (sysvinit or systemd) – REAL BUILD
+# Install init system – respects INIT_SYSTEM environment variable
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,30 +42,24 @@ log_info "========================================="
 log_info "Installing init system"
 log_info "========================================="
 
-# Lire le choix de l'init depuis la config (fichier ou variable)
+# --- Use the variable passed from builder ---
 INIT_SYSTEM=${INIT_SYSTEM:-sysvinit}
-if [ -f "$SCRIPT_DIR/../config/init.conf" ]; then
-    source "$SCRIPT_DIR/../config/init.conf"
-fi
 log_info "Init system selected: $INIT_SYSTEM"
 
-# Docker mode – structure minimale
 if [ "$IN_DOCKER" = true ]; then
     log_info "Docker mode – creating minimal init structure"
-    mkdir -pv $LFS/{etc/init.d,bin,sbin,usr/sbin}
-    # Créer un script simple pour que le système démarre
-    cat > $LFS/etc/init.d/rcS << 'EOF'
+    mkdir -pv "$LFS"/{etc/init.d,bin,sbin,usr/sbin}
+    cat > "$LFS/etc/init.d/rcS" << 'EOF'
 #!/bin/sh
 echo "Starting minimal init..."
 exec /bin/bash
 EOF
-    chmod +x $LFS/etc/init.d/rcS
-    ln -sf /etc/init.d/rcS $LFS/sbin/init
+    chmod +x "$LFS/etc/init.d/rcS"
+    ln -sf /etc/init.d/rcS "$LFS/sbin/init"
     log_success "Minimal init created for Docker"
     exit 0
 fi
 
-# Vérifier que le chroot est fonctionnel
 if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin – run lfs-basic first"
     exit 1
@@ -75,32 +69,30 @@ if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     exit 1
 fi
 
-# Monter les FS si nécessaire
 run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
 run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
 run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# Copier les sources depuis /tmp/lfs-build/sources vers $LFS/sources
-SOURCES_HOST="/tmp/lfs-build/sources"
-if [ -d "$SOURCES_HOST" ] && [ "$(ls -A $SOURCES_HOST 2>/dev/null)" ]; then
+# --- DYNAMIC SOURCE PATH ---
+SOURCES_HOST="$(dirname "$LFS")/sources"
+if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
     run_privileged mkdir -p "$LFS/sources"
     run_privileged cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
     run_privileged chown -R lfs:lfs "$LFS/sources"
-else
-    log_warning "No sources found in $SOURCES_HOST – will try to use existing sources in chroot"
 fi
 
-# Créer le script de compilation interne
-log_info "Creating internal build script for init system"
-cat > $LFS/build-init.sh << 'INNEREOF'
+# Create internal build script that uses INIT_SYSTEM
+cat > "$LFS/build-init.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
 cd /sources
 
-# Fonction pour compiler un paquet avec gestion des archives
+# Ensure the variable is available
+INIT_SYSTEM=${INIT_SYSTEM:-sysvinit}
+
 compile_package() {
     local pattern=$1
     local archive=$(ls -1 $pattern 2>/dev/null | head -n1)
@@ -112,11 +104,9 @@ compile_package() {
     echo "=== Building $dir ==="
     tar -xf "$archive"
     cd "$dir"
-    # Détection du type de build
     if [ -f "configure" ]; then
         ./configure --prefix=/usr --sysconfdir=/etc
     elif [ -f "Makefile" ]; then
-        # déjà prêt
         true
     fi
     make -j$(nproc)
@@ -126,28 +116,28 @@ compile_package() {
     echo "=== $dir done ==="
 }
 
-# Installer sysvinit
 if [ "$INIT_SYSTEM" = "sysvinit" ]; then
     echo "Building sysvinit..."
     compile_package "sysvinit-*.tar.xz" || compile_package "sysvinit-*.tar.gz"
-    # Créer le lien /sbin/init
-    ln -sf /sbin/init /sbin/init
-
+    # Create /sbin/init symlink
+    ln -sf /sbin/init /sbin/init 2>/dev/null || true
 elif [ "$INIT_SYSTEM" = "systemd" ]; then
     echo "Building systemd..."
     compile_package "systemd-*.tar.xz" || compile_package "systemd-*.tar.gz"
+else
+    echo "ERROR: Unknown init system $INIT_SYSTEM"
+    exit 1
 fi
 
 echo "Init system installation complete."
 INNEREOF
 
-run_privileged chmod +x $LFS/build-init.sh
+run_privileged chmod +x "$LFS/build-init.sh"
 
-# Exécuter le chroot
+# --- Pass INIT_SYSTEM inside chroot ---
 log_info "Entering chroot and building init system..."
-run_privileged chroot "$LFS" /bin/bash /build-init.sh
+run_privileged chroot "$LFS" /bin/bash -c "export INIT_SYSTEM=$INIT_SYSTEM; /build-init.sh"
 
-# Nettoyer les montages
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
 run_privileged umount $LFS/proc 2>/dev/null || true
