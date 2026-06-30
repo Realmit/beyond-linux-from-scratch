@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install init system – respects INIT_SYSTEM, dynamic source path, copies head/cut
+# Install init system – FINAL FIX: respects INIT_SYSTEM
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,8 +42,8 @@ log_info "========================================="
 log_info "Installing init system"
 log_info "========================================="
 
-# Use the variable passed from builder (or default to sysvinit)
-INIT_SYSTEM=${INIT_SYSTEM:-sysvinit}
+# --- Crucial: use the value from the builder, default to sysvinit ---
+export INIT_SYSTEM="${INIT_SYSTEM:-sysvinit}"
 log_info "Init system selected: $INIT_SYSTEM"
 
 if [ "$IN_DOCKER" = true ]; then
@@ -69,15 +69,13 @@ if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     exit 1
 fi
 
-# Mount virtual filesystems
 run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
 run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
 run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# --- Copy head and cut into the chroot (needed for the compile_package function) ---
-log_info "Copying head and cut into chroot"
+# Copy head and cut (needed for compile_package)
 for tool in head cut; do
     src=$(which "$tool" 2>/dev/null || echo "/usr/bin/$tool")
     if [ -f "$src" ]; then
@@ -91,25 +89,23 @@ for tool in head cut; do
     fi
 done
 
-# --- DYNAMIC SOURCE PATH ---
+# Dynamic source path
 SOURCES_HOST="$(dirname "$LFS")/sources"
 if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
     run_privileged mkdir -p "$LFS/sources"
     run_privileged cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
     run_privileged chown -R lfs:lfs "$LFS/sources"
-else
-    log_warning "No sources found in $SOURCES_HOST – might still be available inside chroot"
 fi
 
-# Create internal build script that uses INIT_SYSTEM
+# Create the internal build script (it will use the exported INIT_SYSTEM)
 cat > "$LFS/build-init.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
 cd /sources
 
-# Ensure the variable is available
-INIT_SYSTEM=${INIT_SYSTEM:-sysvinit}
+# Use the exported variable from the parent environment
+INIT_SYSTEM="${INIT_SYSTEM:-sysvinit}"
 
 compile_package() {
     local pattern=$1
@@ -137,8 +133,6 @@ compile_package() {
 if [ "$INIT_SYSTEM" = "sysvinit" ]; then
     echo "Building sysvinit..."
     compile_package "sysvinit-*.tar.xz" || compile_package "sysvinit-*.tar.gz"
-    # Create /sbin/init symlink
-    ln -sf /sbin/init /sbin/init 2>/dev/null || true
 elif [ "$INIT_SYSTEM" = "systemd" ]; then
     echo "Building systemd..."
     compile_package "systemd-*.tar.xz" || compile_package "systemd-*.tar.gz"
@@ -152,7 +146,7 @@ INNEREOF
 
 run_privileged chmod +x "$LFS/build-init.sh"
 
-# --- Pass INIT_SYSTEM inside chroot ---
+# --- Run the chroot with the environment variable set ---
 log_info "Entering chroot and building init system..."
 run_privileged chroot "$LFS" /bin/bash -c "export INIT_SYSTEM=$INIT_SYSTEM; /build-init.sh"
 
