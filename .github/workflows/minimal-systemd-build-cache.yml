@@ -1,4 +1,4 @@
-name: Build Cache
+name: Minimal Build Cache
 
 on:
   schedule:
