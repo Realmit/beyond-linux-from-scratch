@@ -30,7 +30,7 @@ jobs:
           format: sarif
           gh-code-scanning-compat: true
           max-allowed-issues: 2147483647
-          tools: bandit,semgrep   # ← uniquement les outils de sécurité
+          skip-tools: pylint,pep8   # ← La clé pour désactiver les linters style
 
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
