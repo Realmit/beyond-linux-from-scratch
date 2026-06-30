@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        #profile: [kde, gnome, full]
         profile: [minimal]
         init: [systemd]
         arch: [x86_64]
@@ -35,7 +34,6 @@ jobs:
       - name: Show disk space
         run: df -h
 
-      # ---- 1. Créer le répertoire de sortie (root) ----
       - name: Create output directory
         run: sudo mkdir -p /tmp/lfs-build
 
@@ -46,7 +44,6 @@ jobs:
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
 
-      # ---- 2. Patcher les scripts DANS LE DÉPÔT ORIGINAL ----
       - name: Patch host-check.sh
         run: |
           sed -i '/texinfo/d' host/01-check-host.sh
@@ -56,16 +53,12 @@ jobs:
         run: |
           sed -i '1a if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
 
-      # ---- 3. PRÉPARER L'HÔTE (root) ----
-      #    Crée l'utilisateur lfs et /tmp/lfs-build/image
       - name: Prepare host system (as root)
         run: |
           sudo -E host/02-prepare-host.sh
         env:
           LFS: /tmp/lfs-build/image
 
-      # ---- 4. MAINTENANT lfs existe ----
-      #    On copie le dépôt dans /tmp/lfs-builder et on donne la propriété à lfs
       - name: Copy repository to /tmp/lfs-builder
         run: |
           sudo mkdir -p /tmp/lfs-builder
@@ -73,12 +66,10 @@ jobs:
           sudo chown -R lfs:lfs /tmp/lfs-builder
           sudo chmod -R a+rX /tmp/lfs-builder
 
-      # ---- 5. Redonner la propriété du répertoire de sortie à lfs ----
       - name: Reassign ownership of output directory to lfs
         run: |
           sudo chown -R lfs:lfs /tmp/lfs-build
 
-      # ---- 6. Lancer le builder EN TANT QUE LFS depuis la copie ----
       - name: Build profile (as lfs user)
         id: build
         run: |
@@ -88,8 +79,8 @@ jobs:
             --init ${{ matrix.init }} \
             --output /tmp/lfs-build
 
-      - name: Upload rootfs
-        id: upload_rootfs
+      - name: Compress rootfs (exclude virtual filesystems)
+        id: compress
         if: success() || failure()
         run: |
           set -e
@@ -104,13 +95,8 @@ jobs:
           sudo chown $USER:$USER /tmp/rootfs.tar.xz
           ls -lh /tmp/rootfs.tar.xz
 
-      - name: Debug – list image contents
-        run: |
-          ls -la /tmp/lfs-build/image
-          du -sh /tmp/lfs-build/image
-
       - name: Create Release and Upload Rootfs
-        if: success() && steps.upload_rootfs.outcome == 'success'
+        if: success() && steps.compress.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v4.3.0-cache
