@@ -1568,6 +1568,9 @@ def main():
         builder.config.set('init_system.choice', args.init)
         builder.logger.info(f"Init system overridden to: {args.init}")
 
+        # Recreate executor with updated environment
+        builder.executor = ScriptExecutor(builder._get_env(), builder.output_dir, builder.logger)
+
     if args.no_live:
         builder.config.set('live_system.enabled', False)
         builder.logger.info("Live system disabled")
