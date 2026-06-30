@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install init system – respects INIT_SYSTEM environment variable
+# Install init system – respects INIT_SYSTEM, dynamic source path, copies head/cut
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,7 +42,7 @@ log_info "========================================="
 log_info "Installing init system"
 log_info "========================================="
 
-# --- Use the variable passed from builder ---
+# Use the variable passed from builder (or default to sysvinit)
 INIT_SYSTEM=${INIT_SYSTEM:-sysvinit}
 log_info "Init system selected: $INIT_SYSTEM"
 
@@ -69,11 +69,27 @@ if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     exit 1
 fi
 
+# Mount virtual filesystems
 run_privileged mount --bind /dev $LFS/dev 2>/dev/null || true
 run_privileged mount -t devpts devpts $LFS/dev/pts 2>/dev/null || true
 run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
+
+# --- Copy head and cut into the chroot (needed for the compile_package function) ---
+log_info "Copying head and cut into chroot"
+for tool in head cut; do
+    src=$(which "$tool" 2>/dev/null || echo "/usr/bin/$tool")
+    if [ -f "$src" ]; then
+        run_privileged cp -L -v "$src" "$LFS/usr/bin/" 2>/dev/null || true
+        ldd "$src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+            lib_dir="$LFS/lib"
+            [[ "$lib" == *"/lib64/"* ]] && lib_dir="$LFS/lib64"
+            run_privileged mkdir -p "$lib_dir"
+            run_privileged cp -v "$lib" "$lib_dir/"
+        done
+    fi
+done
 
 # --- DYNAMIC SOURCE PATH ---
 SOURCES_HOST="$(dirname "$LFS")/sources"
@@ -82,6 +98,8 @@ if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     run_privileged mkdir -p "$LFS/sources"
     run_privileged cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
     run_privileged chown -R lfs:lfs "$LFS/sources"
+else
+    log_warning "No sources found in $SOURCES_HOST – might still be available inside chroot"
 fi
 
 # Create internal build script that uses INIT_SYSTEM
