@@ -15,6 +15,18 @@ else
     log_success() { echo "[SUCCESS] $*"; }
 fi
 
+# ============================================================================
+# INTÉGRATION DU TYPE DE NOYAU (KERNEL_TYPE)
+# ============================================================================
+# Récupère la variable d'environnement ou utilise la valeur par défaut
+# Cette variable sera exportée pour les scripts ultérieurs
+KERNEL_TYPE="${KERNEL_TYPE:-linux}"
+export KERNEL_TYPE
+
+log_info "Kernel type: $KERNEL_TYPE"
+
+# ============================================================================
+
 # Detect if running in Docker
 IN_DOCKER=false
 if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then

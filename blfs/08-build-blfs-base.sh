@@ -13,6 +13,14 @@ else
     log_success() { echo "[SUCCESS] $*"; }
 fi
 
+# ============================================================================
+# INTÉGRATION DU TYPE DE NOYAU
+# ============================================================================
+KERNEL_TYPE="${KERNEL_TYPE:-linux}"
+export KERNEL_TYPE
+log_info "Kernel type: $KERNEL_TYPE"
+# ============================================================================
+
 IN_DOCKER=false
 if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
     IN_DOCKER=true
@@ -112,7 +120,9 @@ echo "BLFS base packages built."
 INNEREOF
 
 run_privileged chmod +x "$LFS/build-blfs-base.sh"
-run_privileged chroot "$LFS" /bin/bash /build-blfs-base.sh
+
+# --- Pass KERNEL_TYPE inside chroot ---
+run_privileged chroot "$LFS" /bin/bash -c "export KERNEL_TYPE=$KERNEL_TYPE; /build-blfs-base.sh"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true

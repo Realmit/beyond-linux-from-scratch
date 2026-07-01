@@ -2,7 +2,7 @@
 # Build LFS system – VRAIE COMPILATION DE GLIBC, BINUTILS, GCC, ETC.
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 if [ -f "$SCRIPT_DIR/../common/utils.sh" ]; then
     source "$SCRIPT_DIR/../common/utils.sh"
@@ -12,6 +12,14 @@ else
     log_warning() { echo "[WARNING] $*"; }
     log_success() { echo "[SUCCESS] $*"; }
 fi
+
+# ============================================================================
+# INTÉGRATION DU TYPE DE NOYAU
+# ============================================================================
+KERNEL_TYPE="${KERNEL_TYPE:-linux}"
+export KERNEL_TYPE
+log_info "Kernel type: $KERNEL_TYPE"
+# ============================================================================
 
 IN_DOCKER=false
 if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
@@ -140,9 +148,9 @@ INNEREOF
 
 run_privileged chmod +x "$LFS/build-lfs-system.sh"
 
-# --- Pass INIT_SYSTEM inside chroot (fix #2) ---
+# --- Pass INIT_SYSTEM and KERNEL_TYPE inside chroot (fix #2) ---
 log_info "Entering chroot and compiling..."
-run_privileged chroot "$LFS" /bin/bash -c "export INIT_SYSTEM=$INIT_SYSTEM; /build-lfs-system.sh"
+run_privileged chroot "$LFS" /bin/bash -c "export INIT_SYSTEM=$INIT_SYSTEM; export KERNEL_TYPE=$KERNEL_TYPE; /build-lfs-system.sh"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true

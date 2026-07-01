@@ -200,6 +200,7 @@ class LFSConfig:
 
             "kernel": {
                 "version": "6.12.20",
+                "type": "linux",
                 "config": "config/kernel-config",
                 "modules": ["ext4", "xfs", "nvme", "virtio", "usb_storage", "overlay", "vfat", "ntfs"],
                 "custom_patches": []
@@ -997,6 +998,9 @@ class LFSBuilder:
         if self.profile_config.get('init_system'):
             self.config.set('init_system.choice', self.profile_config['init_system'])
 
+        if self.profile_config.get('kernel'):
+            self.config.set('kernel.type', self.profile_config['kernel'])
+
         # Apply cross-compilation settings from profile
         if self.profile_config.get('cross_compile', False):
             self.config.set('cross_compile', True)
@@ -1097,6 +1101,7 @@ class LFSBuilder:
             'SECURITY_HARDENING': str(self.profile_config.get('security_hardening', False)).lower(),
             'PRIVACY_TOOLS': str(self.profile_config.get('privacy_tools', False)).lower(),
             'LIVE_SYSTEM': str(self.profile_config.get('live_system', True)).lower(),
+            'KERNEL_TYPE': str(self.config.get('kernel.type', 'linux')).lower(),
             'SYSTEM_UPDATER': str(self.profile_config.get('system_updater', True)).lower(),
             'LFS_VERSION': __version__,
             'LC_ALL': 'POSIX'
@@ -1599,6 +1604,11 @@ Examples:
     parser.add_argument('--cache-url', default='https://raw.githubusercontent.com/lfs-builder/lfs-builder/main/cache-metadata.json',
                         help='Custom cache metadata URL')
 
+    parser.add_argument('--kernel-type',
+                        choices=['linux', 'linux-libre', 'gnu-hurd', 'freebsd'],
+                        default='linux',
+                        help='Type de noyau à utiliser (linux, linux-libre, gnu-hurd, freebsd)')
+
     return parser
 
 def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
@@ -1731,6 +1741,10 @@ def main():
     if args.no_live:
         builder.config.set('live_system.enabled', False)
         builder.logger.info("Live system disabled")
+
+    if args.kernel_type:
+        builder.config.set('kernel.type', args.kernel_type)
+        builder.logger.info(f"Kernel type overridden to: {args.kernel_type}")
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
