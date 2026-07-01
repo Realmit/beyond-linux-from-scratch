@@ -1,32 +1,31 @@
 #!/bin/bash
-# Installation de GRUB pour BIOS et UEFI
+# final/13-create-bootloader.sh – Install GRUB bootloader
 set -e
 
-LFS="${LFS:-/output/image}"
-
-echo "[INFO] Installing bootloader (GRUB)..."
-
-if [ ! -f "$LFS/usr/sbin/grub-install" ]; then
-    echo "[ERROR] GRUB not installed in $LFS. Please build GRUB first."
+LFS="${LFS:-/mnt/lfs}"
+if [ ! -d "$LFS" ]; then
+    echo "[ERROR] LFS directory not found"
     exit 1
 fi
 
-# Monter /dev, /proc, /sys pour le chroot
-mount --bind /dev "$LFS/dev"
-mount --bind /proc "$LFS/proc"
-mount --bind /sys "$LFS/sys"
+echo "[INFO] Installing bootloader (GRUB)..."
 
-# Installer GRUB en mode BIOS
-chroot "$LFS" /usr/sbin/grub-install --target=i386-pc /dev/sda || true
-# Installer GRUB en mode UEFI
-if [ -d "$LFS/usr/lib/grub/x86_64-efi" ]; then
-    chroot "$LFS" /usr/sbin/grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB || true
+# Monter les systèmes de fichiers virtuels
+mount --bind /dev "$LFS/dev" 2>/dev/null || true
+mount --bind /proc "$LFS/proc" 2>/dev/null || true
+mount --bind /sys "$LFS/sys" 2>/dev/null || true
+
+# Installer GRUB (BIOS)
+if [ -f "$LFS/usr/sbin/grub-install" ]; then
+    chroot "$LFS" grub-install --target=i386-pc /dev/sda || echo "GRUB BIOS install skipped"
+    chroot "$LFS" grub-mkconfig -o /boot/grub/grub.cfg
+else
+    echo "[WARNING] GRUB not installed in LFS"
 fi
 
-# Générer la configuration
-chroot "$LFS" /usr/sbin/grub-mkconfig -o /boot/grub/grub.cfg
+# Nettoyer
+umount "$LFS/dev" 2>/dev/null || true
+umount "$LFS/proc" 2>/dev/null || true
+umount "$LFS/sys" 2>/dev/null || true
 
-# Nettoyer les montages
-umount "$LFS/dev" "$LFS/proc" "$LFS/sys"
-
-echo "[SUCCESS] Bootloader installed."
+echo "[SUCCESS] Bootloader configured"

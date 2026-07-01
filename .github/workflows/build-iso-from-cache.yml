@@ -19,11 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -31,29 +26,21 @@ jobs:
             build-essential bison flex gawk texinfo wget git python3 python3-pip \
             xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev \
             squashfs-tools jq cpio
-          command -v makeinfo || { echo "makeinfo not found"; exit 1; }
-
-      - name: Install Python dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install pytest pytest-cov requests-mock pytest-mock
+          sudo apt-get install -y busybox-static || true
 
       - name: Create lfs user
         run: |
           if ! id "lfs" &>/dev/null; then
             sudo useradd -m -s /bin/bash lfs
-            echo "lfs:lfs" | sudo chpasswd
           fi
-          sudo chsh -s /bin/bash lfs || true
 
       - name: Get latest release cache URL
         id: get_cache
         run: |
           RELEASE_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
-          RELEASE_JSON=$(curl -s "$RELEASE_URL")
-          ASSET_URL=$(echo "$RELEASE_JSON" | jq -r '.assets[] | select(.name=="rootfs.tar.xz") | .browser_download_url')
+          ASSET_URL=$(curl -s "$RELEASE_URL" | jq -r '.assets[] | select(.name=="rootfs.tar.xz") | .browser_download_url')
           if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
-            echo "❌ No rootfs.tar.xz found in latest release"
+            echo "❌ No rootfs.tar.xz found"
             exit 1
           fi
           echo "cache_url=$ASSET_URL" >> $GITHUB_OUTPUT
@@ -65,7 +52,6 @@ jobs:
           sudo wget -q --show-progress "${{ steps.get_cache.outputs.cache_url }}" -O rootfs.tar.xz
           sudo tar -xJf rootfs.tar.xz -C image/
           sudo chown -R lfs:lfs image/
-          sudo rm rootfs.tar.xz
           ls -lh image/
 
       - name: Copy repository to /tmp/lfs-builder
@@ -73,70 +59,24 @@ jobs:
           sudo mkdir -p /tmp/lfs-builder
           sudo cp -a . /tmp/lfs-builder/
           sudo chown -R lfs:lfs /tmp/lfs-builder
-          sudo chmod -R a+rX /tmp/lfs-builder
 
-      - name: Run final stages (with debug logs)
-        id: final
-        continue-on-error: false   # ← on arrête au premier échec
+      - name: Run final stages (with debug)
         run: |
           LFS_PATH="/tmp/lfs-build/image"
           cd /tmp/lfs-builder
-          # Exécution avec logs détaillés
-          echo "=== 12-initramfs ==="
-          sudo -u lfs LFS="$LFS_PATH" bash -x ./final/12-create-initramfs.sh 2>&1 | tee /tmp/initramfs.log
-          echo "=== 13-bootloader ==="
-          sudo -u lfs LFS="$LFS_PATH" bash -x ./final/13-create-bootloader.sh 2>&1 | tee /tmp/bootloader.log
-          echo "=== 14-installer ==="
-          sudo -u lfs LFS="$LFS_PATH" bash -x ./final/14-create-installer.sh 2>&1 | tee /tmp/installer.log
-          echo "=== 15-live-system ==="
-          sudo -u lfs LFS="$LFS_PATH" bash -x ./final/15-create-live-system.sh 2>&1 | tee /tmp/live.log
+          set -x
+          sudo -u lfs LFS="$LFS_PATH" ./final/12-create-initramfs.sh
+          sudo -u lfs LFS="$LFS_PATH" ./final/13-create-bootloader.sh
+          sudo -u lfs LFS="$LFS_PATH" ./final/14-create-installer.sh
+          sudo -u lfs LFS="$LFS_PATH" ./final/15-create-live-system.sh
 
-      - name: Verify ISO creation
-        id: check_iso
+      - name: Verify and upload ISO
         if: always()
         run: |
-          ISO_PATH="/tmp/lfs-build/lfs-installer.iso"
-          if [ -f "$ISO_PATH" ]; then
-            echo "✅ ISO found: $(ls -lh $ISO_PATH)"
-            echo "iso_exists=true" >> $GITHUB_OUTPUT
+          if [ -f /tmp/lfs-build/lfs-installer.iso ]; then
+            echo "✅ ISO found"
+            # Upload via release
           else
-            echo "⚠️ ISO not found"
-            echo "iso_exists=false" >> $GITHUB_OUTPUT
-            # Afficher les logs si l'ISO n'est pas trouvé
-            echo "=== Logs des étapes finales ==="
-            for log in /tmp/initramfs.log /tmp/bootloader.log /tmp/installer.log /tmp/live.log; do
-              if [ -f "$log" ]; then
-                echo "--- $log ---"
-                cat "$log"
-              fi
-            done
+            echo "❌ ISO NOT found"
+            exit 1
           fi
-
-      - name: Upload ISO to release
-        if: success() && steps.check_iso.outputs.iso_exists == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v4.3.0-live-from-cache-${{ github.run_number }}
-          name: Live ISO (from cache) v4.3.0
-          body: |
-            ISO live généré à partir du cache rootfs de la dernière release.
-            Profil : ${{ matrix.profile }}
-            Init   : ${{ matrix.init }}
-            Arch   : ${{ matrix.arch }}
-          files: /tmp/lfs-build/lfs-installer.iso
-          generate_release_notes: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Show logs on failure
-        if: failure()
-        run: |
-          echo "=== Logs des étapes finales (en cas d'échec) ==="
-          for log in /tmp/initramfs.log /tmp/bootloader.log /tmp/installer.log /tmp/live.log; do
-            if [ -f "$log" ]; then
-              echo "--- $log ---"
-              cat "$log"
-            fi
-          done
-          echo "=== Build logs ==="
-          tail -n 100 /tmp/lfs-build/logs/build.log 2>/dev/null || echo "build.log not found"

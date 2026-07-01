@@ -51,7 +51,6 @@ done
 cd - >/dev/null
 
 # --- Créer les périphériques indispensables ---
-# (nécessite sudo pour mknod)
 if [ "$(whoami)" = "root" ]; then
     mknod -m 622 "$INITRAMFS_DIR/dev/console" c 5 1
     mknod -m 666 "$INITRAMFS_DIR/dev/null" c 1 3
@@ -67,14 +66,11 @@ fi
 # --- Script init ---
 cat > "$INITRAMFS_DIR/init" << 'EOF'
 #!/bin/busybox sh
-# Initramfs minimal – montage du rootfs réel
-
 /bin/busybox mount -t proc proc /proc
 /bin/busybox mount -t sysfs sysfs /sys
 /bin/busybox mount -t devtmpfs devtmpfs /dev
 
-# Chercher le vrai root (label=ROOT, UUID, ou /dev/sda2)
-ROOT_DEV="/dev/sda2"  # À adapter
+ROOT_DEV="/dev/sda2"
 if [ -b "$ROOT_DEV" ]; then
     /bin/busybox mount -t ext4 "$ROOT_DEV" /mnt
 else
@@ -95,8 +91,6 @@ cd "$INITRAMFS_DIR"
 find . | cpio -o -H newc | gzip -9 > "$INITRAMFS_OUTPUT"
 cd - >/dev/null
 
-# Nettoyer
 rm -rf "$INITRAMFS_DIR"
-
 echo "[SUCCESS] Initramfs created at $INITRAMFS_OUTPUT"
 ls -lh "$INITRAMFS_OUTPUT"
