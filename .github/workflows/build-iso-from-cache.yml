@@ -30,13 +30,21 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential bison flex gawk texinfo wget git python3 python3-pip \
             xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev \
-            squashfs-tools jq
+            squashfs-tools jq cpio
           command -v makeinfo || { echo "makeinfo not found"; exit 1; }
 
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
           pip install pytest pytest-cov requests-mock pytest-mock
+
+      - name: Create lfs user
+        run: |
+          if ! id "lfs" &>/dev/null; then
+            sudo useradd -m -s /bin/bash lfs
+            echo "lfs:lfs" | sudo chpasswd
+          fi
+          sudo chsh -s /bin/bash lfs || true
 
       - name: Get latest release cache URL
         id: get_cache
@@ -56,27 +64,32 @@ jobs:
           cd /tmp/lfs-build
           sudo wget -q --show-progress "${{ steps.get_cache.outputs.cache_url }}" -O rootfs.tar.xz
           sudo tar -xJf rootfs.tar.xz -C image/
+          sudo chown -R lfs:lfs image/
           sudo rm rootfs.tar.xz
-          sudo chown -R root:root image/
           ls -lh image/
 
       - name: Copy repository to /tmp/lfs-builder
         run: |
           sudo mkdir -p /tmp/lfs-builder
           sudo cp -a . /tmp/lfs-builder/
+          sudo chown -R lfs:lfs /tmp/lfs-builder
           sudo chmod -R a+rX /tmp/lfs-builder
 
-      - name: Run final stages (as root)
+      - name: Run final stages (with debug logs)
         id: final
-        continue-on-error: true
+        continue-on-error: false   # ← on arrête au premier échec
         run: |
+          LFS_PATH="/tmp/lfs-build/image"
           cd /tmp/lfs-builder
-          export LFS=/tmp/lfs-build/image
-          # Exécuter chaque script en tant que root pour avoir les droits
-          sudo bash -c "export LFS=$LFS && cd /tmp/lfs-builder && ./final/12-create-initramfs.sh" || { echo "initramfs failed"; exit 1; }
-          sudo bash -c "export LFS=$LFS && cd /tmp/lfs-builder && ./final/13-create-bootloader.sh" || { echo "bootloader failed"; exit 1; }
-          sudo bash -c "export LFS=$LFS && cd /tmp/lfs-builder && ./final/14-create-installer.sh" || { echo "installer failed"; exit 1; }
-          sudo bash -c "export LFS=$LFS && cd /tmp/lfs-builder && ./final/15-create-live-system.sh" || { echo "live-system failed"; exit 1; }
+          # Exécution avec logs détaillés
+          echo "=== 12-initramfs ==="
+          sudo -u lfs LFS="$LFS_PATH" bash -x ./final/12-create-initramfs.sh 2>&1 | tee /tmp/initramfs.log
+          echo "=== 13-bootloader ==="
+          sudo -u lfs LFS="$LFS_PATH" bash -x ./final/13-create-bootloader.sh 2>&1 | tee /tmp/bootloader.log
+          echo "=== 14-installer ==="
+          sudo -u lfs LFS="$LFS_PATH" bash -x ./final/14-create-installer.sh 2>&1 | tee /tmp/installer.log
+          echo "=== 15-live-system ==="
+          sudo -u lfs LFS="$LFS_PATH" bash -x ./final/15-create-live-system.sh 2>&1 | tee /tmp/live.log
 
       - name: Verify ISO creation
         id: check_iso
@@ -89,6 +102,14 @@ jobs:
           else
             echo "⚠️ ISO not found"
             echo "iso_exists=false" >> $GITHUB_OUTPUT
+            # Afficher les logs si l'ISO n'est pas trouvé
+            echo "=== Logs des étapes finales ==="
+            for log in /tmp/initramfs.log /tmp/bootloader.log /tmp/installer.log /tmp/live.log; do
+              if [ -f "$log" ]; then
+                echo "--- $log ---"
+                cat "$log"
+              fi
+            done
           fi
 
       - name: Upload ISO to release
@@ -110,9 +131,12 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
+          echo "=== Logs des étapes finales (en cas d'échec) ==="
+          for log in /tmp/initramfs.log /tmp/bootloader.log /tmp/installer.log /tmp/live.log; do
+            if [ -f "$log" ]; then
+              echo "--- $log ---"
+              cat "$log"
+            fi
+          done
           echo "=== Build logs ==="
           tail -n 100 /tmp/lfs-build/logs/build.log 2>/dev/null || echo "build.log not found"
-          for log in /tmp/lfs-build/logs/*.log; do
-            echo "--- $log ---"
-            tail -n 20 "$log" 2>/dev/null || echo "Cannot read $log"
-          done
