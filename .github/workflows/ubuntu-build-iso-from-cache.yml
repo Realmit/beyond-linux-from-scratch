@@ -1,4 +1,4 @@
-name: Build ISO from Cache
+name: Ubuntu Build ISO from Cache
 
 on:
   workflow_dispatch:
