@@ -3,7 +3,7 @@ name: Build ISO from Cache
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * 1'   # tous les lundis à 6h, facultatif
+    - cron: '0 6 * * 1'
 
 permissions:
   contents: write
@@ -38,7 +38,6 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install pytest pytest-cov requests-mock pytest-mock
 
-      # Créer l'utilisateur lfs AVANT toute opération qui en dépend
       - name: Create lfs user
         run: |
           if ! id "lfs" &>/dev/null; then
@@ -51,7 +50,6 @@ jobs:
         id: get_cache
         run: |
           RELEASE_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
-          echo "Fetching release info from $RELEASE_URL"
           RELEASE_JSON=$(curl -s "$RELEASE_URL")
           ASSET_URL=$(echo "$RELEASE_JSON" | jq -r '.assets[] | select(.name=="rootfs.tar.xz") | .browser_download_url')
           if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
@@ -59,7 +57,6 @@ jobs:
             exit 1
           fi
           echo "cache_url=$ASSET_URL" >> $GITHUB_OUTPUT
-          echo "✅ Cache URL found: $ASSET_URL"
 
       - name: Download and extract cache
         run: |
@@ -67,7 +64,6 @@ jobs:
           cd /tmp/lfs-build
           sudo wget -q --show-progress "${{ steps.get_cache.outputs.cache_url }}" -O rootfs.tar.xz
           sudo tar -xJf rootfs.tar.xz -C image/
-          # Changer les propriétaires après extraction
           sudo chown -R lfs:lfs image/
           sudo rm rootfs.tar.xz
           ls -lh image/
@@ -79,10 +75,12 @@ jobs:
           sudo chown -R lfs:lfs /tmp/lfs-builder
           sudo chmod -R a+rX /tmp/lfs-builder
 
-      - name: Prepare /output directory for initramfs
+      # === NOUVELLE ÉTAPE : créer /output pour l'initramfs ===
+      - name: Create /output directory for initramfs
         run: |
           sudo mkdir -p /output
           sudo chown lfs:lfs /output
+          sudo chmod 755 /output
 
       - name: Run final stages (initramfs, bootloader, live-system)
         id: final
@@ -94,7 +92,6 @@ jobs:
           export INIT_SYSTEM=${{ matrix.init }}
           export LFS_TGT=x86_64-lfs-linux-gnu
           export MAKEFLAGS="-j$(nproc)"
-          # Exécuter chaque script en tant que lfs
           sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/12-create-initramfs.sh" || { echo "initramfs failed"; exit 1; }
           sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/13-create-bootloader.sh" || { echo "bootloader failed"; exit 1; }
           sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/14-create-installer.sh" || { echo "installer failed"; exit 1; }
