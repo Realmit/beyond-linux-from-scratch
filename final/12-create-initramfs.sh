@@ -38,9 +38,12 @@ fi
 cp -a "$BUSYBOX_SRC" "$INITRAMFS_DIR/bin/busybox"
 chmod 755 "$INITRAMFS_DIR/bin/busybox"
 
+# --- Créer les liens symboliques, en ignorant 'busybox' lui-même ---
 cd "$INITRAMFS_DIR/bin"
 for cmd in $(./busybox --list); do
-    ln -sf busybox "$cmd"
+    if [ "$cmd" != "busybox" ]; then
+        ln -sf busybox "$cmd"
+    fi
 done
 cd - >/dev/null
 
@@ -63,6 +66,7 @@ cat > "$INITRAMFS_DIR/init" << 'EOF'
 /bin/busybox mount -t proc proc /proc
 /bin/busybox mount -t sysfs sysfs /sys
 /bin/busybox mount -t devtmpfs devtmpfs /dev
+
 ROOT_DEV="/dev/sda2"
 if [ -b "$ROOT_DEV" ]; then
     /bin/busybox mount -t ext4 "$ROOT_DEV" /mnt
@@ -70,6 +74,7 @@ else
     echo "Root device $ROOT_DEV not found. Dropping to shell."
     /bin/busybox sh
 fi
+
 /bin/busybox umount /proc
 /bin/busybox umount /sys
 /bin/busybox umount /dev
@@ -78,7 +83,7 @@ EOF
 
 chmod 755 "$INITRAMFS_DIR/init"
 
-# --- Archive ---
+# --- Archive cpio compressée ---
 cd "$INITRAMFS_DIR"
 find . | cpio -o -H newc | gzip -9 > "$INITRAMFS_OUTPUT"
 cd - >/dev/null
