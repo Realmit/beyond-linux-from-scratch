@@ -1,4 +1,4 @@
-name: Fedora XFCE SYSVINIT x86_64 Build Cache (Fedora)
+name: XFCE SYSVINIT x86_64 Build Cache (Fedora)
 
 on:
   schedule:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   build-cache:
     runs-on: ubuntu-latest
-    container: fedora:latest          # ← Exécute toutes les étapes dans un conteneur Fedora
+    container: fedora:latest
     strategy:
       matrix:
         profile: [xfce]
@@ -31,15 +31,16 @@ jobs:
 
       - name: Install dependencies (Fedora)
         run: |
-          # Mise à jour des dépôts et installation des paquets équivalents
           dnf install -y dnf-plugins-core
-          dnf groupinstall -y "Development Tools"   # build-essential
+          # Installation du groupe de développement (équivalent à build-essential)
+          dnf install -y @development-tools
+          # Autres paquets nécessaires
           dnf install -y \
             bison flex gawk texinfo wget git python3 python3-pip \
             xorriso isolinux mtools dosfstools parted rsync bc cpio \
             openssl-devel elfutils-libelf-devel \
             file which findutils util-linux
-          # Vérification que makeinfo est bien présent (fourni par texinfo)
+          # Vérification de makeinfo (fourni par texinfo)
           command -v makeinfo || { echo "makeinfo not found"; exit 1; }
 
       - name: Install Python dependencies
@@ -63,10 +64,10 @@ jobs:
           https://github.com/i2p/i2p.i2p/archive/refs/tags/i2p-2.12.0.tar.gz
           https://0xacab.org/jvoisin/mat2/-/archive/0.13.4/mat2-0.13.4.tar.gz
           EOF
-          echo "✅ sources.list mis à jour avec $(wc -l < packages/sources.list) URLs"
+          echo "sources.list mis à jour avec $(wc -l < packages/sources.list) URLs"
 
       - name: Create output directory
-        run: mkdir -p /tmp/lfs-build   # plus besoin de sudo, car on est root dans le conteneur
+        run: mkdir -p /tmp/lfs-build
 
       - name: Cache LFS sources
         uses: actions/cache@v4
@@ -82,7 +83,7 @@ jobs:
       - name: Check compilation
         run: |
           python3 -m py_compile builder.py
-          echo "✅ builder.py compiled successfully"
+          echo "builder.py compiled successfully"
 
       - name: Patch host-check.sh
         run: |
@@ -95,7 +96,6 @@ jobs:
 
       - name: Prepare host system (as root)
         run: |
-          # Dans le conteneur on est root, on peut lancer directement
           host/02-prepare-host.sh
         env:
           LFS: /tmp/lfs-build/image
@@ -116,7 +116,6 @@ jobs:
         continue-on-error: true
         run: |
           cd /tmp/lfs-builder
-          # On bascule sur l'utilisateur lfs créé par 02-prepare-host.sh
           sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
@@ -129,16 +128,21 @@ jobs:
         continue-on-error: true
         run: |
           set -e
-          cd /tmp/lfs-build/image
-          tar -cJf /tmp/rootfs.tar.xz \
-            --exclude='proc' \
-            --exclude='sys' \
-            --exclude='dev' \
-            --exclude='run' \
-            --exclude='sources' \
-            .
-          chown $USER:$USER /tmp/rootfs.tar.xz || true   # $USER peut ne pas exister, on ignore
-          ls -lh /tmp/rootfs.tar.xz
+          if [ -d /tmp/lfs-build/image ]; then
+            cd /tmp/lfs-build/image
+            tar -cJf /tmp/rootfs.tar.xz \
+              --exclude='proc' \
+              --exclude='sys' \
+              --exclude='dev' \
+              --exclude='run' \
+              --exclude='sources' \
+              .
+            chown $USER:$USER /tmp/rootfs.tar.xz || true
+            ls -lh /tmp/rootfs.tar.xz
+          else
+            echo "/tmp/lfs-build/image n'existe pas, compression ignorée."
+            exit 0
+          fi
 
       - name: Create Release and Upload Rootfs
         if: success() && steps.compress.outcome == 'success'
