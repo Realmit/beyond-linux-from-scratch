@@ -75,27 +75,19 @@ jobs:
           sudo chown -R lfs:lfs /tmp/lfs-builder
           sudo chmod -R a+rX /tmp/lfs-builder
 
-      # === NOUVELLE ÉTAPE : créer /output pour l'initramfs ===
-      - name: Create /output directory for initramfs
-        run: |
-          sudo mkdir -p /output
-          sudo chown lfs:lfs /output
-          sudo chmod 755 /output
+      # Plus besoin de créer /output : les vrais scripts utilisent $LFS
 
-      - name: Run final stages (initramfs, bootloader, live-system)
+      - name: Run final stages (initramfs, bootloader, installer, live-system)
         id: final
         continue-on-error: true
         run: |
+          # Définir LFS et le passer explicitement à chaque commande
+          LFS_PATH="/tmp/lfs-build/image"
           cd /tmp/lfs-builder
-          export LFS=/tmp/lfs-build/image
-          export PROFILE=${{ matrix.profile }}
-          export INIT_SYSTEM=${{ matrix.init }}
-          export LFS_TGT=x86_64-lfs-linux-gnu
-          export MAKEFLAGS="-j$(nproc)"
-          sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/12-create-initramfs.sh" || { echo "initramfs failed"; exit 1; }
-          sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/13-create-bootloader.sh" || { echo "bootloader failed"; exit 1; }
-          sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/14-create-installer.sh" || { echo "installer failed"; exit 1; }
-          sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/15-create-live-system.sh" || { echo "live-system failed"; exit 1; }
+          sudo -u lfs LFS="$LFS_PATH" bash -c "./final/12-create-initramfs.sh" || { echo "initramfs failed"; exit 1; }
+          sudo -u lfs LFS="$LFS_PATH" bash -c "./final/13-create-bootloader.sh" || { echo "bootloader failed"; exit 1; }
+          sudo -u lfs LFS="$LFS_PATH" bash -c "./final/14-create-installer.sh" || { echo "installer failed"; exit 1; }
+          sudo -u lfs LFS="$LFS_PATH" bash -c "./final/15-create-live-system.sh" || { echo "live-system failed"; exit 1; }
 
       - name: Verify ISO creation
         id: check_iso
