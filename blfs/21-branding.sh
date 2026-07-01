@@ -184,10 +184,10 @@ configure_user_settings
 install_branding_assets
 
 log_success "LFS branding successfully applied!"
-log_info "✅ Themes: LFS-Dark and LFS-Light installed"
-log_info "✅ Wallpapers: Installed to /usr/share/backgrounds/lfs/"
-log_info "✅ XFCE: Configured with LFS branding"
-log_info "✅ GNOME: Configured with LFS branding"
-log_info "✅ User preferences: Applied to lfsuser and root"
+log_info "Themes: LFS-Dark and LFS-Light installed"
+log_info "Wallpapers: Installed to /usr/share/backgrounds/lfs/"
+log_info "XFCE: Configured with LFS branding"
+log_info "GNOME: Configured with LFS branding"
+log_info "User preferences: Applied to lfsuser and root"
 
 exit 0
