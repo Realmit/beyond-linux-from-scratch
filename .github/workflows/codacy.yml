@@ -41,7 +41,6 @@ jobs:
           gh-code-scanning-compat: true
           max-allowed-issues: 2147483647
           skip-tools: pylint,pep8
-          directory: ./
           excluded-directories: branding,lfs-output
 
       - name: Upload SARIF results
