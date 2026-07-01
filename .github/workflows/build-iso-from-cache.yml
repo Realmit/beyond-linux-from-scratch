@@ -1,0 +1,141 @@
+name: Build ISO from Cache
+
+on:
+  workflow_dispatch:  # Déclenchement manuel
+  schedule:
+    - cron: '0 6 * * 1'  # Tous les lundis à 6h (optionnel)
+
+permissions:
+  contents: write
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        profile: [xfce]
+        init: [sysvinit]
+        arch: [x86_64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential bison flex gawk texinfo wget git python3 python3-pip \
+            xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev \
+            squashfs-tools jq
+          command -v makeinfo || { echo "makeinfo not found"; exit 1; }
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install pytest pytest-cov requests-mock pytest-mock
+
+      # --- Étape clé : récupérer l'URL du cache depuis la dernière release ---
+      - name: Get latest release cache URL
+        id: get_cache
+        run: |
+          # Récupère la dernière release (triée par date)
+          RELEASE_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
+          echo "Fetching release info from $RELEASE_URL"
+          RELEASE_JSON=$(curl -s "$RELEASE_URL")
+          # Cherche l'asset rootfs.tar.xz
+          ASSET_URL=$(echo "$RELEASE_JSON" | jq -r '.assets[] | select(.name=="rootfs.tar.xz") | .browser_download_url')
+          if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
+            echo "❌ No rootfs.tar.xz found in latest release"
+            exit 1
+          fi
+          echo "cache_url=$ASSET_URL" >> $GITHUB_OUTPUT
+          echo "✅ Cache URL found: $ASSET_URL"
+
+      - name: Download and extract cache
+        run: |
+          mkdir -p /tmp/lfs-build/image
+          cd /tmp/lfs-build
+          echo "Downloading cache from ${{ steps.get_cache.outputs.cache_url }}"
+          wget -q --show-progress "${{ steps.get_cache.outputs.cache_url }}" -O rootfs.tar.xz
+          echo "Extracting rootfs..."
+          sudo tar -xJf rootfs.tar.xz -C image/
+          sudo chown -R lfs:lfs image/ 2>/dev/null || true
+          rm rootfs.tar.xz
+          ls -lh image/
+
+      - name: Copy repository to /tmp/lfs-builder
+        run: |
+          sudo mkdir -p /tmp/lfs-builder
+          sudo cp -a . /tmp/lfs-builder/
+          sudo chown -R lfs:lfs /tmp/lfs-builder
+          sudo chmod -R a+rX /tmp/lfs-builder
+
+      - name: Create lfs user if not exists
+        run: |
+          if ! id "lfs" &>/dev/null; then
+            sudo useradd -m -s /bin/bash lfs
+          fi
+          sudo chown -R lfs:lfs /tmp/lfs-build
+
+      # --- Exécution des étapes finales (initramfs, bootloader, live-system) ---
+      - name: Run final stages (initramfs, bootloader, live-system)
+        id: final
+        continue-on-error: true
+        run: |
+          cd /tmp/lfs-builder
+          # On reprend à partir de initramfs (ou live-system directement)
+          # Mais il faut que les scripts soient exécutés dans l'ordre.
+          # On utilise l'environnement du builder pour avoir les bonnes variables
+          export LFS=/tmp/lfs-build/image
+          export PROFILE=${{ matrix.profile }}
+          export INIT_SYSTEM=${{ matrix.init }}
+          export LFS_TGT=x86_64-lfs-linux-gnu
+          export MAKEFLAGS="-j$(nproc)"
+          # On exécute les scripts finaux un par un
+          sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/12-create-initramfs.sh" || { echo "initramfs failed"; exit 1; }
+          sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/13-create-bootloader.sh" || { echo "bootloader failed"; exit 1; }
+          sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/14-create-installer.sh" || { echo "installer failed"; exit 1; }
+          sudo -u lfs bash -c "cd /tmp/lfs-builder && ./final/15-create-live-system.sh" || { echo "live-system failed"; exit 1; }
+
+      - name: Verify ISO creation
+        id: check_iso
+        if: success() || failure()
+        run: |
+          ISO_PATH="/tmp/lfs-build/lfs-installer.iso"
+          if [ -f "$ISO_PATH" ]; then
+            echo "✅ ISO found: $(ls -lh $ISO_PATH)"
+            echo "iso_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ ISO not found"
+            echo "iso_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload ISO to release
+        if: success() && steps.check_iso.outputs.iso_exists == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v4.3.0-live-from-cache
+          name: Live ISO (built from cache) v4.3.0
+          body: |
+            ISO live généré à partir du cache rootfs de la dernière release.
+            Profil : ${{ matrix.profile }}
+            Init   : ${{ matrix.init }}
+            Arch   : ${{ matrix.arch }}
+          files: /tmp/lfs-build/lfs-installer.iso
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== Build logs ==="
+          tail -n 100 /tmp/lfs-build/logs/build.log 2>/dev/null || echo "build.log not found"
+          for log in /tmp/lfs-build/logs/*.log; do
+            echo "--- $log ---"
+            tail -n 20 "$log" 2>/dev/null || echo "Cannot read $log"
+          done
