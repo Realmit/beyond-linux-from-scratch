@@ -122,7 +122,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v4.3.0-cache
-          name: Way Beyond LFS Cache v4.3.0
+          name: Way Beyond LFS Xfce SYSVINIT Cache v4.3.0
           body: |
             Cache pour LFS/BLFS 13.0
             Profil : ${{ matrix.profile }}
