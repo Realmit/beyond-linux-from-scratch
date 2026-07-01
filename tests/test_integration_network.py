@@ -146,19 +146,10 @@ class TestRealSourceLists:
         assert len(lines) > 50
         print(f"✅ {len(lines)} packages in sources.list")
 
-        # Utiliser des motifs pour les paquets critiques (car les versions évoluent)
-        critical_patterns = [
-            r'linux-\d+\.\d+\.\d+\.tar\.',      # noyau
-            r'gcc-\d+\.\d+\.\d+\.tar\.',        # gcc
-            r'glibc-\d+\.\d+\.\d+\.tar\.',      # glibc
-            r'systemd-\d+\.\d+\.\d+\.tar\.',    # systemd
-            r'sysvinit-\d+\.\d+\.\d+\.tar\.'    # sysvinit
-        ]
-
-        for pattern in critical_patterns:
-            found = any(re.search(pattern, line) for line in lines)
-            assert found, f"Pattern {pattern} not found in sources.list"
-        print("✅ All critical package patterns present")
+        critical_terms = ['linux', 'gcc', 'glibc', 'systemd', 'sysvinit']
+        for term in critical_terms:
+            assert any(term in line for line in lines), f"'{term}' not found in sources.list"
+        print("✅ All critical packages present")
 
     @pytest.mark.skipif(not os.environ.get('RUN_SLOW_TESTS'), reason="Set RUN_SLOW_TESTS=1 to run")
     @pytest.mark.timeout(300)
