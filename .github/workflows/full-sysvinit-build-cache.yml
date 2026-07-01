@@ -1,4 +1,4 @@
-name: XFCE SYSTEMD Build Cache
+name: FULL SYSVINIT Build Cache
 
 on:
   schedule:
@@ -17,16 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        profile: [xfce]
-        init: [systemd]
+        profile: [full]
+        init: [sysvinit]
         arch: [x86_64]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -35,11 +30,6 @@ jobs:
             build-essential bison flex gawk texinfo wget git python3 python3-pip \
             xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev
           command -v makeinfo || { echo "makeinfo not found"; exit 1; }
-
-      - name: Install Python dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install pytest pytest-cov requests-mock pytest-mock
 
       - name: Show disk space
         run: df -h
@@ -53,15 +43,6 @@ jobs:
           path: /tmp/lfs-build/sources
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
-
-      - name: Run Python tests
-        run: |
-          python3 -m pytest tests/ --cov=builder --cov-report=xml -v --tb=short 2>&1 | tee test_output.log
-
-      - name: Check compilation
-        run: |
-          python3 -m py_compile builder.py
-          echo "✅ builder.py compiled successfully"
 
       - name: Patch host-check.sh
         run: |
@@ -91,19 +72,16 @@ jobs:
 
       - name: Build profile (as lfs user)
         id: build
-        continue-on-error: true
         run: |
           cd /tmp/lfs-builder
           sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
-            --no-live \
             --output /tmp/lfs-build
 
       - name: Compress rootfs (exclude virtual filesystems)
         id: compress
         if: success() || failure()
-        continue-on-error: true
         run: |
           set -e
           cd /tmp/lfs-build/image
@@ -136,8 +114,6 @@ jobs:
       - name: Show build logs on failure
         if: failure()
         run: |
-          echo "=== Test output ==="
-          tail -n 50 test_output.log 2>/dev/null || echo "test_output.log not found"
           echo "=== Global build.log (last 100 lines) ==="
           tail -n 100 /tmp/lfs-build/logs/build.log 2>/dev/null || echo "build.log not found"
           echo "=== Stage logs (last 20 lines each) ==="

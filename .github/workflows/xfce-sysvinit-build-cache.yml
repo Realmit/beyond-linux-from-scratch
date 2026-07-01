@@ -1,4 +1,4 @@
-name: XFCE SYSTEMD Build Cache
+name: XFCE SYSVINIT Build Cache
 
 on:
   schedule:
@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         profile: [xfce]
-        init: [systemd]
+        init: [sysvinit]
         arch: [x86_64]
     steps:
       - uses: actions/checkout@v4

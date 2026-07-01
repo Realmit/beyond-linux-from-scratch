@@ -1,4 +1,4 @@
-name: XFCE SYSTEMD Build Cache
+name: Minimal SYSVINIT Build Cache
 
 on:
   schedule:
@@ -17,8 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        profile: [xfce]
-        init: [systemd]
+        profile: [minimal]
+        init: [sysvinit]
         arch: [x86_64]
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +41,15 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install pytest pytest-cov requests-mock pytest-mock
 
+      - name: Check compilation
+        run: |
+          python3 -m py_compile builder.py
+          echo "✅ builder.py compiled successfully"
+
+      - name: Run tests
+        run: |
+          python3 -m pytest tests/ --cov=builder --cov-report=xml -v --tb=short 2>&1 | head -100
+
       - name: Show disk space
         run: df -h
 
@@ -53,15 +62,6 @@ jobs:
           path: /tmp/lfs-build/sources
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
-
-      - name: Run Python tests
-        run: |
-          python3 -m pytest tests/ --cov=builder --cov-report=xml -v --tb=short 2>&1 | tee test_output.log
-
-      - name: Check compilation
-        run: |
-          python3 -m py_compile builder.py
-          echo "✅ builder.py compiled successfully"
 
       - name: Patch host-check.sh
         run: |
@@ -136,8 +136,6 @@ jobs:
       - name: Show build logs on failure
         if: failure()
         run: |
-          echo "=== Test output ==="
-          tail -n 50 test_output.log 2>/dev/null || echo "test_output.log not found"
           echo "=== Global build.log (last 100 lines) ==="
           tail -n 100 /tmp/lfs-build/logs/build.log 2>/dev/null || echo "build.log not found"
           echo "=== Stage logs (last 20 lines each) ==="

@@ -1,4 +1,4 @@
-name: Minimal Build Cache
+name: Minimal SYSTEMD Build Cache
 
 on:
   schedule:
