@@ -79,6 +79,11 @@ jobs:
           sudo chown -R lfs:lfs /tmp/lfs-builder
           sudo chmod -R a+rX /tmp/lfs-builder
 
+      - name: Prepare /output directory for initramfs
+        run: |
+          sudo mkdir -p /output
+          sudo chown lfs:lfs /output
+
       - name: Run final stages (initramfs, bootloader, live-system)
         id: final
         continue-on-error: true
