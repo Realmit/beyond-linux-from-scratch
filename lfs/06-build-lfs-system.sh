@@ -2,7 +2,7 @@
 # Build LFS system – VRAIE COMPILATION DE GLIBC, BINUTILS, GCC, ETC.
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -f "$SCRIPT_DIR/../common/utils.sh" ]; then
     source "$SCRIPT_DIR/../common/utils.sh"

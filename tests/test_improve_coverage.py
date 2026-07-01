@@ -382,11 +382,39 @@ class TestCLICoverage:
         from builder import main
         import sys
 
-        # Simuler les arguments
         test_args = ['builder.py', '--no-live', '--profile', 'minimal']
         monkeypatch.setattr(sys, 'argv', test_args)
 
-        # Mock du builder pour éviter l'exécution réelle
+        with patch('builder.LFSBuilder') as MockBuilder:
+            mock_instance = MagicMock()
+            MockBuilder.return_value = mock_instance
+
+            # Simuler get pour retourner les valeurs par défaut
+            def get_side_effect(key, default=None):
+                config_map = {
+                    'live_system.enabled': True,
+                    'kernel.type': 'linux',
+                    'init_system.choice': 'sysvinit',
+                    'desktop.type': None
+                }
+                return config_map.get(key, default)
+
+            mock_instance.config.get.side_effect = get_side_effect
+
+            with patch('sys.exit'):
+                main()
+
+                mock_instance.config.set.assert_called_with('live_system.enabled', False)
+
+    def test_main_with_kernel_type(self, monkeypatch):
+        """Test option --kernel-type"""
+        from builder import main
+        import sys
+
+        # Simuler les arguments avec kernel-type personnalisé
+        test_args = ['builder.py', '--kernel-type', 'linux-libre', '--profile', 'minimal']
+        monkeypatch.setattr(sys, 'argv', test_args)
+
         with patch('builder.LFSBuilder') as MockBuilder:
             mock_instance = MagicMock()
             MockBuilder.return_value = mock_instance
@@ -395,5 +423,5 @@ class TestCLICoverage:
             with patch('sys.exit'):
                 main()
 
-                # Vérifier que set a été appelé
-                mock_instance.config.set.assert_called_with('live_system.enabled', False)
+                # Vérifier que config.set a bien été appelé avec kernel.type et linux-libre
+                mock_instance.config.set.assert_called_with('kernel.type', 'linux-libre')
