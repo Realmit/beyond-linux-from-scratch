@@ -13,9 +13,6 @@ from builder import LFSBuilder
 class TestLFSBuilder:
     """Test LFSBuilder class"""
 
-    def __init__(self):
-        pass
-
     def test_get_init_system_default(self, builder):
         """Test default init system"""
         # Le profil xfce utilise systemd par défaut
@@ -171,6 +168,55 @@ class TestLFSBuilder:
         stage_names = [s[0] for s in stages]
         assert 'uboot' in stage_names
 
+    def test_flatten_config_simple_dict(self, builder):
+        """Test flattening simple dictionary"""
+        test_dict = {
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': True,
+            'key4': False
+        }
+        result = builder._flatten_config(test_dict)
+        
+        assert result['KEY1'] == 'value1'
+        assert result['KEY2'] == 'value2'
+        assert result['KEY3'] == 'true'
+        assert result['KEY4'] == 'false'
+    
+    def test_flatten_config_nested_dict(self, builder):
+        """Test flattening nested dictionary"""
+        test_dict = {
+            'outer': {
+                'inner': 'value',
+                'number': 42
+            }
+        }
+        result = builder._flatten_config(test_dict)
+        
+        assert result['OUTER_INNER'] == 'value'
+        assert result['OUTER_NUMBER'] == '42'
+    
+    def test_flatten_config_with_prefix(self, builder):
+        """Test flattening with prefix"""
+        test_dict = {'key': 'value'}
+        result = builder._flatten_config(test_dict, 'TEST')
+        
+        assert result['TEST_KEY'] == 'value'
+    
+    def test_flatten_config_list_values(self, builder):
+        """Test flattening with list values"""
+        test_dict = {'items': ['a', 'b', 'c']}
+        result = builder._flatten_config(test_dict)
+        
+        assert result['ITEMS'] == 'a,b,c'
+    
+    def test_flatten_config_none_values(self, builder):
+        """Test flattening with None values"""
+        test_dict = {'key': None}
+        result = builder._flatten_config(test_dict)
+        
+        assert result['KEY'] == ''
+
     def test_get_env_variables(self, builder):
         """Test environment variables generation"""
         env = builder._get_env()
@@ -182,6 +228,27 @@ class TestLFSBuilder:
         assert 'INIT_SYSTEM' in env
         assert 'SYSVINIT_STYLE' in env
         assert 'LIVE_SYSTEM' in env
+    
+    def test_get_env_includes_config_vars(self, builder):
+        """Test that _get_env includes all flattened config variables"""
+        env = builder._get_env()
+        
+        # Check that LFS_CONFIG_* variables are present
+        config_vars = [k for k in env.keys() if k.startswith('LFS_CONFIG_')]
+        assert len(config_vars) > 0
+        
+        # Check specific important config vars
+        assert any('ARCHITECTURE' in k for k in config_vars)
+        assert any('BUILD_THREADS' in k for k in config_vars)
+        assert any('BOOTLOADER' in k for k in config_vars)
+    
+    def test_get_env_includes_profile_vars(self, builder):
+        """Test that _get_env includes all flattened profile variables"""
+        env = builder._get_env()
+        
+        # Check that LFS_PROFILE_* variables are present
+        profile_vars = [k for k in env.keys() if k.startswith('LFS_PROFILE_')]
+        assert len(profile_vars) > 0
 
     def test_get_env_cross_compile(self, builder):
         """Test environment variables for cross-compilation"""
@@ -196,31 +263,31 @@ class TestLFSBuilder:
                 assert 'SYSROOT' in env
 
     @patch('subprocess.run')
-    def test_build_success(self, mock_run, builder):
+    def test_build_success(self, mock_run, builder, mock_script):
         """Test successful build"""
         mock_run.return_value = MagicMock(returncode=0)
 
-        with patch.object(builder.executor, 'find_script', return_value=Path("script.sh")):
+        with patch.object(builder.executor, 'find_script', return_value=mock_script):
             result = builder.build()
 
             assert result is True
 
     @patch('subprocess.run')
-    def test_build_failure(self, mock_run, builder):
+    def test_build_failure(self, mock_run, builder, mock_script):
         """Test build failure"""
         mock_run.return_value = MagicMock(returncode=1)
 
-        with patch.object(builder.executor, 'find_script', return_value=Path("script.sh")):
+        with patch.object(builder.executor, 'find_script', return_value=mock_script):
             result = builder.build()
 
             assert result is False
 
     @patch('subprocess.run')
-    def test_build_resume_from_stage(self, mock_run, builder):
+    def test_build_resume_from_stage(self, mock_run, builder, mock_script):
         """Test resuming build from specific stage"""
         mock_run.return_value = MagicMock(returncode=0)
 
-        with patch.object(builder.executor, 'find_script', return_value=Path("script.sh")):
+        with patch.object(builder.executor, 'find_script', return_value=mock_script):
             result = builder.build(resume_from="lfs-system")
 
             assert result is True

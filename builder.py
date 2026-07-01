@@ -15,7 +15,7 @@ import shutil
 import hashlib
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import logging
 import tarfile
 import tempfile
@@ -1051,6 +1051,24 @@ class LFSBuilder:
 
         return init
 
+    def _flatten_config(self, obj: Any, prefix: str = '') -> Dict[str, str]:
+        """Recursively flatten nested config dictionaries to env variables"""
+        env_vars = {}
+        
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                new_key = f"{prefix}_{key}".upper() if prefix else key.upper()
+                if isinstance(value, dict):
+                    env_vars.update(self._flatten_config(value, new_key))
+                elif isinstance(value, bool):
+                    env_vars[new_key] = str(value).lower()
+                elif isinstance(value, (list, tuple)):
+                    env_vars[new_key] = ','.join(str(v) for v in value)
+                else:
+                    env_vars[new_key] = str(value) if value is not None else ''
+        
+        return env_vars
+
     def _get_env(self) -> Dict:
         """Get environment variables for scripts"""
         env = {
@@ -1072,6 +1090,14 @@ class LFSBuilder:
             'LFS_VERSION': __version__,
             'LC_ALL': 'POSIX'
         }
+
+        # Add all configuration parameters as environment variables for scripts
+        config_flat = self._flatten_config(self.config.data, 'LFS_CONFIG')
+        env.update(config_flat)
+        
+        # Add all profile configuration parameters
+        profile_flat = self._flatten_config(self.profile_config, 'LFS_PROFILE')
+        env.update(profile_flat)
 
         # Add cross-compilation variables if enabled
         if self.is_cross_compile():
