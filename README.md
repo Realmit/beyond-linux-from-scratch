@@ -1,4 +1,4 @@
-# LFS/BLFS Builder - Custom Linux Distribution Builder
+# Way Beyond Linux From Scratch
 
 [![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/lfs-builder/lfs-builder)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
