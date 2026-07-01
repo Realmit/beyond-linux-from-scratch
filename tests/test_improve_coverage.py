@@ -424,3 +424,149 @@ class TestCLICoverage:
 
                 # Vérifier que config.set a bien été appelé avec kernel.type et linux-libre
                 mock_instance.config.set.assert_called_with('kernel.type', 'linux-libre')
+
+
+import pytest
+from pathlib import Path
+from unittest.mock import patch, MagicMock
+from builder import LFSBuilder, LFSConfig
+
+class TestUpdateSourcesList:
+
+    def test_update_sources_list_with_custom_sources(self, tmp_path, monkeypatch):
+        """Test _update_sources_list avec un fichier custom-sources.list existant."""
+        monkeypatch.chdir(tmp_path)
+        output_dir = tmp_path / "lfs-build"
+        output_dir.mkdir()
+        config_file = tmp_path / "config.json"
+        config = LFSConfig(config_file)
+        config.set('repositories', ['https://example.com/wget-list'])
+
+        builder = LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+        builder.config = config
+
+        packages_dir = tmp_path / "packages"
+        packages_dir.mkdir()
+        sources_file = packages_dir / "sources.list"
+        custom_file = packages_dir / "custom-sources.list"
+        custom_file.write_text("""
+# Commentaire
+https://custom.url/source1.tar.gz
+https://custom.url/source2.tar.xz
+""")
+
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"https://official.url/file1.tar.gz\nhttps://official.url/file2.tar.bz2"
+        mock_response.__enter__.return_value = mock_response
+
+        with patch('urllib.request.urlopen', return_value=mock_response):
+            result = builder._update_sources_list()
+            assert result is True
+
+        content = sources_file.read_text()
+        assert "https://official.url/file1.tar.gz" in content
+        assert "https://official.url/file2.tar.bz2" in content
+        assert "https://custom.url/source1.tar.gz" in content
+        assert "https://custom.url/source2.tar.xz" in content
+
+    def test_update_sources_list_no_custom_sources(self, tmp_path, monkeypatch):
+        """Test _update_sources_list sans fichier custom-sources.list."""
+        monkeypatch.chdir(tmp_path)
+        output_dir = tmp_path / "lfs-build"
+        output_dir.mkdir()
+        config_file = tmp_path / "config.json"
+        config = LFSConfig(config_file)
+        config.set('repositories', ['https://example.com/wget-list'])
+
+        builder = LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+        builder.config = config
+
+        packages_dir = tmp_path / "packages"
+        packages_dir.mkdir()
+        sources_file = packages_dir / "sources.list"
+        # Ne pas créer custom-sources.list
+
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"https://official.url/file1.tar.gz\n"
+        mock_response.__enter__.return_value = mock_response
+
+        with patch('urllib.request.urlopen', return_value=mock_response):
+            result = builder._update_sources_list()
+            assert result is True
+
+        content = sources_file.read_text()
+        assert "https://official.url/file1.tar.gz" in content
+        assert "# CUSTOM SOURCES" not in content  # Pas de section séparée car on ne distingue plus
+
+    def test_update_sources_list_official_fails_custom_exists(self, tmp_path, monkeypatch):
+        """Test quand la récupération officielle échoue mais que custom existe."""
+        monkeypatch.chdir(tmp_path)
+        output_dir = tmp_path / "lfs-build"
+        output_dir.mkdir()
+        config_file = tmp_path / "config.json"
+        config = LFSConfig(config_file)
+        config.set('repositories', ['https://example.com/wget-list'])
+
+        builder = LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+        builder.config = config
+
+        packages_dir = tmp_path / "packages"
+        packages_dir.mkdir()
+        sources_file = packages_dir / "sources.list"
+        custom_file = packages_dir / "custom-sources.list"
+        custom_file.write_text("https://custom.only/unique.tar.gz")
+
+        with patch('urllib.request.urlopen', side_effect=Exception("Network error")):
+            result = builder._update_sources_list()
+            assert result is True   # Il y a des URLs custom
+
+        content = sources_file.read_text()
+        assert "https://custom.only/unique.tar.gz" in content
+
+    def test_update_sources_list_official_all_fail_no_custom(self, tmp_path, monkeypatch):
+        """Test quand officiel échoue et custom n'existe pas -> doit retourner False."""
+        monkeypatch.chdir(tmp_path)
+        output_dir = tmp_path / "lfs-build"
+        output_dir.mkdir()
+        config_file = tmp_path / "config.json"
+        config = LFSConfig(config_file)
+        config.set('repositories', ['https://fail1.com', 'https://fail2.com'])
+
+        builder = LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+        builder.config = config
+
+        packages_dir = tmp_path / "packages"
+        packages_dir.mkdir()
+        sources_file = packages_dir / "sources.list"
+        # Pas de custom
+
+        with patch('urllib.request.urlopen', side_effect=Exception("Network error")):
+            result = builder._update_sources_list()
+            assert result is False   # Aucune URL
+
+        # sources.list ne doit pas avoir été créé
+        assert not sources_file.exists()
+
+    def test_update_sources_list_no_repositories(self, tmp_path, monkeypatch):
+        """Test quand aucune URL de dépôt n'est configurée."""
+        monkeypatch.chdir(tmp_path)
+        output_dir = tmp_path / "lfs-build"
+        output_dir.mkdir()
+        config_file = tmp_path / "config.json"
+        config = LFSConfig(config_file)
+        config.set('repositories', [])  # liste vide
+
+        builder = LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+        builder.config = config
+
+        packages_dir = tmp_path / "packages"
+        packages_dir.mkdir()
+        sources_file = packages_dir / "sources.list"
+        sources_file.write_text("https://existing.source/file1.tar.gz")  # on garde un fichier existant
+
+        result = builder._update_sources_list()
+        assert result is False   # Aucune repository configurée, on ne fait rien
+
+        # Le fichier existant n'est pas modifié
+        content = sources_file.read_text()
+        assert "https://existing.source/file1.tar.gz" in content
