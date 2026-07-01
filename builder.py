@@ -1466,7 +1466,7 @@ class LFSBuilder:
                 return False
 
         self.logger.info("=" * 70)
-        self.logger.info("✅ BUILD COMPLETED SUCCESSFULLY!")
+        self.logger.info("BUILD COMPLETED SUCCESSFULLY!")
         self.logger.info("=" * 70)
 
         iso_path = self.output_dir / 'lfs-installer.iso'
