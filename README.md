@@ -1136,7 +1136,7 @@ chore(scope): maintenance tasks
 - 📖 **Documentation**: [ADVANCED.md](ADVANCED.md)
 - 📝 **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/lfs-builder/lfs-builder/issues)
-- 🐛 **Troubleshooting**: [Troubleshoot Guide](troubleshoot.md)
+- 🐛 **Troubleshooting**: [Troubleshoot Guide](docs/troubleshoot.md)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/lfs-builder/lfs-builder/discussions)
 
 ## Acknowledgments
@@ -1223,7 +1223,7 @@ alias proj='cd ~/projects'
 
 ## Troubleshooting
 
-For more details, see the [Failed Step](troubleshoot.md).
+For more details, see the [Failed Step](docs/troubleshoot.md).
 
 ### Wallpaper
 

@@ -163,4 +163,4 @@ The `--resume-from` argument must match one of the stage names listed above. If 
 
 The `--resume-from` option is a powerful tool that saves time and effort during the build process. Use it whenever a stage fails to avoid rebuilding everything from scratch.
 
-For more details, see the [Advanced Usage Guide](ADVANCED.md).
+For more details, see the [Advanced Usage Guide](../ADVANCED.md).
