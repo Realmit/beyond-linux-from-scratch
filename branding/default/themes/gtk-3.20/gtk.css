@@ -1,0 +1,146 @@
+/* LFS GTK3 Dark Theme - gtk.css */
+
+* {
+    -gtk-icon-style: regular;
+}
+
+/* Main colors */
+@define-color bg_color #1a1a2e;
+@define-color fg_color #f0f0f0;
+@define-color base_color #252535;
+@define-color text_color #f0f0f0;
+@define-color selected_bg_color #2E8B57;
+@define-color selected_fg_color #ffffff;
+@define-color border_color #3a3a4a;
+@define-color insensitive_bg_color #3a3a4a;
+@define-color insensitive_fg_color #8a8a9a;
+
+/* Window and background */
+window {
+    background-color: @bg_color;
+    color: @fg_color;
+}
+
+/* Button styling */
+button {
+    background-color: @base_color;
+    color: @fg_color;
+    border: 1px solid @border_color;
+    border-radius: 3px;
+    padding: 6px 12px;
+}
+
+button:hover {
+    background-color: #353545;
+}
+
+button:active,
+button:checked {
+    background-color: @selected_bg_color;
+    color: @selected_fg_color;
+}
+
+button:disabled {
+    background-color: @insensitive_bg_color;
+    color: @insensitive_fg_color;
+}
+
+/* Entry fields */
+entry {
+    background-color: @base_color;
+    color: @text_color;
+    border: 1px solid @border_color;
+    border-radius: 3px;
+    padding: 4px 8px;
+}
+
+entry:focus {
+    border-color: @selected_bg_color;
+    background-color: #2a2a3a;
+}
+
+/* Text view */
+textview {
+    background-color: @base_color;
+    color: @text_color;
+}
+
+/* Labels */
+label {
+    color: @fg_color;
+}
+
+label:disabled {
+    color: @insensitive_fg_color;
+}
+
+/* Header bar */
+headerbar {
+    background-color: #0a0a14;
+    color: @fg_color;
+    border-bottom: 1px solid @border_color;
+}
+
+/* Menu and menu items */
+menu,
+.menu {
+    background-color: @bg_color;
+    color: @fg_color;
+}
+
+menuitem {
+    background-color: @bg_color;
+    color: @fg_color;
+}
+
+menuitem:hover {
+    background-color: @base_color;
+}
+
+/* Scrollbar */
+scrollbar {
+    background-color: @bg_color;
+}
+
+scrollbar slider {
+    background-color: @border_color;
+    border-radius: 4px;
+    min-width: 8px;
+    min-height: 8px;
+}
+
+scrollbar slider:hover {
+    background-color: @selected_bg_color;
+}
+
+/* Tab view */
+notebook {
+    background-color: @bg_color;
+}
+
+notebook tab {
+    background-color: @base_color;
+    color: @fg_color;
+    border-radius: 3px 3px 0 0;
+}
+
+notebook tab:active {
+    background-color: @bg_color;
+    border-bottom: 3px solid @selected_bg_color;
+}
+
+/* Treeview */
+treeview {
+    background-color: @base_color;
+    color: @text_color;
+}
+
+treeview row:selected {
+    background-color: @selected_bg_color;
+    color: @selected_fg_color;
+}
+
+/* Separator */
+separator {
+    background-color: @border_color;
+}

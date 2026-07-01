@@ -1,0 +1,37 @@
+/* LFS GTK4 Dark Theme - gtk.css */
+
+window {
+    background-color: #1a1a2e;
+    color: #f0f0f0;
+}
+
+button {
+    background-color: #252535;
+    color: #f0f0f0;
+    border: 1px solid #3a3a4a;
+    border-radius: 3px;
+    padding: 6px 12px;
+}
+
+button:hover {
+    background-color: #353545;
+}
+
+button:active,
+button:checked {
+    background-color: #2E8B57;
+    color: #ffffff;
+}
+
+entry {
+    background-color: #252535;
+    color: #f0f0f0;
+    border: 1px solid #3a3a4a;
+    border-radius: 3px;
+    padding: 4px 8px;
+}
+
+entry:focus {
+    border-color: #2E8B57;
+    background-color: #2a2a3a;
+}

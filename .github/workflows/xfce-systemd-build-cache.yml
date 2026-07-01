@@ -97,6 +97,7 @@ jobs:
           sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
+            --no-live \
             --output /tmp/lfs-build
 
       - name: Compress rootfs (exclude virtual filesystems)

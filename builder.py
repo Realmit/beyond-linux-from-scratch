@@ -1312,6 +1312,9 @@ class LFSBuilder:
         if self.profile_config.get('privacy_tools', False):
             stages.append(('privacy', 'blfs/16-privacy-tools.sh'))
 
+        # Branding (themes, wallpapers, customization)
+        stages.append(('branding', 'blfs/21-branding.sh'))
+
         # First boot service
         stages.append(('first-boot', 'blfs/17-first-boot-service.sh'))
 
