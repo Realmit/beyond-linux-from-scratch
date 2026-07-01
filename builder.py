@@ -555,28 +555,38 @@ class ProfileManager:
         return list(cls.PROFILES.keys())
 
     @classmethod
-    def get_profile_info(cls, name: str) -> str:
-        """Get profile information string"""
+    def get_profile_info(cls, name: str,
+                         init_system: Optional[str] = None,
+                         desktop: Optional[str] = None,
+                         live_system: Optional[bool] = None,
+                         security_hardening: Optional[bool] = None,
+                         privacy_tools: Optional[bool] = None) -> str:
         profile = cls.get_profile(name)
+        effective_init = init_system if init_system is not None else profile.get('init_system', 'sysvinit')
+        effective_desktop = desktop if desktop is not None else profile.get('desktop')
+        effective_live = live_system if live_system is not None else profile.get('live_system', False)
+        effective_security = security_hardening if security_hardening is not None else profile.get('security_hardening', False)
+        effective_privacy = privacy_tools if privacy_tools is not None else profile.get('privacy_tools', False)
+
         return f"""
-╔══════════════════════════════════════════════════════════════════╗
-║ Profile: {name.upper()}
-╠══════════════════════════════════════════════════════════════════╣
-║ Description:   {profile['description']}
-║ Size:          ~{profile['size_gb']} GB
-║ Build time:    ~{profile['build_time_hours']} hours
-║ Desktop:       {profile['desktop'] or 'None (CLI only)'}
-║ Init System:   {profile.get('init_system', 'sysvinit')}
-║ Architecture:  {profile.get('architecture', 'x86_64')}
-║ Bootloader:    {profile.get('bootloader', 'grub')}
-║ Java Dev:      {'✓' if profile['java_dev'] else '✗'}
-║ Package Mgr:   {'✓' if profile['package_manager'] else '✗'}
-║ Security:      {'✓' if profile.get('security_hardening', False) else '✗'}
-║ Privacy:       {'✓' if profile.get('privacy_tools', False) else '✗'}
-║ Live System:   {'✓' if profile.get('live_system', False) else '✗'}
-║ Auto Updates:  {'✓' if profile.get('system_updater', False) else '✗'}
-╚══════════════════════════════════════════════════════════════════╝
-"""
+    ╔══════════════════════════════════════════════════════════════════╗
+    ║ Profile: {name.upper()}
+    ╠══════════════════════════════════════════════════════════════════╣
+    ║ Description:   {profile['description']}
+    ║ Size:          ~{profile['size_gb']} GB
+    ║ Build time:    ~{profile['build_time_hours']} hours
+    ║ Desktop:       {effective_desktop or 'None (CLI only)'}
+    ║ Init System:   {effective_init}
+    ║ Architecture:  {profile.get('architecture', 'x86_64')}
+    ║ Bootloader:    {profile.get('bootloader', 'grub')}
+    ║ Java Dev:      {'✓' if profile['java_dev'] else '✗'}
+    ║ Package Mgr:   {'✓' if profile['package_manager'] else '✗'}
+    ║ Security:      {'✓' if effective_security else '✗'}
+    ║ Privacy:       {'✓' if effective_privacy else '✗'}
+    ║ Live System:   {'✓' if effective_live else '✗'}
+    ║ Auto Updates:  {'✓' if profile.get('system_updater', False) else '✗'}
+    ╚══════════════════════════════════════════════════════════════════╝
+    """
 
 
 # ============================================================================
@@ -1576,6 +1586,8 @@ def main():
         return
 
     if args.profile_info:
+        # Pour `--profile-info`, on peut aussi afficher les valeurs par défaut,
+        # mais on peut garder la version simple.
         print(ProfileManager.get_profile_info(args.profile_info))
         return
 
@@ -1596,7 +1608,6 @@ def main():
     if args.init:
         builder.config.set('init_system.choice', args.init)
         builder.logger.info(f"Init system overridden to: {args.init}")
-
         # Recreate executor with updated environment
         builder.executor = ScriptExecutor(builder._get_env(), builder.output_dir, builder.logger)
 
@@ -1609,12 +1620,29 @@ def main():
         builder.logger.setLevel(logging.DEBUG)
         builder.logger.info("Verbose logging enabled")
 
+    # --- Calcul des valeurs effectives ---
+    effective_init = builder.get_init_system()
+    effective_live = builder.config.get('live_system.enabled', True)
+    effective_security = builder.profile_config.get('security_hardening', False)
+    effective_privacy = builder.profile_config.get('privacy_tools', False)
+    # Pour le bureau, si le profil a 'desktop' mais qu'on pourrait le surcharger (pas dans les options)
+    effective_desktop = builder.profile_config.get('desktop')
+
     print("\n" + "=" * 70)
     print(f"LFS/BLFS Builder v{__version__}")
     print("=" * 70)
-    print(ProfileManager.get_profile_info(args.profile))
-    print(f"  Init System:    {builder.get_init_system()}")
-    print(f"  Live System:    {'Yes' if builder.config.get('live_system.enabled', True) else 'No'}")
+    # Affiche le cadre avec les valeurs effectives
+    print(ProfileManager.get_profile_info(
+        args.profile,
+        init_system=effective_init,
+        desktop=effective_desktop,
+        live_system=effective_live,
+        security_hardening=effective_security,
+        privacy_tools=effective_privacy
+    ))
+    # Lignes supplémentaires (pour info)
+    print(f"  Init System:    {effective_init}")
+    print(f"  Live System:    {'Yes' if effective_live else 'No'}")
     print(f"  Cross-Compile:  {'Yes (' + builder.get_target_architecture() + ')' if builder.is_cross_compile() else 'No'}")
     print(f"  Output:         {args.output}")
     print(f"  Host System:    {builder.system}")
