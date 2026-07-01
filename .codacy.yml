@@ -8,3 +8,7 @@ engines:
     enabled: true
   semgrep:
     enabled: true
+
+exclude-paths:
+  - branding/**/*.css
+  - /branding/

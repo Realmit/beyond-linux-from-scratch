@@ -40,7 +40,9 @@ jobs:
           format: sarif
           gh-code-scanning-compat: true
           max-allowed-issues: 2147483647
-          skip-tools: pylint,pep8   # ← Désactive les linters de style
+          skip-tools: pylint,pep8
+          directory: ./
+          excluded-directories: branding,lfs-output
 
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v4
