@@ -1308,6 +1308,12 @@ class LFSBuilder:
         # BLFS base
         stages.append(('blfs-base', 'blfs/08-build-blfs-base.sh'))
 
+        # Build kernel
+        stages.append(('build-kernel', 'lfs/09-build-kernel.sh'))
+
+        # Final stages
+        stages.append(('initramfs', 'final/12-create-initramfs.sh'))
+
         # Desktop (if enabled)
         if self.profile_config.get('desktop'):
             stages.append(('desktop', 'blfs/09-build-desktop.sh'))
