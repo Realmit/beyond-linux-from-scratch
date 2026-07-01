@@ -11,6 +11,7 @@ import hashlib
 from pathlib import Path
 import time
 import os
+import re
 
 from builder import SourceDownloader
 
@@ -145,16 +146,19 @@ class TestRealSourceLists:
         assert len(lines) > 50
         print(f"✅ {len(lines)} packages in sources.list")
 
-        critical = [
-            'linux-6.12.20.tar.xz',
-            'gcc-15.2.0.tar.xz',
-            'glibc-2.43.tar.xz',
-            'systemd-259.1.tar.gz',
-            'sysvinit-3.14.tar.xz'
+        # Utiliser des motifs pour les paquets critiques (car les versions évoluent)
+        critical_patterns = [
+            r'linux-\d+\.\d+\.\d+\.tar\.',      # noyau
+            r'gcc-\d+\.\d+\.\d+\.tar\.',        # gcc
+            r'glibc-\d+\.\d+\.\d+\.tar\.',      # glibc
+            r'systemd-\d+\.\d+\.\d+\.tar\.',    # systemd
+            r'sysvinit-\d+\.\d+\.\d+\.tar\.'    # sysvinit
         ]
-        for c in critical:
-            assert any(c in line for line in lines), f"{c} not found"
-        print("✅ All critical packages present")
+
+        for pattern in critical_patterns:
+            found = any(re.search(pattern, line) for line in lines)
+            assert found, f"Pattern {pattern} not found in sources.list"
+        print("✅ All critical package patterns present")
 
     @pytest.mark.skipif(not os.environ.get('RUN_SLOW_TESTS'), reason="Set RUN_SLOW_TESTS=1 to run")
     @pytest.mark.timeout(300)
