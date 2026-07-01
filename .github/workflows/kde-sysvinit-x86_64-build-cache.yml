@@ -1,4 +1,4 @@
-name: FULL SYSVINIT Build Cache
+name: KDE SYSVINIT x86_64 Build Cache
 
 on:
   schedule:
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        profile: [full]
+        profile: [kde]
         init: [sysvinit]
         arch: [x86_64]
     steps:
@@ -100,7 +100,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v4.3.0-cache
-          name: Way Beyond LFS Full SYSVINIT Cache v4.3.0
+          name: Way Beyond LFS KDE SYSVINIT Cache v4.3.0
           body: |
             Cache pour LFS/BLFS 13.0
             Profil : ${{ matrix.profile }}

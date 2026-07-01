@@ -1,4 +1,4 @@
-name: Gnome SYSVINIT Build Cache
+name: Gnome SYSTEMD x86_64 Build Cache
 
 on:
   schedule:
@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         profile: [gnome]
-        init: [sysvinit]
+        init: [systemd]
         arch: [x86_64]
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +100,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v4.3.0-cache
-          name: Way Beyond LFS Gnome SYSVINIT Cache v4.3.0
+          name: Way Beyond LFS Gnome Systemd Cache v4.3.0
           body: |
             Cache pour LFS/BLFS 13.0
             Profil : ${{ matrix.profile }}
