@@ -1,6 +1,9 @@
 name: XFCE SYSVINIT x86_64 Build Live ISO
 
 on:
+  push:
+    tags:
+      - 'v*'
   schedule:
     - cron: '0 0 * * 0'
   workflow_dispatch:
@@ -150,8 +153,8 @@ jobs:
         if: success() && steps.compress.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v4.3.0-live
-          name: Way Beyond LFS Xfce SYSVINIT Live ISO v4.3.0
+          tag_name: ${{ github.ref_name }}   # utilise le tag déclencheur
+          name: "LFS Builder ${{ github.ref_name }}"
           body: |
             Live ISO et cache rootfs pour LFS/BLFS 13.0
             Profil : ${{ matrix.profile }}
