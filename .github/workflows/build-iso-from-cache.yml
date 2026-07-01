@@ -51,14 +51,15 @@ jobs:
           cd /tmp/lfs-build
           sudo wget -q --show-progress "${{ steps.get_cache.outputs.cache_url }}" -O rootfs.tar.xz
           sudo tar -xJf rootfs.tar.xz -C image/
-          sudo chown -R lfs:lfs image/
+          sudo chown -R lfs:lfs image/ || true
           ls -lh image/
 
       - name: Copy repository to /tmp/lfs-builder
         run: |
           sudo mkdir -p /tmp/lfs-builder
           sudo cp -a . /tmp/lfs-builder/
-          sudo chown -R lfs:lfs /tmp/lfs-builder
+          sudo chmod +x /tmp/lfs-builder/final/*.sh
+          sudo chown -R lfs:lfs /tmp/lfs-builder || true
 
       - name: Run final stages (as root)
         id: build_iso
