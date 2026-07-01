@@ -61,6 +61,7 @@ jobs:
           sudo chmod +x /tmp/lfs-builder/final/*.sh
           sudo chown -R lfs:lfs /tmp/lfs-builder || true
 
+      # ⬇️ C’EST ICI LA CORRECTION ⬇️
       - name: Run final stages (as root)
         id: build_iso
         run: |
