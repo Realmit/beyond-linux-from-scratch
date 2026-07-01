@@ -74,6 +74,24 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
+# --- Copie des outils manquants (tar, head, cut, ...) ---
+copy_tool() {
+    local tool="$1"
+    local src="$(which "$tool" 2>/dev/null || echo "/bin/$tool")"
+    [ -f "$src" ] || { log_warning "Source not found for $tool"; return 0; }
+    run_privileged cp -L -v "$src" "$LFS/usr/bin/" 2>/dev/null || true
+    ldd "$src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+        local dest_dir="$LFS/lib"
+        [[ "$lib" == *"/lib64/"* ]] && dest_dir="$LFS/lib64"
+        run_privileged mkdir -p "$dest_dir"
+        run_privileged cp -v "$lib" "$dest_dir/" 2>/dev/null || true
+    done
+}
+
+for tool in tar head cut; do
+    copy_tool "$tool"
+done
+
 # Chemin dynamique des sources
 SOURCES_HOST="$(dirname "$LFS")/sources"
 if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
