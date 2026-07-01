@@ -61,8 +61,22 @@ jobs:
           sudo chmod +x /tmp/lfs-builder/final/*.sh
           sudo chown -R lfs:lfs /tmp/lfs-builder || true
 
-      # ⬇️ C’EST ICI LA CORRECTION ⬇️
-      - name: Run final stages (as root)
+      # ⬇️ NOUVEAU : Patch des scripts pour supprimer les appels sudo internes ⬇️
+      - name: Patch final scripts to remove sudo calls
+        run: |
+          cd /tmp/lfs-builder/final
+          # Supprime toutes les lignes contenant 'sudo' dans les scripts (sauf commentaires)
+          for script in 12-create-initramfs.sh 13-create-bootloader.sh 14-create-installer.sh 15-create-live-system.sh; do
+            if [ -f "$script" ]; then
+              echo "Patching $script..."
+              sed -i '/^[[:space:]]*sudo[[:space:]]/d' "$script"
+              # Alternative : remplacer sudo par une commande vide
+              # sed -i 's/sudo //g' "$script"
+            fi
+          done
+
+      # ⬇️ ICI on exécute en root (sans -u lfs) ⬇️
+      - name: Run final stages (as root, no sudo inside)
         id: build_iso
         run: |
           LFS_PATH="/tmp/lfs-build/image"
