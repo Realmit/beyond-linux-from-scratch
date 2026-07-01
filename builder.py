@@ -3,6 +3,7 @@
 LFS/BLFS Builder - Main orchestrator
 Works on Linux, macOS, and Windows (WSL2)
 Version: 4.3.0 - Fixed script paths and config loading
+Author: Jean-Francois Landreville
 """
 
 import os
@@ -26,7 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 # VERSION INFO
 # ============================================================================
 __version__ = "4.3.0"
-__build_date__ = "2026-05-14"
+__build_date__ = datetime.now().strftime("%Y-%m-%d")
 
 # ============================================================================
 # CONSTANTS
@@ -47,8 +48,8 @@ BUILD_STAGES = [
     ('host-prepare', 'host/02-prepare-host.sh'),
     ('disk-image', 'host/03-create-disk-image.sh'),
     ('toolchain', 'host/04-build-toolchain.sh'),
-    ('qemu-setup', 'host/00-setup-qemu.sh'),  # Optional, for cross-compile
-    ('uboot', 'host/05-build-uboot.sh'),      # Optional, for ARM
+    ('qemu-setup', 'host/00-setup-qemu.sh'),
+    ('uboot', 'host/05-build-uboot.sh'),
     ('lfs-basic', 'lfs/05-build-lfs-basic.sh'),
     ('lfs-system', 'lfs/06-build-lfs-system.sh'),
     ('init-system', 'lfs/06a-init-system.sh'),
@@ -116,9 +117,9 @@ class LFSConfig:
             "qemu_user": "",
 
             "init_system": {
-                "choice": "sysvinit",  # Changed to sysvinit as default (LFS classic)
+                "choice": "sysvinit",
                 "service_style": "lfs-classic",
-                "parallel_startup": False,  # sysvinit doesn't have parallel
+                "parallel_startup": False,
                 "auto_restart": True,
                 "default_runlevel": 3,
                 "service_timeout": 5,
