@@ -1348,6 +1348,62 @@ class LFSBuilder:
 
         return stages
 
+    def _update_sources_list(self) -> bool:
+        """Update packages/sources.list with official LFS/BLFS URLs + custom sources."""
+        sources_file = Path('packages/sources.list')
+        custom_file = Path('packages/custom-sources.list')
+        repo_urls = self.config.get('repositories', [])
+
+        if not repo_urls:
+            self.logger.warning("No repository URLs configured, skipping sources update")
+            return False
+
+        all_urls = set()
+        success = False
+
+        for repo_url in repo_urls:
+            try:
+                self.logger.info(f"Fetching sources list from {repo_url}")
+                with urllib.request.urlopen(repo_url, timeout=30) as resp:
+                    content = resp.read().decode('utf-8')
+                    for line in content.splitlines():
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            all_urls.add(line)
+                success = True
+            except Exception as e:
+                self.logger.warning(f"Failed to fetch {repo_url}: {e}")
+
+        if not success and not sources_file.exists():
+            self.logger.error("No sources could be fetched and no existing sources.list found")
+            return False
+
+        # Write the merged list
+        with open(sources_file, 'w') as f:
+            f.write("# LFS Sources - Automatically generated from official wget-lists\n")
+            f.write(f"# Generated: {datetime.now().isoformat()}\n")
+            f.write("# DO NOT EDIT MANUALLY – changes will be overwritten\n\n")
+            for url in sorted(all_urls):
+                f.write(f"{url}\n")
+            f.write("\n")
+
+        # Append custom sources if they exist
+        if custom_file.exists():
+            self.logger.info(f"Appending custom sources from {custom_file}")
+            with open(custom_file, 'r') as cf:
+                custom_lines = cf.readlines()
+            with open(sources_file, 'a') as f:
+                f.write("\n# ============================================================================\n")
+                f.write("# CUSTOM SOURCES (from packages/custom-sources.list)\n")
+                f.write("# ============================================================================\n\n")
+                for line in custom_lines:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        f.write(f"{line}\n")
+
+        self.logger.info(f"Updated sources.list with {len(all_urls)} official URLs + custom entries")
+        return True
+
     def build(self, resume_from: Optional[str] = None, use_cache: bool = False, cache_only: bool = False) -> bool:
         self.logger.info("=" * 70)
         self.logger.info(f"LFS Builder v{__version__}")
