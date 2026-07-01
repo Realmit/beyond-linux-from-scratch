@@ -28,7 +28,7 @@ jobs:
             squashfs-tools jq cpio
           sudo apt-get install -y busybox-static || true
 
-      - name: Create lfs user
+      - name: Create lfs user (if needed)
         run: |
           if ! id "lfs" &>/dev/null; then
             sudo useradd -m -s /bin/bash lfs
@@ -60,21 +60,16 @@ jobs:
           sudo cp -a . /tmp/lfs-builder/
           sudo chown -R lfs:lfs /tmp/lfs-builder
 
-      - name: Grant passwordless sudo to lfs
-        run: |
-          sudo bash -c 'echo "lfs ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/lfs'
-          sudo chmod 440 /etc/sudoers.d/lfs
-
-      - name: Run final stages (with debug)
+      - name: Run final stages (as root)
         id: build_iso
         run: |
           LFS_PATH="/tmp/lfs-build/image"
           cd /tmp/lfs-builder
           set -x
-          sudo -u lfs LFS="$LFS_PATH" ./final/12-create-initramfs.sh
-          sudo -u lfs LFS="$LFS_PATH" ./final/13-create-bootloader.sh
-          sudo -u lfs LFS="$LFS_PATH" ./final/14-create-installer.sh
-          sudo -u lfs LFS="$LFS_PATH" ./final/15-create-live-system.sh
+          sudo LFS="$LFS_PATH" ./final/12-create-initramfs.sh
+          sudo LFS="$LFS_PATH" ./final/13-create-bootloader.sh
+          sudo LFS="$LFS_PATH" ./final/14-create-installer.sh
+          sudo LFS="$LFS_PATH" ./final/15-create-live-system.sh
 
       - name: Upload ISO to release
         if: success() && steps.build_iso.outcome == 'success'
