@@ -1,4 +1,4 @@
-name: XFCE SYSVINIT x86_64 Build Cache (Fedora)
+name: Fedora XFCE SYSVINIT x86_64 Build Cache (Fedora)
 
 on:
   schedule:
