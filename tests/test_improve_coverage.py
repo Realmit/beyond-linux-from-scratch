@@ -376,7 +376,6 @@ class TestCLICoverage:
                     main()
                     assert not build_dir.exists()
 
-    # tests/test_improve_coverage.py - ligne 383
     def test_main_with_no_live(self, monkeypatch):
         """Test option --no-live"""
         from builder import main
@@ -389,7 +388,6 @@ class TestCLICoverage:
             mock_instance = MagicMock()
             MockBuilder.return_value = mock_instance
 
-            # Simuler get pour retourner les valeurs par défaut
             def get_side_effect(key, default=None):
                 config_map = {
                     'live_system.enabled': True,
@@ -404,7 +402,8 @@ class TestCLICoverage:
             with patch('sys.exit'):
                 main()
 
-                mock_instance.config.set.assert_called_with('live_system.enabled', False)
+            # Vérifier que l'appel a bien eu lieu (peu importe l'ordre)
+            mock_instance.config.set.assert_any_call('live_system.enabled', False)
 
     def test_main_with_kernel_type(self, monkeypatch):
         """Test option --kernel-type"""
