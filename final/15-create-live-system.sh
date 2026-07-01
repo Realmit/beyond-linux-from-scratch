@@ -9,14 +9,13 @@ ISO_OUT="${OUTPUT_DIR}/lfs-installer.iso"
 
 echo "[INFO] Creating live system (squashfs + ISO)..."
 
-# Vérifier la présence de mksquashfs
 if ! command -v mksquashfs &>/dev/null; then
     echo "[ERROR] mksquashfs not found. Install squashfs-tools."
     exit 1
 fi
 
 # Créer le squashfs (en excluant les répertoires virtuels)
-sudo mksquashfs "$LFS" "$SQUASHFS" \
+mksquashfs "$LFS" "$SQUASHFS" \
     -comp xz -Xbcj x86 -b 1M \
     -wildcards -e "proc/*" "sys/*" "dev/*" "run/*" "tmp/*" "sources/*"
 

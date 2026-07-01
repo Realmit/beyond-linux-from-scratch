@@ -38,14 +38,6 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install pytest pytest-cov requests-mock pytest-mock
 
-      - name: Create lfs user
-        run: |
-          if ! id "lfs" &>/dev/null; then
-            sudo useradd -m -s /bin/bash lfs
-            echo "lfs:lfs" | sudo chpasswd
-          fi
-          sudo chsh -s /bin/bash lfs || true
-
       - name: Get latest release cache URL
         id: get_cache
         run: |
@@ -64,30 +56,27 @@ jobs:
           cd /tmp/lfs-build
           sudo wget -q --show-progress "${{ steps.get_cache.outputs.cache_url }}" -O rootfs.tar.xz
           sudo tar -xJf rootfs.tar.xz -C image/
-          sudo chown -R lfs:lfs image/
           sudo rm rootfs.tar.xz
+          sudo chown -R root:root image/
           ls -lh image/
 
       - name: Copy repository to /tmp/lfs-builder
         run: |
           sudo mkdir -p /tmp/lfs-builder
           sudo cp -a . /tmp/lfs-builder/
-          sudo chown -R lfs:lfs /tmp/lfs-builder
           sudo chmod -R a+rX /tmp/lfs-builder
 
-      # Plus besoin de créer /output : les vrais scripts utilisent $LFS
-
-      - name: Run final stages (initramfs, bootloader, installer, live-system)
+      - name: Run final stages (as root)
         id: final
         continue-on-error: true
         run: |
-          # Définir LFS et le passer explicitement à chaque commande
-          LFS_PATH="/tmp/lfs-build/image"
           cd /tmp/lfs-builder
-          sudo -u lfs LFS="$LFS_PATH" bash -c "./final/12-create-initramfs.sh" || { echo "initramfs failed"; exit 1; }
-          sudo -u lfs LFS="$LFS_PATH" bash -c "./final/13-create-bootloader.sh" || { echo "bootloader failed"; exit 1; }
-          sudo -u lfs LFS="$LFS_PATH" bash -c "./final/14-create-installer.sh" || { echo "installer failed"; exit 1; }
-          sudo -u lfs LFS="$LFS_PATH" bash -c "./final/15-create-live-system.sh" || { echo "live-system failed"; exit 1; }
+          export LFS=/tmp/lfs-build/image
+          # Exécuter chaque script en tant que root pour avoir les droits
+          sudo bash -c "export LFS=$LFS && cd /tmp/lfs-builder && ./final/12-create-initramfs.sh" || { echo "initramfs failed"; exit 1; }
+          sudo bash -c "export LFS=$LFS && cd /tmp/lfs-builder && ./final/13-create-bootloader.sh" || { echo "bootloader failed"; exit 1; }
+          sudo bash -c "export LFS=$LFS && cd /tmp/lfs-builder && ./final/14-create-installer.sh" || { echo "installer failed"; exit 1; }
+          sudo bash -c "export LFS=$LFS && cd /tmp/lfs-builder && ./final/15-create-live-system.sh" || { echo "live-system failed"; exit 1; }
 
       - name: Verify ISO creation
         id: check_iso

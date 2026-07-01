@@ -27,10 +27,10 @@ else
 fi
 
 # Créer les périphériques indispensables
-sudo mknod -m 622 "$INITRAMFS_DIR/dev/console" c 5 1
-sudo mknod -m 666 "$INITRAMFS_DIR/dev/null" c 1 3
-sudo mknod -m 666 "$INITRAMFS_DIR/dev/zero" c 1 5
-sudo mknod -m 666 "$INITRAMFS_DIR/dev/tty" c 5 0
+mknod -m 622 "$INITRAMFS_DIR/dev/console" c 5 1
+mknod -m 666 "$INITRAMFS_DIR/dev/null" c 1 3
+mknod -m 666 "$INITRAMFS_DIR/dev/zero" c 1 5
+mknod -m 666 "$INITRAMFS_DIR/dev/tty" c 5 0
 
 # Script init
 cat > "$INITRAMFS_DIR/init" << 'EOF'
