@@ -1,0 +1,17 @@
+# Branding files - CSS and theme assets
+branding/
+*.css
+*.xml
+
+# Build output and generated files
+lfs-output/
+*.iso
+*.tar.xz
+*.img
+
+# IDE and OS files
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+.DS_Store
