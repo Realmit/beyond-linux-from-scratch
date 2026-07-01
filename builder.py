@@ -1248,6 +1248,9 @@ class LFSBuilder:
         """Download all required sources"""
         self.logger.info("Downloading sources")
 
+        # Update sources.list from official repositories
+        self._update_sources_list()
+
         sources_list = Path('packages/sources.list')
         checksum_file = Path('packages/md5sums')
 
@@ -1562,6 +1565,63 @@ def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
         return False
 
 
+def _update_sources_list(self) -> bool:
+    """Update packages/sources.list with official LFS/BLFS URLs + custom sources."""
+    sources_file = Path('packages/sources.list')
+    custom_file = Path('packages/custom-sources.list')
+    repo_urls = self.config.get('repositories', [])
+
+    if not repo_urls:
+        self.logger.warning("No repository URLs configured, skipping sources update")
+        return False
+
+    all_urls = set()
+    success = False
+
+    for repo_url in repo_urls:
+        try:
+            self.logger.info(f"Fetching sources list from {repo_url}")
+            with urllib.request.urlopen(repo_url, timeout=30) as resp:
+                content = resp.read().decode('utf-8')
+                for line in content.splitlines():
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        all_urls.add(line)
+            success = True
+        except Exception as e:
+            self.logger.warning(f"Failed to fetch {repo_url}: {e}")
+
+    if not success and not sources_file.exists():
+        self.logger.error("No sources could be fetched and no existing sources.list found")
+        return False
+
+    # Write the merged list
+    with open(sources_file, 'w') as f:
+        f.write("# LFS Sources - Automatically generated from official wget-lists\n")
+        f.write(f"# Generated: {datetime.now().isoformat()}\n")
+        f.write("# DO NOT EDIT MANUALLY – changes will be overwritten\n\n")
+        for url in sorted(all_urls):
+            f.write(f"{url}\n")
+        f.write("\n")
+
+    # Append custom sources if they exist
+    if custom_file.exists():
+        self.logger.info(f"Appending custom sources from {custom_file}")
+        with open(custom_file, 'r') as cf:
+            custom_lines = cf.readlines()
+        with open(sources_file, 'a') as f:
+            f.write("\n# ============================================================================\n")
+            f.write("# CUSTOM SOURCES (from packages/custom-sources.list)\n")
+            f.write("# ============================================================================\n\n")
+            for line in custom_lines:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    f.write(f"{line}\n")
+
+    self.logger.info(f"Updated sources.list with {len(all_urls)} official URLs + custom entries")
+    return True
+
+
 def main():
     """Main entry point"""
     parser = create_parser()
@@ -1665,10 +1725,10 @@ def main():
         builder.create_writable_media(args.write_usb)
 
     print("\n" + "=" * 70)
-    print("✅ BUILD COMPLETED SUCCESSFULLY!")
+    print("BUILD COMPLETED SUCCESSFULLY!")
     print("=" * 70)
-    print(f"📀 ISO location: {builder.output_dir}/lfs-installer.iso")
-    print("\n📝 Next steps:")
+    print(f"ISO location: {builder.output_dir}/lfs-installer.iso")
+    print("\nNext steps:")
     print("  1. Write ISO to USB:")
     print(f"     python3 builder.py --write-usb /dev/sdX")
     print("  2. Boot from USB")
@@ -1676,12 +1736,12 @@ def main():
     print("  4. Or select 'Install LFS Linux' for permanent installation")
 
     if builder.is_cross_compile():
-        print(f"\n📱 For ARM64 target ({builder.get_target_architecture()}):")
+        print(f"\nFor ARM64 target ({builder.get_target_architecture()}):")
         print(f"   - Flash to SD card: dd if={builder.output_dir}/lfs-installer.img of=/dev/sdb bs=4M")
         print(f"   - Boot on your ARM device (Raspberry Pi, Orange Pi, etc.)")
         print(f"   - Default login: lfsuser / lfsuser123")
 
-    print("\n🔧 After installation:")
+    print("\nAfter installation:")
     print("  - Check for updates:   lfs-update check")
     print("  - Upgrade system:      lfs-update upgrade")
     print("  - System status:       lfs-update status")
@@ -1689,13 +1749,13 @@ def main():
     print()
 
     if builder.profile_config.get('security_hardening', False):
-        print("🛡️  Security features: ENABLED")
+        print("Security features: ENABLED")
         print("   - Kernel hardening, Firewall, Fail2ban, Audit, HIDS")
     if builder.profile_config.get('privacy_tools', False):
-        print("🔒 Privacy tools: ENABLED")
+        print("Privacy tools: ENABLED")
         print("   - DNSCrypt, WireGuard, Tor, Telemetry blocking")
     if builder.is_cross_compile():
-        print(f"🔄 Cross-compilation: ENABLED for {builder.get_target_architecture()}")
+        print(f"Cross-compilation: ENABLED for {builder.get_target_architecture()}")
     print()
 
 
