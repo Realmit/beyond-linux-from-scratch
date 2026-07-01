@@ -34,6 +34,27 @@ jobs:
       - name: Show disk space
         run: df -h
 
+      - name: Update sources.list with official LFS/BLFS URLs
+        run: |
+          # Télécharge les listes officielles à jour
+          wget -q https://www.linuxfromscratch.org/lfs/view/stable/wget-list -O /tmp/lfs.list
+          wget -q https://www.linuxfromscratch.org/blfs/view/stable-systemd/wget-list -O /tmp/blfs.list
+          
+          # Fusionne, supprime les doublons
+          cat /tmp/lfs.list /tmp/blfs.list | sort -u > packages/sources.list
+          
+          # Ajoute les outils de confidentialité à la fin
+          cat >> packages/sources.list << 'EOF'
+          # Privacy tools
+          https://dist.torproject.org/tor-0.4.9.7.tar.gz
+          https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-1.0.20210914.tar.xz
+          https://github.com/DNSCrypt/dnscrypt-proxy/archive/refs/tags/2.1.16.tar.gz
+          https://github.com/i2p/i2p.i2p/archive/refs/tags/i2p-2.12.0.tar.gz
+          https://0xacab.org/jvoisin/mat2/-/archive/0.13.4/mat2-0.13.4.tar.gz
+          EOF
+          
+          echo "✅ sources.list mis à jour avec $(wc -l < packages/sources.list) URLs"
+
       - name: Create output directory
         run: sudo mkdir -p /tmp/lfs-build
 
