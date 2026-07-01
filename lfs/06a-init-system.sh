@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install init system – utilise le globbing Bash, pas de ls/head/cut
+# Install init system – avec copie des outils et PATH explicite
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -74,7 +74,7 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# --- Copie des outils manquants (tar, head, cut, ...) ---
+# Copie des outils manquants
 copy_tool() {
     local tool="$1"
     local src="$(which "$tool" 2>/dev/null || echo "/bin/$tool")"
@@ -92,27 +92,33 @@ for tool in tar head cut; do
     copy_tool "$tool"
 done
 
-# Chemin dynamique des sources
+# Sources
 SOURCES_HOST="$(dirname "$LFS")/sources"
 if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
     run_privileged mkdir -p "$LFS/sources"
     run_privileged cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
     run_privileged chown -R lfs:lfs "$LFS/sources"
-else
-    log_warning "No sources found in $SOURCES_HOST – might still be available inside chroot"
 fi
 
-# --- Créer le script interne qui utilise le globbing Bash (pas de ls/head/cut) ---
+# Script interne
 cat > "$LFS/build-init.sh" << 'INNEREOF'
 #!/bin/bash
+# Force PATH to include /usr/bin and /bin
+export PATH=/bin:/usr/bin:/sbin:/usr/sbin
+
 set -e
 cd /sources
 
 INIT_SYSTEM="${1:-sysvinit}"
 
 compile_package() {
-    local archive="$1"
+    local pattern=$1
+    local archive=$(ls -1 $pattern 2>/dev/null | head -n1)
+    if [ -z "$archive" ]; then
+        echo "WARNING: No source found for $pattern"
+        return 1
+    fi
     local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
     echo "=== Building $dir ==="
     tar -xf "$archive"
@@ -165,9 +171,9 @@ INNEREOF
 
 run_privileged chmod +x "$LFS/build-init.sh"
 
-# --- Exécuter le chroot en passant l'argument ---
+# Exécution avec PATH explicite
 log_info "Entering chroot and building init system with argument: $INIT_SYSTEM"
-run_privileged chroot "$LFS" /bin/bash /build-init.sh "$INIT_SYSTEM"
+run_privileged chroot "$LFS" /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; /build-init.sh $INIT_SYSTEM"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
