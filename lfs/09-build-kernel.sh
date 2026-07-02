@@ -15,6 +15,17 @@ log_error() { echo "[ERROR] $*" >&2; }
 log_success() { echo "[SUCCESS] $*"; }
 
 # ============================================================================
+# 0. VÉRIFICATION DES OUTILS SUR L'HÔTE (INCLUSE)
+# ============================================================================
+for cmd in make gcc tar xz; do
+    if ! command -v "$cmd" &> /dev/null; then
+        log_error "Required command '$cmd' not found on host"
+        exit 1
+    fi
+done
+log_success "All required tools found on host"
+
+# ============================================================================
 # 1. S'assurer que les sources du noyau sont disponibles
 # ============================================================================
 SOURCES_HOST="$(dirname "$LFS")/sources"
@@ -47,7 +58,7 @@ if [ -f "$LFS/boot/vmlinuz" ]; then
 fi
 
 # ============================================================================
-# 3. Compilation sur l'hôte
+# 3. Compilation sur l'hôte (utilisation des outils système)
 # ============================================================================
 WORKDIR=$(mktemp -d)
 cd "$WORKDIR"
@@ -64,7 +75,7 @@ log_info "Building kernel with $(nproc) jobs"
 make -j$(nproc)
 
 # ============================================================================
-# 4. Installation dans $LFS
+# 4. Installation dans $LFS (modules + noyau)
 # ============================================================================
 log_info "Installing modules to $LFS"
 make modules_install INSTALL_MOD_PATH="$LFS"
