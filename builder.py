@@ -623,8 +623,7 @@ class SourceDownloader:
         for attempt in range(retries):
             self.logger.info(f"Downloading: {filename} (attempt {attempt + 1}/{retries})")
             try:
-                urllib.request.urlretrieve(url, dest, self._reporthook)
-                print()
+                urllib.request.urlretrieve(url, dest)
                 return True
             except Exception as e:
                 self.logger.warning(f"Attempt {attempt + 1} failed: {e}")
