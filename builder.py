@@ -1311,8 +1311,8 @@ class LFSBuilder:
         # Build kernel
         stages.append(('build-kernel', 'lfs/09-build-kernel.sh'))
 
-        # Final stages
-        stages.append(('initramfs', 'final/12-create-initramfs.sh'))
+        # ⚠️ SUPPRIMEZ la ligne suivante (initramfs ne doit pas être ici)
+        # stages.append(('initramfs', 'final/12-create-initramfs.sh'))  <--- À RETIRER
 
         # Desktop (if enabled)
         if self.profile_config.get('desktop'):
@@ -1337,7 +1337,7 @@ class LFSBuilder:
         if self.profile_config.get('privacy_tools', False):
             stages.append(('privacy', 'blfs/16-privacy-tools.sh'))
 
-        # Branding (themes, wallpapers, customization)
+        # Branding
         stages.append(('branding', 'blfs/21-branding.sh'))
 
         # First boot service
@@ -1349,7 +1349,7 @@ class LFSBuilder:
             stages.append(('package-updater', 'blfs/19-package-updater.sh'))
             stages.append(('lpm-advanced', 'blfs/20-lpm-advanced.sh'))
 
-        # Final stages
+        # ✅ FINAL STAGES (un seul initramfs ici)
         stages.append(('initramfs', 'final/12-create-initramfs.sh'))
         stages.append(('bootloader', 'final/13-create-bootloader.sh'))
         stages.append(('installer', 'final/14-create-installer.sh'))
