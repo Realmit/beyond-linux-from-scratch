@@ -1,13 +1,9 @@
 #!/bin/bash
-# Build BLFS (Beyond Linux From Scratch) base packages
-
+# Build BLFS base packages (minimal set)
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LFS=${LFS:-/mnt/lfs}
-LFS_TGT=${LFS_TGT:-$(uname -m)-lfs-linux-gnu}
 
-# Source utilities if available
 if [ -f "$SCRIPT_DIR/../common/utils.sh" ]; then
     source "$SCRIPT_DIR/../common/utils.sh"
 else
@@ -17,36 +13,88 @@ else
     log_success() { echo "[SUCCESS] $*"; }
 fi
 
-log_info "Building BLFS base packages"
-log_info "LFS: $LFS"
-log_info "Target: $LFS_TGT"
-log_info "User: $(whoami)"
+LFS=${LFS:-/mnt/lfs}
+KERNEL_TYPE=${KERNEL_TYPE:-linux}
+export KERNEL_TYPE
 
-# Check if LFS directory exists
+if [ "$EUID" -ne 0 ]; then
+    log_info "Relaunching with sudo..."
+    exec sudo -E "$0" "$@"
+fi
+
+log_info "========================================="
+log_info "Building BLFS base packages"
+log_info "========================================="
+
 if [ ! -d "$LFS" ]; then
-    log_error "LFS directory does not exist: $LFS"
+    log_error "LFS directory $LFS does not exist"
     exit 1
 fi
 
-# Set up environment for building
-export LC_ALL=POSIX
-export LFS
-export LFS_TGT
+# Montages
+mountpoint -q "$LFS/dev"  || mount --bind /dev "$LFS/dev"
+mountpoint -q "$LFS/dev/pts" || mount -t devpts devpts "$LFS/dev/pts"
+mountpoint -q "$LFS/proc" || mount -t proc proc "$LFS/proc"
+mountpoint -q "$LFS/sys"  || mount -t sysfs sysfs "$LFS/sys"
+mountpoint -q "$LFS/run"  || mount -t tmpfs tmpfs "$LFS/run"
 
-# Enter LFS chroot
-log_info "Entering LFS chroot environment..."
+cleanup() {
+    umount "$LFS/dev/pts" 2>/dev/null || true
+    umount "$LFS/dev" 2>/dev/null || true
+    umount "$LFS/proc" 2>/dev/null || true
+    umount "$LFS/sys" 2>/dev/null || true
+    umount "$LFS/run" 2>/dev/null || true
+}
+trap cleanup EXIT
 
-if [ -f "$LFS/etc/os-release" ]; then
-    log_success "LFS root found, preparing for BLFS build"
-else
-    log_warning "LFS root not properly initialized, this may cause issues"
+# Copie des sources si nécessaire
+SOURCES_HOST="$(dirname "$LFS")/sources"
+if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
+    log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
+    mkdir -p "$LFS/sources"
+    cp -rv "$SOURCES_HOST"/* "$LFS/sources/"
+    chown -R lfs:lfs "$LFS/sources" 2>/dev/null || true
 fi
 
-# Create BLFS source directory if needed
-mkdir -p "$LFS/sources/blfs"
-cd "$LFS/sources/blfs"
+# Script de compilation BLFS
+cat > "$LFS/build-blfs-base.sh" << 'INNEREOF'
+#!/bin/bash
+set -e
+cd /sources
 
-log_info "BLFS base packages stage completed"
-log_success "BLFS base preparation done"
+compile_package() {
+    local pattern=$1
+    local archive=$(ls -1 $pattern 2>/dev/null | head -n1)
+    if [ -z "$archive" ]; then
+        echo "WARNING: No source found for $pattern"
+        return 1
+    fi
+    local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
+    echo "=== Building $dir ==="
+    tar -xf "$archive"
+    cd "$dir"
+    if [ -f "configure" ]; then
+        ./configure --prefix=/usr --sysconfdir=/etc
+    elif [ -f "Makefile" ]; then
+        true
+    fi
+    make -j$(nproc)
+    make install
+    cd /sources
+    rm -rf "$dir"
+    echo "=== $dir done ==="
+}
 
-exit 0
+for pkg in "curl-*.tar.xz" "openssl-*.tar.gz" "expat-*.tar.xz" "libxml2-*.tar.xz"; do
+    compile_package "$pkg" || true
+done
+
+echo "BLFS base packages built."
+INNEREOF
+
+chmod +x "$LFS/build-blfs-base.sh"
+
+# Exécution dans le chroot
+chroot "$LFS" /bin/bash -c "export KERNEL_TYPE=$KERNEL_TYPE; /build-blfs-base.sh"
+
+log_success "BLFS base packages built successfully"
