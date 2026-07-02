@@ -33,8 +33,13 @@ fi
 # 2. Copier tous les outils et leurs bibliothèques
 # ============================================================================
 ensure_tools_in_chroot() {
-    # Liste des commandes indispensables
-    local tools=("bash" "tar" "make" "gcc" "g++" "ld" "ar" "nm" "strip" "gawk" "sed" "grep" "find" "xargs" "cp" "mv" "rm" "mkdir" "ln" "chmod" "chown" "cat" "echo" "pwd" "which" "m4" "bison" "flex")
+    # Liste des commandes indispensables (incluant xz)
+    local tools=(
+        "bash" "tar" "make" "gcc" "g++" "ld" "ar" "nm" "strip"
+        "gawk" "sed" "grep" "find" "xargs" "cp" "mv" "rm" "mkdir"
+        "ln" "chmod" "chown" "cat" "echo" "pwd" "which" "m4"
+        "bison" "flex" "xz"   # <--- AJOUT DE xz
+    )
 
     mkdir -p "$LFS/bin" "$LFS/usr/bin" "$LFS/lib" "$LFS/lib64" "$LFS/usr/lib" "$LFS/usr/lib64"
 
@@ -127,6 +132,13 @@ ensure_tools_in_chroot() {
         log_info "Contents of /lib64 in chroot:"
         ls -la "$LFS/lib64" || true
         exit 1
+    fi
+
+    # Vérifier que xz est disponible
+    if chroot "$LFS" /bin/bash -c "xz --version" >/dev/null 2>&1; then
+        log_success "xz works in chroot"
+    else
+        log_warning "xz not available in chroot – tar may fail with .xz archives"
     fi
 }
 
