@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# Se relancer avec sudo si nécessaire
 if [ "$EUID" -ne 0 ]; then
     echo "[INFO] Relaunching with sudo..."
     exec sudo -E "$0" "$@"
@@ -14,9 +13,7 @@ log_info() { echo "[INFO] $*"; }
 log_error() { echo "[ERROR] $*" >&2; }
 log_success() { echo "[SUCCESS] $*"; }
 
-# ============================================================================
-# Copier les sources si elles manquent
-# ============================================================================
+# Copier les sources
 SOURCES_HOST="$(dirname "$LFS")/sources"
 if [ ! -d "$LFS/sources" ] || [ -z "$(ls -A "$LFS/sources" 2>/dev/null)" ]; then
     if [ -d "$SOURCES_HOST" ] && [ -n "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
@@ -30,13 +27,10 @@ if [ ! -d "$LFS/sources" ] || [ -z "$(ls -A "$LFS/sources" 2>/dev/null)" ]; then
     fi
 fi
 
-# ============================================================================
-# Vérifier /bin/bash – le copier depuis l'hôte si absent
-# ============================================================================
 ensure_bash_in_chroot() {
     mkdir -p "$LFS/bin" "$LFS/lib" "$LFS/lib64"
 
-    # 1. Copier bash s'il n'existe pas
+    # Copier bash s'il n'existe pas
     if [ ! -x "$LFS/bin/bash" ]; then
         BASH_SRC=$(which bash 2>/dev/null || echo "/bin/bash")
         [ ! -f "$BASH_SRC" ] && BASH_SRC="/usr/bin/bash"
@@ -48,39 +42,36 @@ ensure_bash_in_chroot() {
         log_info "bash already present in chroot"
     fi
 
-    # 2. Copier ld-linux s'il n'existe pas
+    # Trouver ld-linux réel (ne pas suivre les liens)
     LD_TARGET="$LFS/lib64/ld-linux-x86-64.so.2"
-    if [ ! -f "$LD_TARGET" ]; then
+    if [ ! -f "$LD_TARGET" ] || [ -L "$LD_TARGET" ]; then
+        # Supprimer le lien symbolique s'il existe
+        [ -L "$LD_TARGET" ] && rm -f "$LD_TARGET"
+        # Trouver le vrai fichier sur l'hôte
         LD_SRC=$(ldd /bin/bash | grep -E 'ld-linux|ld-2' | awk '{print $3}')
-        if [ -n "$LD_SRC" ] && [ -f "$LD_SRC" ]; then
-            mkdir -p "$LFS/lib64"
-            # Éviter la copie si source == destination
-            if [ "$LD_SRC" != "$LD_TARGET" ]; then
-                cp -L "$LD_SRC" "$LD_TARGET"
-                chmod 755 "$LD_TARGET"
-                log_info "ld-linux copied to $LD_TARGET"
-            else
-                log_info "ld-linux already in correct location"
-            fi
-        else
+        if [ -z "$LD_SRC" ] || [ ! -f "$LD_SRC" ]; then
             # Recherche manuelle
             for ld in /lib64/ld-linux*.so.* /lib/ld-linux*.so.*; do
                 if [ -f "$ld" ]; then
-                    mkdir -p "$LFS/lib64"
-                    if [ "$ld" != "$LD_TARGET" ]; then
-                        cp -L "$ld" "$LD_TARGET"
-                        chmod 755 "$LD_TARGET"
-                        log_info "ld-linux copied from $ld"
-                        break
-                    fi
+                    LD_SRC="$ld"
+                    break
                 fi
             done
         fi
+        if [ -n "$LD_SRC" ] && [ -f "$LD_SRC" ]; then
+            # Copier le vrai fichier, pas le lien
+            cp -L "$LD_SRC" "$LD_TARGET"
+            chmod 755 "$LD_TARGET"
+            log_info "ld-linux copied (real file) to $LD_TARGET"
+        else
+            log_error "ld-linux not found on host"
+            exit 1
+        fi
     else
-        log_info "ld-linux already present in chroot"
+        log_info "ld-linux already present as real file"
     fi
 
-    # 3. Copier les bibliothèques partagées dont bash a besoin (si elles ne sont pas déjà présentes)
+    # Copier les autres bibliothèques partagées
     ldd /bin/bash | grep "=>" | awk '{print $3}' | while read lib; do
         [ -z "$lib" ] && continue
         if [ -f "$lib" ]; then
@@ -100,15 +91,10 @@ ensure_bash_in_chroot() {
         fi
     done
 
-    # 4. Créer un lien /lib64 -> /lib si nécessaire (certains binaires cherchent dans /lib64)
-    if [ ! -e "$LFS/lib64/ld-linux-x86-64.so.2" ] && [ -e "$LFS/lib/ld-linux-x86-64.so.2" ]; then
-        ln -sf ../lib/ld-linux-x86-64.so.2 "$LFS/lib64/ld-linux-x86-64.so.2"
-    fi
-
-    # 5. Tester le chroot
+    # Tester le chroot
     log_info "Testing chroot..."
     if ! chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
-        log_error "chroot test failed – missing libraries"
+        log_error "chroot test failed"
         log_info "Contents of $LFS/bin:"
         ls -la "$LFS/bin" || true
         log_info "Contents of $LFS/lib64:"
@@ -120,9 +106,7 @@ ensure_bash_in_chroot() {
 
 ensure_bash_in_chroot
 
-# ============================================================================
 # Montages
-# ============================================================================
 mountpoint -q "$LFS/dev"  || mount --bind /dev "$LFS/dev"
 mountpoint -q "$LFS/dev/pts" || mount -t devpts devpts "$LFS/dev/pts"
 mountpoint -q "$LFS/proc" || mount -t proc proc "$LFS/proc"
@@ -136,9 +120,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# ============================================================================
 # Trouver l'archive du noyau
-# ============================================================================
 cd "$LFS/sources"
 KERNEL_ARCHIVE=$(ls -1 "${KERNEL_TYPE}"-*.tar.xz 2>/dev/null | head -n1)
 if [ -z "$KERNEL_ARCHIVE" ]; then
@@ -155,9 +137,7 @@ if [ -f "$LFS/boot/vmlinuz" ]; then
     exit 0
 fi
 
-# ============================================================================
 # Compilation
-# ============================================================================
 chroot "$LFS" /bin/bash << EOF
 set -e
 cd /sources
