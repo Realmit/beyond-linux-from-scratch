@@ -12,18 +12,18 @@ log_info() { echo "[INFO] $*"; }
 log_error() { echo "[ERROR] $*" >&2; }
 log_success() { echo "[SUCCESS] $*"; }
 
-# Monter les systèmes de fichiers virtuels si ce n'est pas déjà fait
-mountpoint -q "$LFS/dev"  || mount --bind /dev "$LFS/dev"
-mountpoint -q "$LFS/dev/pts" || mount -t devpts devpts "$LFS/dev/pts"
-mountpoint -q "$LFS/proc" || mount -t proc proc "$LFS/proc"
-mountpoint -q "$LFS/sys"  || mount -t sysfs sysfs "$LFS/sys"
+# Monter les systèmes de fichiers virtuels si ce n'est pas déjà fait (avec sudo)
+sudo mountpoint -q "$LFS/dev"  || sudo mount --bind /dev "$LFS/dev"
+sudo mountpoint -q "$LFS/dev/pts" || sudo mount -t devpts devpts "$LFS/dev/pts"
+sudo mountpoint -q "$LFS/proc" || sudo mount -t proc proc "$LFS/proc"
+sudo mountpoint -q "$LFS/sys"  || sudo mount -t sysfs sysfs "$LFS/sys"
 
 # Nettoyage en fin de script (même en cas d'erreur)
 cleanup() {
-    umount "$LFS/dev/pts" 2>/dev/null || true
-    umount "$LFS/dev" 2>/dev/null || true
-    umount "$LFS/proc" 2>/dev/null || true
-    umount "$LFS/sys" 2>/dev/null || true
+    sudo umount "$LFS/dev/pts" 2>/dev/null || true
+    sudo umount "$LFS/dev" 2>/dev/null || true
+    sudo umount "$LFS/proc" 2>/dev/null || true
+    sudo umount "$LFS/sys" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -52,8 +52,8 @@ if [ -f "$LFS/boot/vmlinuz" ]; then
     exit 0
 fi
 
-# Compilation dans un chroot
-chroot "$LFS" /bin/bash << EOF
+# Compilation dans un chroot (avec sudo)
+sudo chroot "$LFS" /bin/bash << EOF
 set -e
 cd /sources
 tar -xf "$KERNEL_ARCHIVE"
