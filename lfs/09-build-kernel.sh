@@ -31,37 +31,56 @@ if [ ! -d "$LFS/sources" ] || [ -z "$(ls -A "$LFS/sources" 2>/dev/null)" ]; then
 fi
 
 # ============================================================================
-# Copier bash, ld-linux et toutes les bibliothèques nécessaires
+# Vérifier /bin/bash – le copier depuis l'hôte si absent
 # ============================================================================
 ensure_bash_in_chroot() {
     mkdir -p "$LFS/bin" "$LFS/lib" "$LFS/lib64"
 
-    # 1. Copier bash
-    BASH_SRC=$(which bash 2>/dev/null || echo "/bin/bash")
-    [ ! -f "$BASH_SRC" ] && BASH_SRC="/usr/bin/bash"
-    [ ! -f "$BASH_SRC" ] && { log_error "bash not found on host"; exit 1; }
-    cp -L "$BASH_SRC" "$LFS/bin/bash"
-    chmod 755 "$LFS/bin/bash"
-
-    # 2. Copier ld-linux (l'interpréteur dynamique)
-    LD_SRC=$(ldd /bin/bash | grep -E 'ld-linux|ld-2' | awk '{print $3}')
-    if [ -n "$LD_SRC" ]; then
-        mkdir -p "$LFS/lib64"
-        cp -L "$LD_SRC" "$LFS/lib64/"
-        chmod 755 "$LFS/lib64/$(basename "$LD_SRC")"
+    # 1. Copier bash s'il n'existe pas
+    if [ ! -x "$LFS/bin/bash" ]; then
+        BASH_SRC=$(which bash 2>/dev/null || echo "/bin/bash")
+        [ ! -f "$BASH_SRC" ] && BASH_SRC="/usr/bin/bash"
+        [ ! -f "$BASH_SRC" ] && { log_error "bash not found on host"; exit 1; }
+        cp -L "$BASH_SRC" "$LFS/bin/bash"
+        chmod 755 "$LFS/bin/bash"
+        log_info "bash copied from $BASH_SRC"
     else
-        # Recherche manuelle
-        for ld in /lib64/ld-linux*.so.* /lib/ld-linux*.so.*; do
-            if [ -f "$ld" ]; then
-                mkdir -p "$LFS/lib64"
-                cp -L "$ld" "$LFS/lib64/"
-                chmod 755 "$LFS/lib64/$(basename "$ld")"
-                break
-            fi
-        done
+        log_info "bash already present in chroot"
     fi
 
-    # 3. Copier toutes les bibliothèques partagées dont bash a besoin
+    # 2. Copier ld-linux s'il n'existe pas
+    LD_TARGET="$LFS/lib64/ld-linux-x86-64.so.2"
+    if [ ! -f "$LD_TARGET" ]; then
+        LD_SRC=$(ldd /bin/bash | grep -E 'ld-linux|ld-2' | awk '{print $3}')
+        if [ -n "$LD_SRC" ] && [ -f "$LD_SRC" ]; then
+            mkdir -p "$LFS/lib64"
+            # Éviter la copie si source == destination
+            if [ "$LD_SRC" != "$LD_TARGET" ]; then
+                cp -L "$LD_SRC" "$LD_TARGET"
+                chmod 755 "$LD_TARGET"
+                log_info "ld-linux copied to $LD_TARGET"
+            else
+                log_info "ld-linux already in correct location"
+            fi
+        else
+            # Recherche manuelle
+            for ld in /lib64/ld-linux*.so.* /lib/ld-linux*.so.*; do
+                if [ -f "$ld" ]; then
+                    mkdir -p "$LFS/lib64"
+                    if [ "$ld" != "$LD_TARGET" ]; then
+                        cp -L "$ld" "$LD_TARGET"
+                        chmod 755 "$LD_TARGET"
+                        log_info "ld-linux copied from $ld"
+                        break
+                    fi
+                fi
+            done
+        fi
+    else
+        log_info "ld-linux already present in chroot"
+    fi
+
+    # 3. Copier les bibliothèques partagées dont bash a besoin (si elles ne sont pas déjà présentes)
     ldd /bin/bash | grep "=>" | awk '{print $3}' | while read lib; do
         [ -z "$lib" ] && continue
         if [ -f "$lib" ]; then
@@ -72,27 +91,31 @@ ensure_bash_in_chroot() {
                 dest_dir="$LFS/usr/lib"
             fi
             mkdir -p "$dest_dir"
-            cp -L "$lib" "$dest_dir/"
-            chmod 755 "$dest_dir/$(basename "$lib")"
+            dest_file="$dest_dir/$(basename "$lib")"
+            if [ ! -f "$dest_file" ] && [ "$lib" != "$dest_file" ]; then
+                cp -L "$lib" "$dest_file"
+                chmod 755 "$dest_file"
+                log_info "copied library: $(basename "$lib")"
+            fi
         fi
     done
 
-    # 4. Créer un lien symbolique /lib64 -> /lib si nécessaire
-    if [ ! -L "$LFS/lib64" ]; then
-        ln -sf lib "$LFS/lib64" 2>/dev/null || true
+    # 4. Créer un lien /lib64 -> /lib si nécessaire (certains binaires cherchent dans /lib64)
+    if [ ! -e "$LFS/lib64/ld-linux-x86-64.so.2" ] && [ -e "$LFS/lib/ld-linux-x86-64.so.2" ]; then
+        ln -sf ../lib/ld-linux-x86-64.so.2 "$LFS/lib64/ld-linux-x86-64.so.2"
     fi
 
-    # 5. Vérifier que le chroot fonctionne
-    log_info "Testing chroot with /bin/bash"
+    # 5. Tester le chroot
+    log_info "Testing chroot..."
     if ! chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
-        log_error "chroot test failed – missing libraries?"
+        log_error "chroot test failed – missing libraries"
         log_info "Contents of $LFS/bin:"
         ls -la "$LFS/bin" || true
         log_info "Contents of $LFS/lib64:"
         ls -la "$LFS/lib64" || true
         exit 1
     fi
-    log_success "bash and libraries copied and chroot works"
+    log_success "chroot works with /bin/bash"
 }
 
 ensure_bash_in_chroot
