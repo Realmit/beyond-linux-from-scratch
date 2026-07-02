@@ -536,10 +536,10 @@ https://ftp.gnu.org/gnu/grub/grub-2.12.tar.xz
 https://ftp.gnu.org/gnu/gsl/gsl-2.8.tar.gz
 https://ftp.gnu.org/gnu/guile/guile-3.0.10.tar.xz
 https://ftp.gnu.org/gnu/gzip/gzip-1.14.tar.xz
-https://ftp.gnu.org/gnu/inetutils/inetutils-2.6.tar.xz
+https://ftp.gnu.org/gnu/inetutils/inetutils-2.6.tar.gz
 https://ftp.gnu.org/gnu/libcdio/libcdio-2.1.0.tar.bz2
 https://ftp.gnu.org/gnu/libcdio/libcdio-paranoia-10.2+2.0.2.tar.bz2
-https://ftp.gnu.org/gnu/libidn/libidn-1.43.tar.gz
+https://ftp.gnu.org/gnu/libidn/libidn-1.43.tar.gz.proof
 https://ftp.gnu.org/gnu/libidn/libidn2-2.3.8.tar.gz
 https://ftp.gnu.org/gnu/libsigsegv/libsigsegv-2.15.tar.gz
 https://ftp.gnu.org/gnu/libtasn1/libtasn1-4.20.0.tar.gz
