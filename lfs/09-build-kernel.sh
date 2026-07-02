@@ -13,9 +13,7 @@ log_info() { echo "[INFO] $*"; }
 log_error() { echo "[ERROR] $*" >&2; }
 log_success() { echo "[SUCCESS] $*"; }
 
-# ============================================================================
-# DÉTECTION DE L'ARCHITECTURE
-# ============================================================================
+# Détection architecture
 if [ -n "$ARCH" ]; then
     TARGET_ARCH="$ARCH"
 elif [ -n "$LFS_TGT" ]; then
@@ -24,7 +22,6 @@ else
     TARGET_ARCH="$(uname -m)"
 fi
 log_info "Target architecture: $TARGET_ARCH"
-
 case "$TARGET_ARCH" in
     x86_64|amd64)  MAKE_ARCH="x86_64" ;;
     aarch64|arm64) MAKE_ARCH="arm64" ;;
@@ -33,9 +30,7 @@ case "$TARGET_ARCH" in
     *)             MAKE_ARCH="$TARGET_ARCH" ;;
 esac
 
-# ============================================================================
-# COPIER LES SOURCES
-# ============================================================================
+# S'assurer que les sources sont disponibles
 SOURCES_HOST="$(dirname "$LFS")/sources"
 if [ ! -d "$LFS/sources" ] || [ -z "$(ls -A "$LFS/sources" 2>/dev/null)" ]; then
     if [ -d "$SOURCES_HOST" ] && [ -n "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
@@ -49,9 +44,38 @@ if [ ! -d "$LFS/sources" ] || [ -z "$(ls -A "$LFS/sources" 2>/dev/null)" ]; then
     fi
 fi
 
-# ============================================================================
-# COPIER BASH, GCC, TAR, XZ ET LEURS BIBLIOTHÈQUES DANS LE CHROOT
-# ============================================================================
+# Trouver l'archive du noyau sur l'hôte
+cd "$LFS/sources"
+KERNEL_ARCHIVE=$(ls -1 "${KERNEL_TYPE}"-*.tar.xz 2>/dev/null | head -n1)
+if [ -z "$KERNEL_ARCHIVE" ]; then
+    log_error "No kernel source found for type: $KERNEL_TYPE"
+    exit 1
+fi
+log_info "Using kernel source: $KERNEL_ARCHIVE"
+
+if [ -f "$LFS/boot/vmlinuz" ]; then
+    log_info "Kernel already installed – skipping"
+    exit 0
+fi
+
+# Extraire le noyau sur l'hôte (dans un répertoire temporaire)
+WORKDIR=$(mktemp -d)
+log_info "Extracting kernel source on host to $WORKDIR"
+tar -xf "$LFS/sources/$KERNEL_ARCHIVE" -C "$WORKDIR"
+KERNEL_DIR=$(tar -tf "$LFS/sources/$KERNEL_ARCHIVE" | head -1 | cut -d/ -f1)
+EXTRACTED_KERNEL="$WORKDIR/$KERNEL_DIR"
+log_info "Kernel extracted to $EXTRACTED_KERNEL"
+
+# Copier le répertoire extrait dans $LFS/sources (pour que le chroot y ait accès)
+KERNEL_BUILD_DIR="$LFS/sources/kernel-build"
+rm -rf "$KERNEL_BUILD_DIR"
+mkdir -p "$KERNEL_BUILD_DIR"
+cp -rv "$EXTRACTED_KERNEL"/* "$KERNEL_BUILD_DIR/"
+chown -R lfs:lfs "$KERNEL_BUILD_DIR" 2>/dev/null || true
+
+# Copier dans le chroot les outils nécessaires : bash, make, gcc (pas tar, pas xz)
+mkdir -p "$LFS/bin" "$LFS/usr/bin" "$LFS/lib" "$LFS/lib64" "$LFS/usr/lib" "$LFS/usr/lib64"
+
 copy_binary() {
     local src="$1"
     local dest="$2"
@@ -75,9 +99,7 @@ copy_libs() {
     done
 }
 
-mkdir -p "$LFS/bin" "$LFS/usr/bin" "$LFS/lib" "$LFS/lib64" "$LFS/usr/lib" "$LFS/usr/lib64"
-
-for tool in bash tar make gcc xz; do
+for tool in bash make gcc; do
     src=$(which "$tool" 2>/dev/null || echo "")
     [ -z "$src" ] && { log_error "$tool not found on host"; exit 1; }
     dest="$LFS/bin/$(basename "$src")"
@@ -87,7 +109,7 @@ for tool in bash tar make gcc xz; do
     fi
 done
 
-# Copier ld-linux
+# Copier ld-linux (interpréteur dynamique) si absent
 LD_TARGET="$LFS/lib64/ld-linux-x86-64.so.2"
 if [ ! -f "$LD_TARGET" ] && [ ! -f "$LFS/lib/ld-linux.so.2" ]; then
     LD_SRC=$(ldd /bin/bash | grep -E 'ld-linux|ld-2' | awk '{print $3}')
@@ -101,15 +123,13 @@ if [ ! -f "$LD_TARGET" ] && [ ! -f "$LFS/lib/ld-linux.so.2" ]; then
 fi
 
 # Créer les liens /usr/bin -> /bin
-for tool in bash tar make gcc xz; do
+for tool in bash make gcc; do
     [ -x "$LFS/bin/$(basename "$(which "$tool" 2>/dev/null || echo "")")" ] && \
     [ ! -x "$LFS/usr/bin/$(basename "$tool")" ] && \
     ln -sf ../bin/$(basename "$tool") "$LFS/usr/bin/$(basename "$tool")"
 done
 
-# ============================================================================
-# MONTER LES FS VIRTUELS
-# ============================================================================
+# Monter les FS virtuels
 mountpoint -q "$LFS/dev"  || mount --bind /dev "$LFS/dev"
 mountpoint -q "$LFS/dev/pts" || mount -t devpts devpts "$LFS/dev/pts"
 mountpoint -q "$LFS/proc" || mount -t proc proc "$LFS/proc"
@@ -120,47 +140,19 @@ cleanup() {
     umount "$LFS/dev" 2>/dev/null || true
     umount "$LFS/proc" 2>/dev/null || true
     umount "$LFS/sys" 2>/dev/null || true
+    rm -rf "$WORKDIR" 2>/dev/null || true
 }
 trap cleanup EXIT
 
-# ============================================================================
-# TROUVER L'ARCHIVE DU NOYAU
-# ============================================================================
-cd "$LFS/sources"
-KERNEL_ARCHIVE=$(ls -1 "${KERNEL_TYPE}"-*.tar.xz 2>/dev/null | head -n1)
-if [ -z "$KERNEL_ARCHIVE" ]; then
-    log_error "No kernel source found for type: $KERNEL_TYPE"
-    exit 1
-fi
-log_info "Using kernel source: $KERNEL_ARCHIVE"
-KERNEL_DIR=$(tar -tf "$KERNEL_ARCHIVE" | head -1 | cut -d/ -f1)
-
-if [ -f "$LFS/boot/vmlinuz" ]; then
-    log_info "Kernel already installed – skipping"
-    exit 0
-fi
-
-# ============================================================================
-# COMPILER LE NOYAU DANS LE CHROOT (AVEC CC FORCÉ)
-# ============================================================================
+# Lancer la compilation dans le chroot
 chroot "$LFS" /bin/bash << EOF
 set -e
-# Forcer l'utilisation de gcc (ignorer les variables d'environnement extérieures)
 export CC=gcc
 export HOSTCC=gcc
 export CXX=g++
 export HOSTCXX=g++
 
-cd /sources
-tar -xf "$KERNEL_ARCHIVE"
-cd "$KERNEL_DIR"
-
-# Vérifier que gcc est accessible
-if ! command -v gcc >/dev/null 2>&1; then
-    echo "ERROR: gcc not found in chroot"
-    exit 1
-fi
-
+cd /sources/kernel-build
 make ARCH="$MAKE_ARCH" mrproper
 make ARCH="$MAKE_ARCH" defconfig
 make ARCH="$MAKE_ARCH" -j\$(nproc)
@@ -181,8 +173,8 @@ else
 fi
 cp System.map /boot/System.map
 
-cd /sources
-rm -rf "$KERNEL_DIR"
+# Nettoyer les sources après compilation (optionnel)
+rm -rf /sources/kernel-build
 EOF
 
-log_success "Kernel $KERNEL_TYPE compiled and installed to $LFS/boot/vmlinuz (architecture: $TARGET_ARCH)"
+log_success "Kernel $KERNEL_TYPE compiled and installed to $LFS/boot/vmlinuz"
