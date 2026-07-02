@@ -31,33 +31,26 @@ if [ ! -d "$LFS/sources" ] || [ -z "$(ls -A "$LFS/sources" 2>/dev/null)" ]; then
 fi
 
 # ============================================================================
-# Copier bash et ses dépendances depuis l'hôte si absents du chroot
+# Copier bash, ld-linux et toutes les bibliothèques nécessaires
 # ============================================================================
 ensure_bash_in_chroot() {
-    if [ -x "$LFS/bin/bash" ]; then
-        log_info "bash already present in chroot"
-        return 0
-    fi
-
-    log_info "bash not found in chroot – copying from host"
     mkdir -p "$LFS/bin" "$LFS/lib" "$LFS/lib64"
 
-    # Copier bash lui-même
-    BASH_SRC="/bin/bash"
+    # 1. Copier bash
+    BASH_SRC=$(which bash 2>/dev/null || echo "/bin/bash")
     [ ! -f "$BASH_SRC" ] && BASH_SRC="/usr/bin/bash"
     [ ! -f "$BASH_SRC" ] && { log_error "bash not found on host"; exit 1; }
     cp -L "$BASH_SRC" "$LFS/bin/bash"
     chmod 755 "$LFS/bin/bash"
 
-    # Copier ld-linux (le vrai fichier, pas le lien)
-    LD_SRC=$(ldd /bin/bash | grep ld-linux | awk '{print $3}')
+    # 2. Copier ld-linux (l'interpréteur dynamique)
+    LD_SRC=$(ldd /bin/bash | grep -E 'ld-linux|ld-2' | awk '{print $3}')
     if [ -n "$LD_SRC" ]; then
-        LD_DEST="$LFS/lib64/$(basename $LD_SRC)"
         mkdir -p "$LFS/lib64"
-        cp -L "$LD_SRC" "$LD_DEST"
-        chmod 755 "$LD_DEST"
+        cp -L "$LD_SRC" "$LFS/lib64/"
+        chmod 755 "$LFS/lib64/$(basename "$LD_SRC")"
     else
-        # Fallback: chercher ld-linux dans /lib64 ou /lib
+        # Recherche manuelle
         for ld in /lib64/ld-linux*.so.* /lib/ld-linux*.so.*; do
             if [ -f "$ld" ]; then
                 mkdir -p "$LFS/lib64"
@@ -68,12 +61,15 @@ ensure_bash_in_chroot() {
         done
     fi
 
-    # Copier les librairies partagées dont bash a besoin
+    # 3. Copier toutes les bibliothèques partagées dont bash a besoin
     ldd /bin/bash | grep "=>" | awk '{print $3}' | while read lib; do
-        if [ -n "$lib" ] && [ -f "$lib" ]; then
+        [ -z "$lib" ] && continue
+        if [ -f "$lib" ]; then
             dest_dir="$LFS/lib64"
             if [[ "$lib" == /lib/* ]]; then
                 dest_dir="$LFS/lib"
+            elif [[ "$lib" == /usr/lib/* ]]; then
+                dest_dir="$LFS/usr/lib"
             fi
             mkdir -p "$dest_dir"
             cp -L "$lib" "$dest_dir/"
@@ -81,12 +77,22 @@ ensure_bash_in_chroot() {
         fi
     done
 
-    # Vérifier que bash peut être exécuté (test de base)
+    # 4. Créer un lien symbolique /lib64 -> /lib si nécessaire
+    if [ ! -L "$LFS/lib64" ]; then
+        ln -sf lib "$LFS/lib64" 2>/dev/null || true
+    fi
+
+    # 5. Vérifier que le chroot fonctionne
+    log_info "Testing chroot with /bin/bash"
     if ! chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
-        log_error "bash still not working in chroot – missing library?"
+        log_error "chroot test failed – missing libraries?"
+        log_info "Contents of $LFS/bin:"
+        ls -la "$LFS/bin" || true
+        log_info "Contents of $LFS/lib64:"
+        ls -la "$LFS/lib64" || true
         exit 1
     fi
-    log_success "bash and libraries copied successfully"
+    log_success "bash and libraries copied and chroot works"
 }
 
 ensure_bash_in_chroot
