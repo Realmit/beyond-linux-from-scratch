@@ -654,10 +654,11 @@ class SourceDownloader:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith('#'):
-                    # Handle potential Git URLs
-                    if line.startswith('git://') or line.startswith('https://git.'):
+                    # Ne skip que les URLs qui commencent par git:// ou qui finissent par .git
+                    if line.startswith('git://') or line.endswith('.git'):
                         self.logger.info(f"Skipping Git repository (use git clone): {line}")
                         continue
+                    # Si c'est une archive (tar.gz, tar.xz, etc.) on la garde
                     urls.append(line)
 
         self.logger.info(f"Downloading {len(urls)} sources with {parallel} threads")
