@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+# Se relancer avec sudo si nécessaire
 if [ "$EUID" -ne 0 ]; then
     echo "[INFO] Relaunching with sudo..."
     exec sudo -E "$0" "$@"
@@ -13,7 +14,9 @@ log_info() { echo "[INFO] $*"; }
 log_error() { echo "[ERROR] $*" >&2; }
 log_success() { echo "[SUCCESS] $*"; }
 
-# Copier les sources
+# ============================================================================
+# 1. Copier les sources depuis l'hôte vers $LFS/sources
+# ============================================================================
 SOURCES_HOST="$(dirname "$LFS")/sources"
 if [ ! -d "$LFS/sources" ] || [ -z "$(ls -A "$LFS/sources" 2>/dev/null)" ]; then
     if [ -d "$SOURCES_HOST" ] && [ -n "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
@@ -27,86 +30,94 @@ if [ ! -d "$LFS/sources" ] || [ -z "$(ls -A "$LFS/sources" 2>/dev/null)" ]; then
     fi
 fi
 
-ensure_bash_in_chroot() {
-    mkdir -p "$LFS/bin" "$LFS/lib" "$LFS/lib64"
+# ============================================================================
+# 2. Copier tous les outils nécessaires (bash, tar, make, gcc, etc.)
+# ============================================================================
+ensure_tools_in_chroot() {
+    # Liste des commandes requises
+    local tools=("bash" "tar" "make" "gcc" "g++" "ld" "ar" "nm" "strip" "gawk" "sed" "grep" "find" "xargs" "cp" "mv" "rm" "mkdir" "ln" "chmod" "chown" "cat" "echo" "pwd" "which")
 
-    # Copier bash s'il n'existe pas
-    if [ ! -x "$LFS/bin/bash" ]; then
-        BASH_SRC=$(which bash 2>/dev/null || echo "/bin/bash")
-        [ ! -f "$BASH_SRC" ] && BASH_SRC="/usr/bin/bash"
-        [ ! -f "$BASH_SRC" ] && { log_error "bash not found on host"; exit 1; }
-        cp -L "$BASH_SRC" "$LFS/bin/bash"
-        chmod 755 "$LFS/bin/bash"
-        log_info "bash copied from $BASH_SRC"
-    else
-        log_info "bash already present in chroot"
-    fi
+    mkdir -p "$LFS/bin" "$LFS/usr/bin" "$LFS/lib" "$LFS/lib64" "$LFS/usr/lib" "$LFS/usr/lib64"
 
-    # Trouver ld-linux réel (ne pas suivre les liens)
+    # Fonction pour copier un binaire et ses bibliothèques
+    copy_binary() {
+        local bin="$1"
+        local src=$(which "$bin" 2>/dev/null || echo "")
+        [ -z "$src" ] && { log_warning "Binary '$bin' not found on host"; return 1; }
+        # Copier le binaire lui-même
+        local dest="$LFS/bin/$(basename "$src")"
+        if [ ! -x "$dest" ]; then
+            cp -L "$src" "$dest"
+            chmod 755 "$dest"
+            log_info "Copied $bin -> $dest"
+        fi
+        # Copier toutes les bibliothèques dont ce binaire dépend
+        ldd "$src" 2>/dev/null | grep "=>" | awk '{print $3}' | while read lib; do
+            [ -z "$lib" ] && continue
+            if [ -f "$lib" ]; then
+                local lib_dest="$LFS/lib64/$(basename "$lib")"
+                if [[ "$lib" == /lib/* ]]; then
+                    lib_dest="$LFS/lib/$(basename "$lib")"
+                elif [[ "$lib" == /usr/lib/* ]]; then
+                    lib_dest="$LFS/usr/lib/$(basename "$lib")"
+                fi
+                if [ ! -f "$lib_dest" ] && [ "$lib" != "$lib_dest" ]; then
+                    mkdir -p "$(dirname "$lib_dest")"
+                    cp -L "$lib" "$lib_dest"
+                    chmod 755 "$lib_dest"
+                    log_info "Copied library: $(basename "$lib")"
+                fi
+            fi
+        done
+        return 0
+    }
+
+    # Copier tous les outils
+    for tool in "${tools[@]}"; do
+        copy_binary "$tool" || true
+    done
+
+    # Copier ld-linux (l'interpréteur dynamique) explicitement
     LD_TARGET="$LFS/lib64/ld-linux-x86-64.so.2"
     if [ ! -f "$LD_TARGET" ] || [ -L "$LD_TARGET" ]; then
-        # Supprimer le lien symbolique s'il existe
         [ -L "$LD_TARGET" ] && rm -f "$LD_TARGET"
-        # Trouver le vrai fichier sur l'hôte
         LD_SRC=$(ldd /bin/bash | grep -E 'ld-linux|ld-2' | awk '{print $3}')
-        if [ -z "$LD_SRC" ] || [ ! -f "$LD_SRC" ]; then
-            # Recherche manuelle
-            for ld in /lib64/ld-linux*.so.* /lib/ld-linux*.so.*; do
-                if [ -f "$ld" ]; then
-                    LD_SRC="$ld"
-                    break
-                fi
-            done
-        fi
-        if [ -n "$LD_SRC" ] && [ -f "$LD_SRC" ]; then
-            # Copier le vrai fichier, pas le lien
+        [ -z "$LD_SRC" ] && LD_SRC="/lib64/ld-linux-x86-64.so.2"
+        if [ -f "$LD_SRC" ]; then
             cp -L "$LD_SRC" "$LD_TARGET"
             chmod 755 "$LD_TARGET"
-            log_info "ld-linux copied (real file) to $LD_TARGET"
+            log_info "Copied ld-linux to $LD_TARGET"
         else
-            log_error "ld-linux not found on host"
+            log_error "ld-linux not found"
             exit 1
         fi
-    else
-        log_info "ld-linux already present as real file"
     fi
 
-    # Copier les autres bibliothèques partagées
-    ldd /bin/bash | grep "=>" | awk '{print $3}' | while read lib; do
-        [ -z "$lib" ] && continue
-        if [ -f "$lib" ]; then
-            dest_dir="$LFS/lib64"
-            if [[ "$lib" == /lib/* ]]; then
-                dest_dir="$LFS/lib"
-            elif [[ "$lib" == /usr/lib/* ]]; then
-                dest_dir="$LFS/usr/lib"
-            fi
-            mkdir -p "$dest_dir"
-            dest_file="$dest_dir/$(basename "$lib")"
-            if [ ! -f "$dest_file" ] && [ "$lib" != "$dest_file" ]; then
-                cp -L "$lib" "$dest_file"
-                chmod 755 "$dest_file"
-                log_info "copied library: $(basename "$lib")"
-            fi
+    # Créer des liens symboliques pour /usr/bin -> /bin
+    for tool in "${tools[@]}"; do
+        if [ -x "$LFS/bin/$(basename "$(which "$tool" 2>/dev/null || echo "")")" ] && [ ! -x "$LFS/usr/bin/$(basename "$tool")" ]; then
+            ln -sf ../bin/"$(basename "$tool")" "$LFS/usr/bin/$(basename "$tool")"
         fi
     done
 
-    # Tester le chroot
-    log_info "Testing chroot..."
-    if ! chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
-        log_error "chroot test failed"
+    # Vérification : tester une compilation simple
+    log_info "Testing chroot with a simple C compile"
+    if ! chroot "$LFS" /bin/bash -c "echo 'int main(){}' | gcc -x c - -o /tmp/test && /tmp/test && rm /tmp/test" 2>/dev/null; then
+        log_error "Chroot compilation test failed – missing tools or libraries"
         log_info "Contents of $LFS/bin:"
         ls -la "$LFS/bin" || true
         log_info "Contents of $LFS/lib64:"
         ls -la "$LFS/lib64" || true
         exit 1
     fi
-    log_success "chroot works with /bin/bash"
+    log_success "Chroot ready for compilation"
 }
 
-ensure_bash_in_chroot
+ensure_tools_in_chroot
 
-# Montages
+# ============================================================================
+# 3. Montages
+# ============================================================================
 mountpoint -q "$LFS/dev"  || mount --bind /dev "$LFS/dev"
 mountpoint -q "$LFS/dev/pts" || mount -t devpts devpts "$LFS/dev/pts"
 mountpoint -q "$LFS/proc" || mount -t proc proc "$LFS/proc"
@@ -120,7 +131,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Trouver l'archive du noyau
+# ============================================================================
+# 4. Trouver l'archive du noyau
+# ============================================================================
 cd "$LFS/sources"
 KERNEL_ARCHIVE=$(ls -1 "${KERNEL_TYPE}"-*.tar.xz 2>/dev/null | head -n1)
 if [ -z "$KERNEL_ARCHIVE" ]; then
@@ -137,7 +150,9 @@ if [ -f "$LFS/boot/vmlinuz" ]; then
     exit 0
 fi
 
-# Compilation
+# ============================================================================
+# 5. Compilation du noyau dans le chroot
+# ============================================================================
 chroot "$LFS" /bin/bash << EOF
 set -e
 cd /sources
