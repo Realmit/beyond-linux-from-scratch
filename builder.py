@@ -610,7 +610,7 @@ class SourceDownloader:
         return opener
 
     def download(self, url: str, filename: Optional[str] = None, retries: int = 3) -> bool:
-        """Download a file with progress indication and retry"""
+        """Download a file with retry"""
         if filename is None:
             filename = url.split('/')[-1]
 
@@ -623,8 +623,7 @@ class SourceDownloader:
         for attempt in range(retries):
             self.logger.info(f"Downloading: {filename} (attempt {attempt + 1}/{retries})")
             try:
-                urllib.request.urlretrieve(url, dest, self._reporthook)
-                print()
+                urllib.request.urlretrieve(url, dest)
                 return True
             except Exception as e:
                 self.logger.warning(f"Attempt {attempt + 1} failed: {e}")
@@ -633,15 +632,6 @@ class SourceDownloader:
                 self.logger.error(f"Failed to download {url}: {e}")
                 return False
         return False
-
-    def _reporthook(self, blocknum, blocksize, totalsize):
-        """Download progress callback"""
-        if totalsize <= 0:
-            return
-        percent = int(blocknum * blocksize * 100 / totalsize)
-        if percent % 10 == 0:
-            sys.stdout.write(f"\r  Progress: {percent}%")
-            sys.stdout.flush()
 
     def download_from_list(self, list_file: Path, parallel: int = 4) -> bool:
         """Download multiple sources in parallel"""

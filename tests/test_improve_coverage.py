@@ -66,13 +66,6 @@ class TestSourceDownloaderCoverage:
         result = downloader.verify_checksums(md5_file)
         assert result is True  # Les lignes invalides sont ignorées
 
-    def test_reporthook_with_zero_totalsize(self, sources_dir, mock_logger, capsys):
-        """Test reporthook avec totalsize = 0 (pas d'affichage)"""
-        downloader = SourceDownloader(sources_dir, mock_logger)
-        downloader._reporthook(1, 1024, 0)
-        captured = capsys.readouterr()
-        assert captured.out == ""  # Pas de sortie
-
 
 class TestScriptExecutorCoverage:
     """Tests pour ScriptExecutor (amélioration couverture)"""

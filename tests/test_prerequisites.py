@@ -135,13 +135,13 @@ class TestCheckPrerequisites:
 
     def test_download_retry_success_after_failure(self, downloader):
         # Simulate failure on first attempt, success on second
-        def fake_retrieve(url, dest, reporthook):
+        def fake_retrieve(url, dest, *args, **kwargs):  # Accepte tout argument
             if not hasattr(fake_retrieve, 'attempt'):
                 fake_retrieve.attempt = 0
             fake_retrieve.attempt += 1
             if fake_retrieve.attempt == 1:
                 raise Exception('Network error')
-            # Ensure parent directory exists (it should, but just in case)
+            # Ensure parent directory exists
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text('dummy')
             return (str(dest), None)
