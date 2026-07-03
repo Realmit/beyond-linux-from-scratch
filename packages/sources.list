@@ -1,5 +1,5 @@
 # LFS Sources - Automatically generated from official wget-lists
-# Generated: 2026-07-03T12:34:52.620518
+# Generated: 2026-07-03T21:33:43.722095
 # DO NOT EDIT MANUALLY – changes will be overwritten
 
 http://archive.xfce.org/src/xfce/xfce4-dev-tools/4.20/xfce4-dev-tools-4.20.0.tar.bz2
@@ -315,7 +315,6 @@ https://download.gnome.org/sources/vala/0.56/vala-0.56.18.tar.xz
 https://download.gnome.org/sources/xdg-desktop-portal-gnome/48/xdg-desktop-portal-gnome-48.0.tar.xz
 https://download.gnome.org/sources/yelp-xsl/42/yelp-xsl-42.4.tar.xz
 https://download.gnome.org/sources/yelp/42/yelp-42.3.tar.xz
-https://download.imagemagick.org/archive/releases/ImageMagick-7.1.2-25.tar.gz
 https://download.kde.org/stable/frameworks/6.17/breeze-icons-6.17.0.tar.xz
 https://download.kde.org/stable/frameworks/6.17/extra-cmake-modules-6.17.0.tar.xz
 https://download.kde.org/stable/frameworks/6.17/kconfig-6.17.0.tar.xz
@@ -561,6 +560,7 @@ https://ftp.gnu.org/gnu/tar/tar-1.35.tar.xz
 https://ftp.gnu.org/gnu/texinfo/texinfo-7.2.tar.xz
 https://ftp.gnu.org/gnu/time/time-1.9.tar.gz
 https://ftp.gnu.org/gnu/wget/wget-1.25.0.tar.gz
+https://ftp.gnu.org/gnu/which/which-2.23.tar.gz
 https://ftp.isc.org/isc/bind9/9.20.12/bind-9.20.12.tar.xz
 https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2025/texlive-20250308-extra.tar.xz
 https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2025/texlive-20250308-source.tar.xz
@@ -1144,7 +1144,6 @@ https://www.x.org/pub/individual/lib/libxcvt-0.1.3.tar.xz
 https://www.x.org/pub/individual/util/util-macros-1.20.2.tar.xz
 https://www.x.org/pub/individual/xserver/xorg-server-21.1.18.tar.xz
 https://www.x.org/pub/individual/xserver/xwayland-24.1.8.tar.xz
-https://www.zsh.org/pub/zsh-5.9.1.tar.xz
 https://xcb.freedesktop.org/dist/xcb-util-0.4.1.tar.xz
 https://xorg.freedesktop.org/archive/individual/lib/libxcb-1.17.0.tar.xz
 https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-1.17.0.tar.xz
