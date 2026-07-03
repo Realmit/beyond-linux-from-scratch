@@ -88,7 +88,7 @@ chown -R lfs:lfs "$KERNEL_BUILD_DIR" 2>/dev/null || true
 # ============================================================================
 mkdir -p "$LFS/bin" "$LFS/usr/bin" "$LFS/lib" "$LFS/lib64" "$LFS/usr/lib" "$LFS/usr/lib64"
 
-# Monter les répertoires de l'hôte (en lecture seule pour éviter les modifications)
+# Monter les répertoires de l'hôte
 mountpoint -q "$LFS/bin"  || mount --bind /bin "$LFS/bin"
 mountpoint -q "$LFS/usr/bin" || mount --bind /usr/bin "$LFS/usr/bin"
 mountpoint -q "$LFS/lib"  || mount --bind /lib "$LFS/lib"
@@ -119,64 +119,69 @@ cleanup() {
 trap cleanup EXIT
 
 # ============================================================================
-# DIAGNOSTIC : Vérifier que les outils sont accessibles via le chroot
+# DIAGNOSTIC AVEC LOGGING COMPLET
 # ============================================================================
-log_info "Checking chroot environment with bind mounts..."
+log_info "=== DIAGNOSTIC : Vérification du chroot ==="
 
 # Vérifier /bin/bash
 if chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     log_success "/bin/bash works in chroot"
 else
     log_error "/bin/bash does not work in chroot"
+    log_info "Contenu de $LFS/bin :"
+    ls -la "$LFS/bin" 2>/dev/null || echo "  (vide ou inaccessible)"
     exit 1
 fi
 
-# Vérifier gcc
-if chroot "$LFS" /bin/bash -c "gcc --version" >/dev/null 2>&1; then
-    log_success "gcc found in chroot"
-else
-    log_error "gcc not found in chroot"
-    exit 1
-fi
+# Afficher les versions des outils dans le chroot
+log_info "=== Outils disponibles dans le chroot ==="
+chroot "$LFS" /bin/bash -c "gcc --version 2>&1 | head -n1 || echo 'gcc non trouvé'" | while read line; do log_info "gcc: $line"; done
+chroot "$LFS" /bin/bash -c "make --version 2>&1 | head -n1 || echo 'make non trouvé'" | while read line; do log_info "make: $line"; done
 
-# Vérifier make
-if chroot "$LFS" /bin/bash -c "make --version" >/dev/null 2>&1; then
-    log_success "make found in chroot"
-else
-    log_error "make not found in chroot"
-    exit 1
-fi
+# Vérifier que les bind mounts sont fonctionnels
+log_info "Contenu de /bin dans le chroot :"
+chroot "$LFS" /bin/bash -c "ls -la /bin | head -20" 2>/dev/null || log_error "Impossible de lister /bin"
+
+# Vérifier que ld-linux est accessible
+log_info "Vérification de ld-linux dans le chroot :"
+chroot "$LFS" /bin/bash -c "ls -la /lib64/ld-linux*.so* 2>/dev/null || echo 'ld-linux non trouvé dans /lib64'" 2>/dev/null
+chroot "$LFS" /bin/bash -c "ls -la /lib/ld-linux*.so* 2>/dev/null || echo 'ld-linux non trouvé dans /lib'" 2>/dev/null
 
 # ============================================================================
-# Compilation dans le chroot avec environnement propre (env -i) et logs détaillés
+# Compilation dans le chroot avec logging complet (même en cas d'échec)
 # ============================================================================
-log_info "Starting kernel compilation in chroot (architecture: $MAKE_ARCH)"
-# On redirige la sortie d'erreur vers la sortie standard pour tout capturer
-chroot "$LFS" /bin/bash -x << 'EOF' 2>&1
+log_info "=== Début de la compilation du noyau ==="
+log_info "Architecture: $MAKE_ARCH"
+log_info "Répertoire de build: /sources/kernel-build"
+
+# On désactive exit on error pour capturer la sortie même en cas d'échec
+set +e
+
+chroot "$LFS" /bin/bash << 'EOF_LOGGED'
 set -e
 cd /sources/kernel-build
 
-echo "=== Step 1: mrproper ==="
+echo "[LOG] Début de make mrproper" > /tmp/kernel-build.log
 env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
-    make ARCH="$MAKE_ARCH" mrproper
-echo "=== Step 1 done ==="
+    make ARCH="'$MAKE_ARCH'" mrproper >> /tmp/kernel-build.log 2>&1
+echo "[LOG] make mrproper terminé avec code $?" >> /tmp/kernel-build.log
 
-echo "=== Step 2: defconfig ==="
+echo "[LOG] Début de make defconfig" >> /tmp/kernel-build.log
 env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
-    make ARCH="$MAKE_ARCH" defconfig
-echo "=== Step 2 done ==="
+    make ARCH="'$MAKE_ARCH'" defconfig >> /tmp/kernel-build.log 2>&1
+echo "[LOG] make defconfig terminé avec code $?" >> /tmp/kernel-build.log
 
-echo "=== Step 3: building kernel ==="
+echo "[LOG] Début de make -j$(nproc)" >> /tmp/kernel-build.log
 env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
-    make ARCH="$MAKE_ARCH" -j$(nproc)
-echo "=== Step 3 done ==="
+    make ARCH="'$MAKE_ARCH'" -j$(nproc) >> /tmp/kernel-build.log 2>&1
+echo "[LOG] make terminé avec code $?" >> /tmp/kernel-build.log
 
-echo "=== Step 4: modules_install ==="
+echo "[LOG] Début de make modules_install" >> /tmp/kernel-build.log
 env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
-    make ARCH="$MAKE_ARCH" modules_install
-echo "=== Step 4 done ==="
+    make ARCH="'$MAKE_ARCH'" modules_install >> /tmp/kernel-build.log 2>&1
+echo "[LOG] make modules_install terminé avec code $?" >> /tmp/kernel-build.log
 
-echo "=== Step 5: install kernel image and System.map ==="
+# Copier l'image du noyau et System.map
 mkdir -p /boot
 if [ -f arch/$MAKE_ARCH/boot/bzImage ]; then
     cp arch/$MAKE_ARCH/boot/bzImage /boot/vmlinuz
@@ -187,20 +192,36 @@ elif [ -f vmlinuz ]; then
 elif [ -f arch/$MAKE_ARCH/boot/zImage ]; then
     cp arch/$MAKE_ARCH/boot/zImage /boot/vmlinuz
 else
-    echo "ERROR: No kernel image found"
+    echo "ERROR: No kernel image found" >> /tmp/kernel-build.log
     exit 1
 fi
 cp System.map /boot/System.map
-echo "=== Step 5 done ==="
 
 # Nettoyer le répertoire de build
 rm -rf /sources/kernel-build
-EOF
 
-# Vérifier le code de retour de la dernière commande
-if [ $? -ne 0 ]; then
-    log_error "Kernel compilation failed"
-    exit 1
+echo "[LOG] Compilation terminée avec succès" >> /tmp/kernel-build.log
+EOF_LOGGED
+
+# Récupérer le code de retour du chroot
+CHROOT_EXIT=$?
+
+# Réactiver exit on error
+set -e
+
+# Récupérer le log du chroot
+if [ -f "$LFS/tmp/kernel-build.log" ]; then
+    log_info "=== LOG DE COMPILATION COMPLET ==="
+    cat "$LFS/tmp/kernel-build.log"
+    cp "$LFS/tmp/kernel-build.log" /tmp/kernel-build.full.log
+    rm -f "$LFS/tmp/kernel-build.log"
+else
+    log_error "Le fichier de log n'a pas été créé dans le chroot"
+fi
+
+if [ $CHROOT_EXIT -ne 0 ]; then
+    log_error "La compilation a échoué avec le code $CHROOT_EXIT"
+    exit $CHROOT_EXIT
 fi
 
 log_success "Kernel $KERNEL_TYPE compiled and installed to $LFS/boot/vmlinuz (architecture: $TARGET_ARCH)"
