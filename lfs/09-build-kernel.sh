@@ -109,19 +109,17 @@ else
 fi
 
 # ============================================================================
-# Mode natif : préparer le chroot avec bind mounts
+# BIND MOUNTS COMPLETS (y compris /usr)
 # ============================================================================
-if [ "$IN_DOCKER" != true ]; then
-    mkdir -p "$LFS/bin" "$LFS/usr/bin" "$LFS/lib" "$LFS/lib64" "$LFS/usr/lib" "$LFS/usr/lib64"
+mkdir -p "$LFS/bin" "$LFS/usr" "$LFS/lib" "$LFS/lib64"
 
-    mountpoint -q "$LFS/bin"  || mount --bind /bin "$LFS/bin"
-    mountpoint -q "$LFS/usr/bin" || mount --bind /usr/bin "$LFS/usr/bin"
-    mountpoint -q "$LFS/lib"  || mount --bind /lib "$LFS/lib"
-    mountpoint -q "$LFS/lib64" || mount --bind /lib64 "$LFS/lib64"
-    mountpoint -q "$LFS/usr/lib" || mount --bind /usr/lib "$LFS/usr/lib"
-fi
+# Monter TOUT /usr de l'hôte dans le chroot (donne accès à /usr/bin, /usr/lib, etc.)
+mountpoint -q "$LFS/usr"  || mount --bind /usr "$LFS/usr"
+mountpoint -q "$LFS/bin"  || mount --bind /bin "$LFS/bin"
+mountpoint -q "$LFS/lib"  || mount --bind /lib "$LFS/lib"
+mountpoint -q "$LFS/lib64" || mount --bind /lib64 "$LFS/lib64"
 
-# Montages virtuels essentiels (pour tous les modes)
+# Montages virtuels essentiels
 mountpoint -q "$LFS/dev"  || mount --bind /dev "$LFS/dev"
 mountpoint -q "$LFS/dev/pts" || mount -t devpts devpts "$LFS/dev/pts"
 mountpoint -q "$LFS/proc" || mount -t proc proc "$LFS/proc"
@@ -135,13 +133,10 @@ cleanup() {
     umount "$LFS/proc" 2>/dev/null || true
     umount "$LFS/sys" 2>/dev/null || true
     umount "$LFS/run" 2>/dev/null || true
-    if [ "$IN_DOCKER" != true ]; then
-        umount "$LFS/bin" 2>/dev/null || true
-        umount "$LFS/usr/bin" 2>/dev/null || true
-        umount "$LFS/lib" 2>/dev/null || true
-        umount "$LFS/lib64" 2>/dev/null || true
-        umount "$LFS/usr/lib" 2>/dev/null || true
-    fi
+    umount "$LFS/bin" 2>/dev/null || true
+    umount "$LFS/usr" 2>/dev/null || true
+    umount "$LFS/lib" 2>/dev/null || true
+    umount "$LFS/lib64" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -153,19 +148,31 @@ if chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     log_success "/bin/bash works in chroot"
 else
     log_error "/bin/bash does not work in chroot"
-    log_info "Contenu de $LFS/bin :"
-    ls -la "$LFS/bin" 2>/dev/null || echo "  (vide ou inaccessible)"
     exit 1
 fi
 
-if chroot "$LFS" /bin/bash -c "gcc --version" >/dev/null 2>&1; then
+if chroot "$LFS" /usr/bin/head -n1 /etc/hosts >/dev/null 2>&1; then
+    log_success "head works in chroot"
+else
+    log_error "head not found in chroot"
+    exit 1
+fi
+
+if chroot "$LFS" /usr/bin/env >/dev/null 2>&1; then
+    log_success "env works in chroot"
+else
+    log_error "env not found in chroot"
+    exit 1
+fi
+
+if chroot "$LFS" /usr/bin/gcc --version >/dev/null 2>&1; then
     log_success "gcc found in chroot"
 else
     log_error "gcc not found in chroot"
     exit 1
 fi
 
-if chroot "$LFS" /bin/bash -c "make --version" >/dev/null 2>&1; then
+if chroot "$LFS" /usr/bin/make --version >/dev/null 2>&1; then
     log_success "make found in chroot"
 else
     log_error "make not found in chroot"
@@ -173,13 +180,13 @@ else
 fi
 
 # ============================================================================
-# Compilation dans le chroot avec logging complet (sans env -i)
+# Compilation dans le chroot avec PATH complet
 # ============================================================================
 log_info "=== Début de la compilation du noyau ==="
 log_info "Architecture: $MAKE_ARCH"
 log_info "Répertoire de build: $KERNEL_BUILD_DIR"
 
-set +e  # Ne pas sortir immédiatement pour pouvoir récupérer le log
+set +e
 
 chroot "$LFS" /bin/bash << EOF_LOGGED
 set -e
@@ -188,12 +195,21 @@ cd /sources/kernel-build
 # Vider le log précédent
 > /tmp/kernel-build.log
 
-echo "[LOG] Début de make mrproper" >> /tmp/kernel-build.log
-export PATH="/bin:/usr/bin"
+# Définir un PATH complet pour avoir accès à toutes les commandes
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
 export CC="gcc"
 export HOSTCC="gcc"
 export CXX="g++"
 export HOSTCXX="g++"
+
+# Vérifier les commandes essentielles
+echo "[LOG] Vérification des commandes essentielles" >> /tmp/kernel-build.log
+which head >> /tmp/kernel-build.log 2>&1 || echo "head not found" >> /tmp/kernel-build.log
+which env >> /tmp/kernel-build.log 2>&1 || echo "env not found" >> /tmp/kernel-build.log
+which uname >> /tmp/kernel-build.log 2>&1 || echo "uname not found" >> /tmp/kernel-build.log
+which tail >> /tmp/kernel-build.log 2>&1 || echo "tail not found" >> /tmp/kernel-build.log
+
+echo "[LOG] Début de make mrproper" >> /tmp/kernel-build.log
 make ARCH="$MAKE_ARCH" mrproper >> /tmp/kernel-build.log 2>&1
 echo "[LOG] make mrproper terminé avec code \$?" >> /tmp/kernel-build.log
 
@@ -234,7 +250,6 @@ EOF_LOGGED
 CHROOT_EXIT=$?
 set -e
 
-# Afficher le log complet
 if [ -f "$LFS/tmp/kernel-build.log" ]; then
     log_info "=== LOG DE COMPILATION COMPLET ==="
     cat "$LFS/tmp/kernel-build.log"
