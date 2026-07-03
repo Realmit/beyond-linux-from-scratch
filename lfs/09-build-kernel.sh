@@ -148,27 +148,35 @@ else
 fi
 
 # ============================================================================
-# Compilation dans le chroot avec environnement propre (env -i)
+# Compilation dans le chroot avec environnement propre (env -i) et logs détaillés
 # ============================================================================
 log_info "Starting kernel compilation in chroot (architecture: $MAKE_ARCH)"
-chroot "$LFS" /bin/bash << EOF
+# On redirige la sortie d'erreur vers la sortie standard pour tout capturer
+chroot "$LFS" /bin/bash -x << 'EOF' 2>&1
 set -e
 cd /sources/kernel-build
 
-# Utiliser env -i pour vider toutes les variables et définir les nôtres
+echo "=== Step 1: mrproper ==="
 env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
     make ARCH="$MAKE_ARCH" mrproper
+echo "=== Step 1 done ==="
 
+echo "=== Step 2: defconfig ==="
 env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
     make ARCH="$MAKE_ARCH" defconfig
+echo "=== Step 2 done ==="
 
+echo "=== Step 3: building kernel ==="
 env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
-    make ARCH="$MAKE_ARCH" -j\$(nproc)
+    make ARCH="$MAKE_ARCH" -j$(nproc)
+echo "=== Step 3 done ==="
 
+echo "=== Step 4: modules_install ==="
 env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
     make ARCH="$MAKE_ARCH" modules_install
+echo "=== Step 4 done ==="
 
-# Copier l'image du noyau et System.map
+echo "=== Step 5: install kernel image and System.map ==="
 mkdir -p /boot
 if [ -f arch/$MAKE_ARCH/boot/bzImage ]; then
     cp arch/$MAKE_ARCH/boot/bzImage /boot/vmlinuz
@@ -183,9 +191,16 @@ else
     exit 1
 fi
 cp System.map /boot/System.map
+echo "=== Step 5 done ==="
 
 # Nettoyer le répertoire de build
 rm -rf /sources/kernel-build
 EOF
+
+# Vérifier le code de retour de la dernière commande
+if [ $? -ne 0 ]; then
+    log_error "Kernel compilation failed"
+    exit 1
+fi
 
 log_success "Kernel $KERNEL_TYPE compiled and installed to $LFS/boot/vmlinuz (architecture: $TARGET_ARCH)"
