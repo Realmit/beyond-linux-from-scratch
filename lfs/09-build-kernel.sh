@@ -13,6 +13,13 @@ log_info() { echo "[INFO] $*"; }
 log_error() { echo "[ERROR] $*" >&2; }
 log_success() { echo "[SUCCESS] $*"; }
 
+# Détection de Docker
+IN_DOCKER=false
+if [ -f /.dockerenv ] || [ -f /run/.containerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
+    IN_DOCKER=true
+    log_info "Running in Docker container"
+fi
+
 # ============================================================================
 # Détection de l'architecture cible
 # ============================================================================
@@ -67,35 +74,54 @@ if [ -f "$LFS/boot/vmlinuz" ]; then
 fi
 
 # ============================================================================
-# Extraire le noyau sur l'hôte (car tar/xz peuvent manquer dans le chroot)
+# Extraire le noyau : mode Docker vs natif
 # ============================================================================
-WORKDIR=$(mktemp -d)
-log_info "Extracting kernel source on host to $WORKDIR"
-tar -xf "$LFS/sources/$KERNEL_ARCHIVE" -C "$WORKDIR"
-KERNEL_DIR=$(tar -tf "$LFS/sources/$KERNEL_ARCHIVE" | head -1 | cut -d/ -f1)
-EXTRACTED_KERNEL="$WORKDIR/$KERNEL_DIR"
-log_info "Kernel extracted to $EXTRACTED_KERNEL"
-
-# Copier le répertoire extrait dans $LFS/sources pour le chroot
 KERNEL_BUILD_DIR="$LFS/sources/kernel-build"
-rm -rf "$KERNEL_BUILD_DIR"
-mkdir -p "$KERNEL_BUILD_DIR"
-cp -rv "$EXTRACTED_KERNEL"/* "$KERNEL_BUILD_DIR/"
-chown -R lfs:lfs "$KERNEL_BUILD_DIR" 2>/dev/null || true
+
+if [ "$IN_DOCKER" = true ]; then
+    # Mode Docker : extraire directement dans kernel-build avec --strip-components=1
+    rm -rf "$KERNEL_BUILD_DIR"
+    mkdir -p "$KERNEL_BUILD_DIR"
+    log_info "Docker mode: extracting kernel source to $KERNEL_BUILD_DIR"
+    # --strip-components=1 enlève le répertoire racine (ex: linux-6.12.10)
+    if ! tar -xf "$LFS/sources/$KERNEL_ARCHIVE" -C "$KERNEL_BUILD_DIR" --strip-components=1 --no-same-owner 2>&1 | tee "$LFS/tmp/tar-extract.log"; then
+        log_error "Failed to extract kernel archive"
+        log_info "Tar extraction log:"
+        cat "$LFS/tmp/tar-extract.log" || true
+        exit 1
+    fi
+    log_info "Kernel extracted in Docker mode"
+
+else
+    # Mode natif : extraire sur l'hôte et copier dans le chroot
+    WORKDIR=$(mktemp -d)
+    log_info "Extracting kernel source on host to $WORKDIR"
+    tar -xf "$LFS/sources/$KERNEL_ARCHIVE" -C "$WORKDIR"
+    KERNEL_DIR=$(tar -tf "$LFS/sources/$KERNEL_ARCHIVE" | head -1 | cut -d/ -f1)
+    EXTRACTED_KERNEL="$WORKDIR/$KERNEL_DIR"
+    log_info "Kernel extracted to $EXTRACTED_KERNEL"
+
+    rm -rf "$KERNEL_BUILD_DIR"
+    mkdir -p "$KERNEL_BUILD_DIR"
+    cp -rv "$EXTRACTED_KERNEL"/* "$KERNEL_BUILD_DIR/"
+    chown -R lfs:lfs "$KERNEL_BUILD_DIR" 2>/dev/null || true
+    rm -rf "$WORKDIR"
+fi
 
 # ============================================================================
-# BIND MOUNTS : donner accès aux outils de l'hôte
+# Mode natif : préparer le chroot avec bind mounts
 # ============================================================================
-mkdir -p "$LFS/bin" "$LFS/usr/bin" "$LFS/lib" "$LFS/lib64" "$LFS/usr/lib" "$LFS/usr/lib64"
+if [ "$IN_DOCKER" != true ]; then
+    mkdir -p "$LFS/bin" "$LFS/usr/bin" "$LFS/lib" "$LFS/lib64" "$LFS/usr/lib" "$LFS/usr/lib64"
 
-# Monter les répertoires de l'hôte
-mountpoint -q "$LFS/bin"  || mount --bind /bin "$LFS/bin"
-mountpoint -q "$LFS/usr/bin" || mount --bind /usr/bin "$LFS/usr/bin"
-mountpoint -q "$LFS/lib"  || mount --bind /lib "$LFS/lib"
-mountpoint -q "$LFS/lib64" || mount --bind /lib64 "$LFS/lib64"
-mountpoint -q "$LFS/usr/lib" || mount --bind /usr/lib "$LFS/usr/lib"
+    mountpoint -q "$LFS/bin"  || mount --bind /bin "$LFS/bin"
+    mountpoint -q "$LFS/usr/bin" || mount --bind /usr/bin "$LFS/usr/bin"
+    mountpoint -q "$LFS/lib"  || mount --bind /lib "$LFS/lib"
+    mountpoint -q "$LFS/lib64" || mount --bind /lib64 "$LFS/lib64"
+    mountpoint -q "$LFS/usr/lib" || mount --bind /usr/lib "$LFS/usr/lib"
+fi
 
-# Montages virtuels essentiels
+# Montages virtuels essentiels (pour tous les modes)
 mountpoint -q "$LFS/dev"  || mount --bind /dev "$LFS/dev"
 mountpoint -q "$LFS/dev/pts" || mount -t devpts devpts "$LFS/dev/pts"
 mountpoint -q "$LFS/proc" || mount -t proc proc "$LFS/proc"
@@ -109,21 +135,20 @@ cleanup() {
     umount "$LFS/proc" 2>/dev/null || true
     umount "$LFS/sys" 2>/dev/null || true
     umount "$LFS/run" 2>/dev/null || true
-    umount "$LFS/bin" 2>/dev/null || true
-    umount "$LFS/usr/bin" 2>/dev/null || true
-    umount "$LFS/lib" 2>/dev/null || true
-    umount "$LFS/lib64" 2>/dev/null || true
-    umount "$LFS/usr/lib" 2>/dev/null || true
-    rm -rf "$WORKDIR" 2>/dev/null || true
+    if [ "$IN_DOCKER" != true ]; then
+        umount "$LFS/bin" 2>/dev/null || true
+        umount "$LFS/usr/bin" 2>/dev/null || true
+        umount "$LFS/lib" 2>/dev/null || true
+        umount "$LFS/lib64" 2>/dev/null || true
+        umount "$LFS/usr/lib" 2>/dev/null || true
+    fi
 }
 trap cleanup EXIT
 
 # ============================================================================
-# DIAGNOSTIC AVEC LOGGING COMPLET
+# DIAGNOSTIC : Vérification du chroot
 # ============================================================================
 log_info "=== DIAGNOSTIC : Vérification du chroot ==="
-
-# Vérifier /bin/bash
 if chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     log_success "/bin/bash works in chroot"
 else
@@ -133,53 +158,56 @@ else
     exit 1
 fi
 
-# Afficher les versions des outils dans le chroot
-log_info "=== Outils disponibles dans le chroot ==="
-chroot "$LFS" /bin/bash -c "gcc --version 2>&1 | head -n1 || echo 'gcc non trouvé'" | while read line; do log_info "gcc: $line"; done
-chroot "$LFS" /bin/bash -c "make --version 2>&1 | head -n1 || echo 'make non trouvé'" | while read line; do log_info "make: $line"; done
+if chroot "$LFS" /bin/bash -c "gcc --version" >/dev/null 2>&1; then
+    log_success "gcc found in chroot"
+else
+    log_error "gcc not found in chroot"
+    exit 1
+fi
 
-# Vérifier que les bind mounts sont fonctionnels
-log_info "Contenu de /bin dans le chroot :"
-chroot "$LFS" /bin/bash -c "ls -la /bin | head -20" 2>/dev/null || log_error "Impossible de lister /bin"
-
-# Vérifier que ld-linux est accessible
-log_info "Vérification de ld-linux dans le chroot :"
-chroot "$LFS" /bin/bash -c "ls -la /lib64/ld-linux*.so* 2>/dev/null || echo 'ld-linux non trouvé dans /lib64'" 2>/dev/null
-chroot "$LFS" /bin/bash -c "ls -la /lib/ld-linux*.so* 2>/dev/null || echo 'ld-linux non trouvé dans /lib'" 2>/dev/null
+if chroot "$LFS" /bin/bash -c "make --version" >/dev/null 2>&1; then
+    log_success "make found in chroot"
+else
+    log_error "make not found in chroot"
+    exit 1
+fi
 
 # ============================================================================
-# Compilation dans le chroot avec logging complet (même en cas d'échec)
+# Compilation dans le chroot avec logging complet (sans env -i)
 # ============================================================================
 log_info "=== Début de la compilation du noyau ==="
 log_info "Architecture: $MAKE_ARCH"
-log_info "Répertoire de build: /sources/kernel-build"
+log_info "Répertoire de build: $KERNEL_BUILD_DIR"
 
-# On désactive exit on error pour capturer la sortie même en cas d'échec
-set +e
+set +e  # Ne pas sortir immédiatement pour pouvoir récupérer le log
 
-chroot "$LFS" /bin/bash << 'EOF_LOGGED'
+chroot "$LFS" /bin/bash << EOF_LOGGED
 set -e
 cd /sources/kernel-build
 
-echo "[LOG] Début de make mrproper" > /tmp/kernel-build.log
-env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
-    make ARCH="'$MAKE_ARCH'" mrproper >> /tmp/kernel-build.log 2>&1
-echo "[LOG] make mrproper terminé avec code $?" >> /tmp/kernel-build.log
+# Vider le log précédent
+> /tmp/kernel-build.log
+
+echo "[LOG] Début de make mrproper" >> /tmp/kernel-build.log
+export PATH="/bin:/usr/bin"
+export CC="gcc"
+export HOSTCC="gcc"
+export CXX="g++"
+export HOSTCXX="g++"
+make ARCH="$MAKE_ARCH" mrproper >> /tmp/kernel-build.log 2>&1
+echo "[LOG] make mrproper terminé avec code \$?" >> /tmp/kernel-build.log
 
 echo "[LOG] Début de make defconfig" >> /tmp/kernel-build.log
-env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
-    make ARCH="'$MAKE_ARCH'" defconfig >> /tmp/kernel-build.log 2>&1
-echo "[LOG] make defconfig terminé avec code $?" >> /tmp/kernel-build.log
+make ARCH="$MAKE_ARCH" defconfig >> /tmp/kernel-build.log 2>&1
+echo "[LOG] make defconfig terminé avec code \$?" >> /tmp/kernel-build.log
 
-echo "[LOG] Début de make -j$(nproc)" >> /tmp/kernel-build.log
-env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
-    make ARCH="'$MAKE_ARCH'" -j$(nproc) >> /tmp/kernel-build.log 2>&1
-echo "[LOG] make terminé avec code $?" >> /tmp/kernel-build.log
+echo "[LOG] Début de make -j\$(nproc)" >> /tmp/kernel-build.log
+make ARCH="$MAKE_ARCH" -j\$(nproc) >> /tmp/kernel-build.log 2>&1
+echo "[LOG] make terminé avec code \$?" >> /tmp/kernel-build.log
 
 echo "[LOG] Début de make modules_install" >> /tmp/kernel-build.log
-env -i PATH="/bin:/usr/bin" CC="gcc" HOSTCC="gcc" CXX="g++" HOSTCXX="g++" \
-    make ARCH="'$MAKE_ARCH'" modules_install >> /tmp/kernel-build.log 2>&1
-echo "[LOG] make modules_install terminé avec code $?" >> /tmp/kernel-build.log
+make ARCH="$MAKE_ARCH" modules_install >> /tmp/kernel-build.log 2>&1
+echo "[LOG] make modules_install terminé avec code \$?" >> /tmp/kernel-build.log
 
 # Copier l'image du noyau et System.map
 mkdir -p /boot
@@ -203,13 +231,10 @@ rm -rf /sources/kernel-build
 echo "[LOG] Compilation terminée avec succès" >> /tmp/kernel-build.log
 EOF_LOGGED
 
-# Récupérer le code de retour du chroot
 CHROOT_EXIT=$?
-
-# Réactiver exit on error
 set -e
 
-# Récupérer le log du chroot
+# Afficher le log complet
 if [ -f "$LFS/tmp/kernel-build.log" ]; then
     log_info "=== LOG DE COMPILATION COMPLET ==="
     cat "$LFS/tmp/kernel-build.log"
