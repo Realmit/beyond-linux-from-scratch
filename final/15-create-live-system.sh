@@ -1,6 +1,6 @@
 #!/bin/bash
-# Création d'un système live avec squashfs et ISO hybride
-# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
+# Create a live system with squashfs and hybrid ISO (BIOS+UEFI)
+# Author: Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 LFS="${LFS:-/output/image}"
@@ -10,36 +10,62 @@ ISO_OUT="${OUTPUT_DIR}/lfs-installer.iso"
 
 echo "[INFO] Creating live system (squashfs + ISO)..."
 
-if ! command -v mksquashfs &>/dev/null; then
-    echo "[ERROR] mksquashfs not found. Install squashfs-tools."
+# Check required tools
+for tool in mksquashfs xorriso; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "[ERROR] $tool not found. Please install it."
+        exit 1
+    fi
+done
+
+# Find kernel and initramfs
+KERNEL=$(ls -1 "$LFS/boot/vmlinuz-"* 2>/dev/null | head -1)
+if [ -z "$KERNEL" ]; then
+    echo "[ERROR] Kernel not found in $LFS/boot"
+    exit 1
+fi
+INITRAMFS="$LFS/boot/initramfs.img"
+if [ ! -f "$INITRAMFS" ]; then
+    echo "[ERROR] Initramfs not found: $INITRAMFS"
     exit 1
 fi
 
-# Créer le squashfs (en excluant les répertoires virtuels)
+echo "[INFO] Kernel: $KERNEL"
+echo "[INFO] Initramfs: $INITRAMFS"
+
+# Create squashfs (excluding virtual filesystems)
+echo "[INFO] Creating squashfs..."
 mksquashfs "$LFS" "$SQUASHFS" \
     -comp xz -Xbcj x86 -b 1M \
     -wildcards -e "proc/*" "sys/*" "dev/*" "run/*" "tmp/*" "sources/*"
 
-# Préparer le contenu de l'ISO
+# Prepare ISO content
 ISO_DIR="${OUTPUT_DIR}/iso-content"
 rm -rf "$ISO_DIR"
 mkdir -pv "$ISO_DIR"/{isolinux,boot/grub,EFI/BOOT}
 
-# Copier le noyau et l'initramfs depuis le rootfs
-cp -v "$LFS/boot/vmlinuz-"* "$ISO_DIR/isolinux/vmlinuz" || \
-    { echo "[ERROR] Kernel not found in $LFS/boot"; exit 1; }
-cp -v "$LFS/boot/initramfs.img" "$ISO_DIR/isolinux/initrd.img" || \
-    { echo "[ERROR] Initramfs not found"; exit 1; }
+# Copy kernel and initramfs
+cp -v "$KERNEL" "$ISO_DIR/isolinux/vmlinuz"
+cp -v "$INITRAMFS" "$ISO_DIR/isolinux/initrd.img"
 
-# Copier le squashfs
+# Copy squashfs
 cp -v "$SQUASHFS" "$ISO_DIR/live.squashfs"
 
-# Copier isolinux et configuration
-cp -v /usr/lib/ISOLINUX/isolinux.bin "$ISO_DIR/isolinux/" || \
-    cp -v /usr/lib/syslinux/isolinux.bin "$ISO_DIR/isolinux/" || \
-    { echo "[ERROR] isolinux.bin not found"; exit 1; }
-cp -v /usr/lib/syslinux/modules/bios/*.c32 "$ISO_DIR/isolinux/" || true
+# Copy isolinux binary
+ISOLINUX_BIN="/usr/lib/ISOLINUX/isolinux.bin"
+[ -f "$ISOLINUX_BIN" ] || ISOLINUX_BIN="/usr/lib/syslinux/isolinux.bin"
+if [ ! -f "$ISOLINUX_BIN" ]; then
+    echo "[ERROR] isolinux.bin not found"
+    exit 1
+fi
+cp -v "$ISOLINUX_BIN" "$ISO_DIR/isolinux/"
 
+# Copy isolinux modules (optional)
+if [ -d "/usr/lib/syslinux/modules/bios" ]; then
+    cp -v /usr/lib/syslinux/modules/bios/*.c32 "$ISO_DIR/isolinux/" 2>/dev/null || true
+fi
+
+# ISOLINUX configuration
 cat > "$ISO_DIR/isolinux/isolinux.cfg" << 'EOF'
 default live
 label live
@@ -50,31 +76,31 @@ label live-verbose
   append initrd=initrd.img root=/dev/sr0 ro
 EOF
 
-# Pour UEFI, copier un bootloader (ex: grub)
-if [ -d "$LFS/usr/lib/grub/x86_64-efi" ]; then
-    cp -r "$LFS/usr/lib/grub/x86_64-efi"/* "$ISO_DIR/EFI/BOOT/"
-    cp -v "$LFS/boot/efi/EFI/BOOT/BOOTX64.EFI" "$ISO_DIR/EFI/BOOT/" || true
+# EFI support – only if the EFI bootloader exists
+EFI_FILE="$LFS/boot/efi/EFI/BOOT/BOOTX64.EFI"
+if [ -f "$EFI_FILE" ]; then
+    echo "[INFO] Found EFI bootloader, including UEFI support"
+    cp -v "$EFI_FILE" "$ISO_DIR/EFI/BOOT/"
+    EFI_OPTION="-eltorito-alt-boot -e EFI/BOOT/BOOTX64.EFI -no-emul-boot"
+else
+    echo "[WARNING] No EFI bootloader found – building BIOS-only ISO"
+    EFI_OPTION=""
 fi
 
-# Générer l'ISO avec xorriso
-if ! command -v xorriso &>/dev/null; then
-    echo "[ERROR] xorriso not found. Install xorriso."
-    exit 1
-fi
-
+# Generate ISO with xorriso
+echo "[INFO] Building ISO..."
 xorriso -as mkisofs \
     -r -V "LFS_LIVE" \
     -J -joliet-long \
-    -cache-inodes \
     -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
     -b isolinux/isolinux.bin \
     -c isolinux/boot.cat \
     -boot-load-size 4 -boot-info-table -no-emul-boot \
-    -eltorito-alt-boot -e EFI/BOOT/BOOTX64.EFI -no-emul-boot \
+    $EFI_OPTION \
     -isohybrid-gpt-basdat \
     -o "$ISO_OUT" "$ISO_DIR"
 
-# Nettoyer
+# Clean up
 rm -rf "$ISO_DIR" "$SQUASHFS"
 
 echo "[SUCCESS] Live ISO created at $ISO_OUT"
