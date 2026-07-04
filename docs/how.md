@@ -2630,7 +2630,7 @@ python -m pytest tests/test_config.py -v
 ```
 # Exécuter un tests avec coverage
 ```bash
-python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html
+python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html --cov-report=annotate
 ```
 # Pour les tests USB (avec une vraie clé USB - DANGEREUX)
 ```bash

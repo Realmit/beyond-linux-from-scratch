@@ -81,15 +81,16 @@ EFI_FILE="$LFS/boot/efi/EFI/BOOT/BOOTX64.EFI"
 if [ -f "$EFI_FILE" ]; then
     echo "[INFO] Found EFI bootloader, including UEFI support"
     cp -v "$EFI_FILE" "$ISO_DIR/EFI/BOOT/"
-    EFI_OPTION="-eltorito-alt-boot -e EFI/BOOT/BOOTX64.EFI -no-emul-boot"
+    EFI_OPTION="-eltorito-alt-boot -e EFI/BOOT/BOOTX64.EFI -no-emul-boot -isohybrid-gpt-basdat"
 else
     echo "[WARNING] No EFI bootloader found – building BIOS-only ISO"
     EFI_OPTION=""
 fi
 
-# Generate ISO with xorriso
+# Generate ISO with xorriso (using -iso-level 4 for large files)
 echo "[INFO] Building ISO..."
 xorriso -as mkisofs \
+    -iso-level 4 \
     -r -V "LFS_LIVE" \
     -J -joliet-long \
     -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
@@ -97,7 +98,6 @@ xorriso -as mkisofs \
     -c isolinux/boot.cat \
     -boot-load-size 4 -boot-info-table -no-emul-boot \
     $EFI_OPTION \
-    -isohybrid-gpt-basdat \
     -o "$ISO_OUT" "$ISO_DIR"
 
 # Clean up
