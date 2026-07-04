@@ -1,7 +1,14 @@
 #!/bin/bash
-# final/14-create-installer.sh – ISO hybride BIOS/UEFI avec xorriso direct
-# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
+# final/14-create-installer.sh – Hybrid BIOS/UEFI ISO with xorriso direct
+# Author: Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
+
+# Détection de sudo si nécessaire
+SUDO=""
+if [ "$(id -u)" -ne 0 ]; then
+    SUDO="sudo"
+    echo "[INFO] Will use sudo for privileged operations."
+fi
 
 LFS="${LFS:-/mnt/lfs}"
 if [ -z "$LFS" ] || [ ! -d "$LFS" ]; then
@@ -74,10 +81,12 @@ mkdir -p "$EFI_MOUNT"
 # Image FAT de 64 Mo
 dd if=/dev/zero of="$EFI_IMG" bs=1M count=64 2>/dev/null
 mkfs.vfat "$EFI_IMG" 2>/dev/null
-mount -o loop "$EFI_IMG" "$EFI_MOUNT"
+
+# Monter l'image avec sudo si nécessaire
+$SUDO mount -o loop "$EFI_IMG" "$EFI_MOUNT"
 
 # Installer GRUB pour EFI dans l'image
-grub-install --target=x86_64-efi \
+$SUDO grub-install --target=x86_64-efi \
     --efi-directory="$EFI_MOUNT" \
     --boot-directory="$EFI_MOUNT/boot" \
     --removable \
@@ -86,10 +95,10 @@ grub-install --target=x86_64-efi \
 
 # Copier notre grub.cfg
 mkdir -p "$EFI_MOUNT/boot/grub"
-cp "$ISO_ROOT/boot/grub/grub.cfg" "$EFI_MOUNT/boot/grub/"
+$SUDO cp "$ISO_ROOT/boot/grub/grub.cfg" "$EFI_MOUNT/boot/grub/"
 
 # Démonter et nettoyer
-umount "$EFI_MOUNT"
+$SUDO umount "$EFI_MOUNT"
 rmdir "$EFI_MOUNT"
 
 # Copier l'image EFI dans l'ISO (comme fichier)
