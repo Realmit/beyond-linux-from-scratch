@@ -249,6 +249,8 @@ RUN apt update && apt install -y \
     sudo \
     bc \
     cpio \
+    grub-pc-bin \
+    grub-efi-amd64-bin \
     kmod \
     libssl-dev \
     libelf-dev \
