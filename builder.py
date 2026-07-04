@@ -764,8 +764,8 @@ class ScriptExecutor:
                 # Show last 10 lines of log for quick debugging
                 if log_file.exists():
                     with open(log_file, 'r') as f:
-                        lines = f.readlines()[-10:]
-                    self.logger.info("  Last 10 log lines:")
+                        lines = f.readlines()[-50:]
+                    self.logger.info("  Last 50 log lines:")
                     for line in lines:
                         self.logger.info(f"    {line.rstrip()}")
                 return False
