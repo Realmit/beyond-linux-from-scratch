@@ -53,23 +53,24 @@ mkdir -p "$ISO_ROOT/boot/grub"
 cp -v "$KERNEL" "$ISO_ROOT/boot/vmlinuz"
 cp -v "$INITRAMFS" "$ISO_ROOT/boot/initramfs.img"
 
-# Create squashfs (will be placed at the root of the ISO)
+# Create squashfs
 echo "[INFO] Creating squashfs..."
 mksquashfs "$LFS" "$ISO_ROOT/live.squashfs" -comp xz -noappend
 
-# GRUB config (BIOS and UEFI will use the same)
-cat > "$ISO_ROOT/boot/grub/grub.cfg" << 'EOF'
-set timeout=10
-set default=0
-menuentry "LFS Linux Live" {
-    linux /boot/vmlinuz root=/dev/loop0 ro quiet
-    initrd /boot/initramfs.img
-}
-menuentry "Install LFS Linux" {
-    linux /boot/vmlinuz root=/dev/loop0 ro quiet install
-    initrd /boot/initramfs.img
-}
-EOF
+# Write GRUB config using echo to avoid heredoc issues
+mkdir -p "$ISO_ROOT/boot/grub"
+{
+    echo 'set timeout=10'
+    echo 'set default=0'
+    echo 'menuentry "LFS Linux Live" {'
+    echo '    linux /boot/vmlinuz root=/dev/loop0 ro quiet'
+    echo '    initrd /boot/initramfs.img'
+    echo '}'
+    echo 'menuentry "Install LFS Linux" {'
+    echo '    linux /boot/vmlinuz root=/dev/loop0 ro quiet install'
+    echo '    initrd /boot/initramfs.img'
+    echo '}'
+} > "$ISO_ROOT/boot/grub/grub.cfg"
 
 # Build hybrid ISO with grub-mkrescue
 echo "[INFO] Building hybrid ISO with grub-mkrescue..."
