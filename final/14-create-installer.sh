@@ -3,6 +3,12 @@
 # Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
+# Re‑launch with sudo if not root
+if [ "$EUID" -ne 0 ]; then
+    echo "[INFO] Relaunching with sudo..."
+    exec sudo -E "$0" "$@"
+fi
+
 LFS="${LFS:-/mnt/lfs}"
 if [ -z "$LFS" ] || [ ! -d "$LFS" ]; then
     echo "[ERROR] LFS directory '$LFS' not found"
@@ -17,7 +23,7 @@ EFI_IMG="${OUTPUT_DIR}/efi.img"
 echo "[INFO] Creating bootable ISO from $LFS"
 echo "[INFO] Output: $INSTALLER_ISO"
 
-# Vérifier les outils
+# Check required tools
 for tool in xorriso mksquashfs grub-install mkfs.vfat mount; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "[ERROR] $tool not found. Please install."
@@ -25,7 +31,7 @@ for tool in xorriso mksquashfs grub-install mkfs.vfat mount; do
     fi
 done
 
-# Trouver noyau et initramfs
+# Find kernel and initramfs
 KERNEL=$(ls -1 "$LFS/boot/vmlinuz"* 2>/dev/null | head -n1)
 [ -z "$KERNEL" ] && KERNEL=$(find "$LFS/boot" -name "vmlinuz*" -type f | head -n1)
 INITRAMFS=$(ls -1 "$LFS/boot/initramfs.img" 2>/dev/null | head -n1)
@@ -41,18 +47,18 @@ fi
 echo "[INFO] Kernel: $KERNEL"
 echo "[INFO] Initramfs: $INITRAMFS"
 
-# Préparer la racine de l'ISO
+# Prepare ISO root
 rm -rf "$ISO_ROOT"
 mkdir -p "$ISO_ROOT"/{boot/grub,isolinux,EFI/BOOT}
 
 cp -v "$KERNEL" "$ISO_ROOT/boot/vmlinuz"
 cp -v "$INITRAMFS" "$ISO_ROOT/boot/initramfs.img"
 
-# Créer le squashfs (taille > 4 Go)
+# Create squashfs (may exceed 4 GiB)
 echo "[INFO] Creating squashfs..."
 mksquashfs "$LFS" "$ISO_ROOT/live.squashfs" -comp xz -noappend
 
-# Fichier grub.cfg (utilisé par BIOS et UEFI)
+# GRUB config (used by both BIOS and UEFI)
 cat > "$ISO_ROOT/boot/grub/grub.cfg" << 'EOF'
 set timeout=10
 set default=0
@@ -66,17 +72,17 @@ menuentry "Install LFS Linux" {
 }
 EOF
 
-# --- CRÉER L'IMAGE EFI (FAT avec GRUB) ---
+# --- Create EFI boot image (FAT with GRUB) ---
 echo "[INFO] Creating EFI boot image..."
 EFI_MOUNT="${OUTPUT_DIR}/efi-mount"
 mkdir -p "$EFI_MOUNT"
 
-# Image FAT de 64 Mo
+# 64 MiB FAT image
 dd if=/dev/zero of="$EFI_IMG" bs=1M count=64 2>/dev/null
 mkfs.vfat "$EFI_IMG" 2>/dev/null
 mount -o loop "$EFI_IMG" "$EFI_MOUNT"
 
-# Installer GRUB pour EFI dans l'image
+# Install GRUB for EFI into the image
 grub-install --target=x86_64-efi \
     --efi-directory="$EFI_MOUNT" \
     --boot-directory="$EFI_MOUNT/boot" \
@@ -84,18 +90,18 @@ grub-install --target=x86_64-efi \
     --modules="part_gpt fat" \
     --no-floppy
 
-# Copier notre grub.cfg
+# Copy our grub.cfg
 mkdir -p "$EFI_MOUNT/boot/grub"
 cp "$ISO_ROOT/boot/grub/grub.cfg" "$EFI_MOUNT/boot/grub/"
 
-# Démonter et nettoyer
+# Unmount and clean up
 umount "$EFI_MOUNT"
 rmdir "$EFI_MOUNT"
 
-# Copier l'image EFI dans l'ISO (comme fichier)
+# Copy the EFI image into the ISO
 cp "$EFI_IMG" "$ISO_ROOT/EFI/BOOT/BOOTX64.EFI"
 
-# --- PRÉPARER ISOLINUX POUR LE BOOT BIOS ---
+# --- Prepare ISOLINUX for BIOS boot ---
 cp /usr/lib/ISOLINUX/isolinux.bin "$ISO_ROOT/isolinux/"
 cp /usr/lib/ISOLINUX/isohdpfx.bin "$ISO_ROOT/isolinux/" 2>/dev/null || true
 
@@ -110,7 +116,7 @@ label install
     append initrd=/boot/initramfs.img root=/dev/loop0 ro quiet install
 EOF
 
-# --- CONSTRUIRE L'ISO AVEC XORRISO (ISO LEVEL 4) ---
+# --- Build ISO with xorriso (ISO level 4 for large files) ---
 echo "[INFO] Building ISO with xorriso (BIOS+UEFI, ISO level 4)..."
 xorriso -as mkisofs \
     -iso-level 4 \
@@ -125,7 +131,7 @@ xorriso -as mkisofs \
     -isohybrid-gpt-basdat \
     -o "$INSTALLER_ISO" "$ISO_ROOT"
 
-# Nettoyer
+# Clean up
 rm -rf "$ISO_ROOT" "$EFI_IMG"
 echo "[SUCCESS] ISO created at $INSTALLER_ISO"
 ls -lh "$INSTALLER_ISO"
