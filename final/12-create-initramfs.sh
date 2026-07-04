@@ -1,5 +1,6 @@
 #!/bin/bash
 # Create a functional initramfs with busybox (auto-download if missing)
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 # Re‑launch with sudo if not root (preserve environment)

@@ -1,5 +1,6 @@
 #!/bin/bash
 # LPM advanced - full-featured package manager for LFS (Docker-aware)
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 LFS=${LFS:-/output/image}

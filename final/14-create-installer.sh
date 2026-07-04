@@ -1,5 +1,6 @@
 #!/bin/bash
 # final/14-create-installer.sh – Create hybrid ISO with grub-mkrescue (BIOS+UEFI)
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 LFS="${LFS:-/mnt/lfs}"

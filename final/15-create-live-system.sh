@@ -1,5 +1,6 @@
 #!/bin/bash
 # Création d'un système live avec squashfs et ISO hybride
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 LFS="${LFS:-/output/image}"

@@ -1,5 +1,6 @@
 #!/bin/bash
-# Package updater for LPM - real implementation
+# Package updater for LPM
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 LFS=${LFS:-/output/image}

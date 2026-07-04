@@ -1,5 +1,6 @@
 #!/bin/bash
-# System updater for LFS - real implementation
+# System updater for LFS
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 LFS=${LFS:-/output/image}

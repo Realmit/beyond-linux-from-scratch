@@ -1,5 +1,6 @@
 #!/bin/bash
 # final/13-create-bootloader.sh – Install GRUB bootloader
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 LFS="${LFS:-/mnt/lfs}"
