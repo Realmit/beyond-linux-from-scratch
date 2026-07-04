@@ -2602,60 +2602,78 @@ pip install -r requirements-test.txt
 # Générer seulement le rapport coverage
 ./run_tests.sh --cov-report=html --cov-report=term
 ```
-mac
-```bash
+## On mac OSX
+
 # Créer un environnement virtuel
+```bash
 python3 -m venv venv
-
+```
 # Activer l'environnement virtuel
+```bash
 source venv/bin/activate
-
+```
 # Installer les dépendances
+```bash
 pip install -r requirements-test.txt
-
+```
 # Exécuter les tests
+```bash
 python -m pytest tests/ -v
-
+```
 # Quitter l'environnement virtuel
+```bash
 deactivate
-
+```
 # Exécuter un test spécifique
+```bash
 python -m pytest tests/test_config.py -v  
-
+```
 # Exécuter un tests avec coverage
+```bash
 python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html
-
+```
 # Pour les tests USB (avec une vraie clé USB - DANGEREUX)
+```bash
 python -m pytest tests/test_integration_usb.py -v --usb-device=/dev/sdb --dangerous
-
+```
 # Rendre le script exécutable
+```bash
 chmod +x mac-lfs-builder.sh
-
+```
 # Build par défaut (XFCE)
+```bash
 ./mac-lfs-builder.sh
-
+```
 # Build pour Pinebook
+```bash
 ./mac-lfs-builder.sh --pinebook
-
+```
 # Build pour Brax3
+```bash
 ./mac-lfs-builder.sh --brax3
-
+```
 # Build audio studio
+```bash
 ./mac-lfs-builder.sh --audio-studio
-
+```
 # Build ARM64 (Raspberry Pi)
+```bash
 ./mac-lfs-builder.sh --arm64
-
+```
 # Build minimal avec sysvinit
+```bash
 ./mac-lfs-builder.sh --profile minimal --init sysvinit
-
+```
 # Build complet sans live USB
+```bash
 ./mac-lfs-builder.sh --profile full --no-live
-
+```
 # Nettoyer
+```bash
 ./mac-lfs-builder.sh --clean
-
+```
 # Aide
+```bash
 ./mac-lfs-builder.sh --help
 ```
 
@@ -2674,16 +2692,22 @@ Option	Description
 ```
 
 # Construire le système GNU Free minimal
+```bash
 python3 builder.py --profile gnu-free
-
+```
 # Construire le système GNU Free complet (avec Emacs, IceCat, Octave)
+```bash
 python3 builder.py --profile gnu-free-full
+```
 
 # Avec init system alternatif
+```bash
 python3 builder.py --profile gnu-free --init sysvinit
-
+```
 # Sur ARM64 (libre)
+```bash
 python3 builder.py --profile gnu-free --config config/build-cross.conf
+```
 
 # Générer un logo simple
 convert -size 200x200 xc:#2E8B57 -font Arial -pointsize 60 -fill white \
