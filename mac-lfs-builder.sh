@@ -256,6 +256,7 @@ RUN apt update && apt install -y \
     unzip \
     xz-utils \
     zstd \
+    squashfs-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Install cross-compilation toolchain for ARM64
