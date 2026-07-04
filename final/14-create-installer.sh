@@ -1,5 +1,5 @@
 #!/bin/bash
-# final/14-create-installer.sh – Create hybrid ISO with grub-mkrescue (BIOS+UEFI)
+# final/14-create-installer.sh – Create hybrid ISO with grub-mkrescue (BIOS+UEFI) with ISO level 4
 # Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
@@ -57,7 +57,7 @@ cp -v "$INITRAMFS" "$ISO_ROOT/boot/initramfs.img"
 echo "[INFO] Creating squashfs..."
 mksquashfs "$LFS" "$ISO_ROOT/live.squashfs" -comp xz -noappend
 
-# Write GRUB config using echo to avoid heredoc issues
+# Write GRUB config
 mkdir -p "$ISO_ROOT/boot/grub"
 {
     echo 'set timeout=10'
@@ -72,8 +72,10 @@ mkdir -p "$ISO_ROOT/boot/grub"
     echo '}'
 } > "$ISO_ROOT/boot/grub/grub.cfg"
 
-# Build hybrid ISO with grub-mkrescue
-echo "[INFO] Building hybrid ISO with grub-mkrescue..."
+# Build hybrid ISO with grub-mkrescue, but pass -iso-level 4 to xorriso
+# to allow files larger than 4GB (UDF/ISO9660 level 4)
+echo "[INFO] Building hybrid ISO with grub-mkrescue (ISO level 4)..."
+export MKRESCUE_XORRISO_OPTS="-iso-level 4"
 grub-mkrescue -o "$INSTALLER_ISO" "$ISO_ROOT"
 
 rm -rf "$ISO_ROOT"
