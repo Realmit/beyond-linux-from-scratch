@@ -1,6 +1,12 @@
 #!/bin/bash
-# Création d'un initramfs fonctionnel avec busybox (autodownload si absent)
+# Create a functional initramfs with busybox (auto-download if missing)
 set -e
+
+# Re‑launch with sudo if not root (preserve environment)
+if [ "$EUID" -ne 0 ]; then
+    echo "[INFO] Relaunching with sudo..."
+    exec sudo -E "$0" "$@"
+fi
 
 LFS="${LFS:-/output/image}"
 INITRAMFS_DIR="${LFS}/boot/initramfs-tmp"
@@ -11,7 +17,9 @@ echo "[INFO] Building initramfs for LFS..."
 rm -rf "$INITRAMFS_DIR"
 mkdir -pv "$INITRAMFS_DIR"/{bin,dev,etc,lib,lib64,mnt,proc,root,sbin,sys,tmp,usr,var}
 
-# --- Recherche de busybox ---
+# --------------------------------------------------------------------------
+# Find or download busybox
+# --------------------------------------------------------------------------
 BUSYBOX_SRC=""
 if [ -f "$LFS/bin/busybox" ]; then
     BUSYBOX_SRC="$LFS/bin/busybox"
@@ -38,7 +46,7 @@ fi
 cp -a "$BUSYBOX_SRC" "$INITRAMFS_DIR/bin/busybox"
 chmod 755 "$INITRAMFS_DIR/bin/busybox"
 
-# --- Créer les liens symboliques, en ignorant 'busybox' lui-même ---
+# Create symlinks, ignoring 'busybox' itself
 cd "$INITRAMFS_DIR/bin"
 for cmd in $(./busybox --list); do
     if [ "$cmd" != "busybox" ]; then
@@ -47,20 +55,39 @@ for cmd in $(./busybox --list); do
 done
 cd - >/dev/null
 
-# --- Périphériques ---
-if [ "$(whoami)" = "root" ]; then
-    mknod -m 622 "$INITRAMFS_DIR/dev/console" c 5 1
-    mknod -m 666 "$INITRAMFS_DIR/dev/null" c 1 3
-    mknod -m 666 "$INITRAMFS_DIR/dev/zero" c 1 5
-    mknod -m 666 "$INITRAMFS_DIR/dev/tty" c 5 0
-else
-    sudo mknod -m 622 "$INITRAMFS_DIR/dev/console" c 5 1
-    sudo mknod -m 666 "$INITRAMFS_DIR/dev/null" c 1 3
-    sudo mknod -m 666 "$INITRAMFS_DIR/dev/zero" c 1 5
-    sudo mknod -m 666 "$INITRAMFS_DIR/dev/tty" c 5 0
-fi
+# --------------------------------------------------------------------------
+# Device nodes – try mknod; fall back to copying from host
+# --------------------------------------------------------------------------
+create_device() {
+    local path="$1"
+    local mode="$2"
+    local major="$3"
+    local minor="$4"
+    if [ -e "$path" ]; then
+        return 0
+    fi
+    if mknod -m "$mode" "$path" "$major" "$minor" 2>/dev/null; then
+        return 0
+    fi
+    # Fallback: copy from host /dev if possible
+    local devname="$(basename "$path")"
+    if [ -e "/dev/$devname" ]; then
+        cp -a "/dev/$devname" "$path"
+        chmod "$mode" "$path"
+        return 0
+    fi
+    echo "[WARNING] Could not create device node: $path"
+    return 1
+}
 
-# --- Script init ---
+create_device "$INITRAMFS_DIR/dev/console" 622 c 5 1
+create_device "$INITRAMFS_DIR/dev/null"    666 c 1 3
+create_device "$INITRAMFS_DIR/dev/zero"    666 c 1 5
+create_device "$INITRAMFS_DIR/dev/tty"     666 c 5 0
+
+# --------------------------------------------------------------------------
+# Init script
+# --------------------------------------------------------------------------
 cat > "$INITRAMFS_DIR/init" << 'EOF'
 #!/bin/busybox sh
 /bin/busybox mount -t proc proc /proc
@@ -83,7 +110,9 @@ EOF
 
 chmod 755 "$INITRAMFS_DIR/init"
 
-# --- Archive cpio compressée ---
+# --------------------------------------------------------------------------
+# Create compressed cpio archive
+# --------------------------------------------------------------------------
 cd "$INITRAMFS_DIR"
 find . | cpio -o -H newc | gzip -9 > "$INITRAMFS_OUTPUT"
 cd - >/dev/null
