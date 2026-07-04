@@ -1,5 +1,6 @@
 #!/bin/bash
 # blfs/16-privacy-tools.sh – with dynamic source path
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Create disk image for USB installation - Compatible with Docker and native
-
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

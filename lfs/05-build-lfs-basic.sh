@@ -1,5 +1,6 @@
 #!/bin/bash
 # Build basic LFS system – COPIE COMPLÈTE DE BASH ET PRÉPARATION DU CHROOT
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

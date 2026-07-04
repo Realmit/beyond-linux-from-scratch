@@ -2,7 +2,7 @@
 # host/00-setup-qemu.sh
 # Setup QEMU user emulation for cross-compilation (ARM64, ARM, RISC‑V, etc.)
 # Only runs if CROSS_COMPILE=1 is set in environment.
-
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
 log_info()    { echo -e "\033[0;32m[INFO]\033[0m $1"; }

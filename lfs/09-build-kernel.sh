@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 # Re‑launch with sudo if not root
 if [ "$EUID" -ne 0 ]; then
     echo "[INFO] Relaunching with sudo..."

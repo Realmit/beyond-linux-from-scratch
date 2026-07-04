@@ -1,5 +1,6 @@
 #!/bin/bash
 # Base packages - Docker compatible minimal
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 LFS=${LFS:-/output/image}
 echo "[INFO] Creating base packages structure (Docker mode)"
