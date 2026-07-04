@@ -1,9 +1,7 @@
 #!/bin/bash
-# final/14-create-installer.sh – Hybrid BIOS/UEFI ISO with xorriso
-# Author: Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
+# final/14-create-installer.sh – Hybrid BIOS/UEFI ISO with aggressive size reduction
 set -e
 
-# Re‑launch with sudo if not root
 if [ "$EUID" -ne 0 ]; then
     echo "[INFO] Relaunching with sudo..."
     exec sudo -E "$0" "$@"
@@ -24,22 +22,34 @@ echo "[INFO] Creating bootable ISO from $LFS"
 echo "[INFO] Output: $INSTALLER_ISO"
 
 # ---------------------------------------------------------------------------
-# 1. Remove large unnecessary directories from the LFS root
-#    (they are not needed on the live system and only waste space)
+# 1. Aggressive size reduction (keep kernel and initramfs)
 # ---------------------------------------------------------------------------
-echo "[INFO] Removing sources and other large directories to reduce size..."
-rm -rf "$LFS/sources"           # already excluded from squashfs, but still on disk
-rm -rf "$LFS/usr/share/doc"     # documentation (can be re-installed if needed)
-rm -rf "$LFS/usr/share/man"     # man pages
-rm -rf "$LFS/usr/share/info"    # info pages
-rm -rf "$LFS/var/cache/*"       # package caches
-rm -rf "$LFS/var/log/*"         # old logs
-rm -rf "$LFS/var/lib/lpm"       # LPM package database (can be rebuilt)
-rm -rf "$LFS/boot/vmlinuz-"*    # kernel is copied separately; keep only the symlink? Actually we copy it separately, so remove to save space.
-rm -rf "$LFS/lib/modules/*/source" "$LFS/lib/modules/*/build"  # kernel build files
+echo "[INFO] Stripping binaries and libraries..."
+find "$LFS" -type f -executable -exec strip --strip-unneeded {} \; 2>/dev/null || true
+find "$LFS" -name "*.so*" -exec strip --strip-unneeded {} \; 2>/dev/null || true
+
+echo "[INFO] Removing unnecessary files..."
+rm -rf "$LFS/sources" "$LFS/usr/share/doc" "$LFS/usr/share/man" "$LFS/usr/share/info"
+rm -rf "$LFS/usr/share/locale" "$LFS/usr/share/help" "$LFS/usr/share/backgrounds"
+rm -rf "$LFS/var/cache/*" "$LFS/var/log/*" "$LFS/var/lib/lpm"
+# DO NOT delete the kernel! Keep it for the ISO.
+# rm -rf "$LFS/boot/vmlinuz-*"   # <-- REMOVED
+rm -rf "$LFS/lib/modules/*/source" "$LFS/lib/modules/*/build"
+
+# Keep only en_US.UTF-8 locale
+if [ -d "$LFS/usr/lib/locale" ]; then
+    find "$LFS/usr/lib/locale" -mindepth 1 -maxdepth 1 -type d ! -name "en_US.UTF-8" -exec rm -rf {} \; 2>/dev/null || true
+fi
+
+# Keep only Adwaita and hicolor icons
+if [ -d "$LFS/usr/share/icons" ]; then
+    for theme in Adwaita hicolor; do
+        find "$LFS/usr/share/icons" -mindepth 1 -maxdepth 1 -type d ! -name "$theme" -exec rm -rf {} \; 2>/dev/null || true
+    done
+fi
 
 # ---------------------------------------------------------------------------
-# 2. Check available disk space after cleanup
+# 2. Disk space check
 # ---------------------------------------------------------------------------
 LFS_SIZE_GB=$(du -sk "$LFS" | awk '{print $1/1024/1024}')
 REQUIRED_GB=$(echo "$LFS_SIZE_GB * 1.2 + 2" | bc | cut -d. -f1)
@@ -49,33 +59,38 @@ if [ "$AVAILABLE_GB" -lt "$REQUIRED_GB" ]; then
     echo "[ERROR] Insufficient disk space after cleanup."
     echo "  Required: ~${REQUIRED_GB} GB (estimated)"
     echo "  Available: ${AVAILABLE_GB} GB"
-    echo "  Please free up more space or use a different output directory."
     exit 1
 fi
 echo "[INFO] Disk space check passed (${AVAILABLE_GB} GB available)."
 
 # ---------------------------------------------------------------------------
-# 3. Check required tools
+# 3. Check tools
 # ---------------------------------------------------------------------------
 for tool in xorriso mksquashfs grub-install mkfs.vfat mount; do
     if ! command -v "$tool" >/dev/null 2>&1; then
-        echo "[ERROR] $tool not found. Please install."
+        echo "[ERROR] $tool not found."
         exit 1
     fi
 done
 
 # ---------------------------------------------------------------------------
-# 4. Locate kernel and initramfs
+# 4. Find kernel and initramfs – prefer versioned files
 # ---------------------------------------------------------------------------
-KERNEL=$(ls -1 "$LFS/boot/vmlinuz"* 2>/dev/null | head -n1)
-[ -z "$KERNEL" ] && KERNEL=$(find "$LFS/boot" -name "vmlinuz*" -type f | head -n1)
-INITRAMFS=$(ls -1 "$LFS/boot/initramfs.img" 2>/dev/null | head -n1)
-[ -z "$INITRAMFS" ] && INITRAMFS=$(find "$LFS/boot" -name "initramfs*" -type f | head -n1)
+KERNEL=$(ls -1 "$LFS/boot/vmlinuz-"* 2>/dev/null | head -1)
+if [ -z "$KERNEL" ]; then
+    KERNEL=$(ls -1 "$LFS/boot/vmlinuz" 2>/dev/null | head -1)
+fi
+if [ -z "$KERNEL" ]; then
+    echo "[ERROR] No kernel found in $LFS/boot"
+    exit 1
+fi
 
-if [ -z "$KERNEL" ] || [ -z "$INITRAMFS" ]; then
-    echo "[ERROR] Kernel or initramfs not found in $LFS/boot"
-    echo "  Kernel: ${KERNEL:-not found}"
-    echo "  Initramfs: ${INITRAMFS:-not found}"
+INITRAMFS=$(ls -1 "$LFS/boot/initramfs.img" 2>/dev/null | head -1)
+if [ -z "$INITRAMFS" ]; then
+    INITRAMFS=$(find "$LFS/boot" -name "initramfs*" -type f | head -1)
+fi
+if [ -z "$INITRAMFS" ]; then
+    echo "[ERROR] Initramfs not found in $LFS/boot"
     exit 1
 fi
 
@@ -91,14 +106,15 @@ mkdir -p "$ISO_ROOT"/{boot/grub,isolinux,EFI/BOOT}
 cp -v "$KERNEL" "$ISO_ROOT/boot/vmlinuz"
 cp -v "$INITRAMFS" "$ISO_ROOT/boot/initramfs.img"
 
-echo "[INFO] Creating squashfs (excluding unnecessary directories)..."
+echo "[INFO] Creating squashfs..."
 mksquashfs "$LFS" "$ISO_ROOT/live.squashfs" \
     -comp xz -Xbcj x86 -b 1M \
     -wildcards \
     -e "proc/*" "sys/*" "dev/*" "run/*" "tmp/*" \
        "sources/*" "usr/share/doc/*" "usr/share/man/*" "usr/share/info/*" \
-       "var/cache/*" "var/log/*" "var/lib/lpm/*" \
-       "boot/vmlinuz-*" "lib/modules/*/source" "lib/modules/*/build"
+       "usr/share/locale/*" "usr/share/help/*" "usr/share/backgrounds/*" \
+       "usr/share/icons/*" "var/cache/*" "var/log/*" "var/lib/lpm/*" \
+       "lib/modules/*/source" "lib/modules/*/build"
 
 # ---------------------------------------------------------------------------
 # 6. GRUB config
@@ -117,7 +133,7 @@ menuentry "Install LFS Linux" {
 EOF
 
 # ---------------------------------------------------------------------------
-# 7. Create EFI boot image (FAT with GRUB)
+# 7. EFI boot image
 # ---------------------------------------------------------------------------
 echo "[INFO] Creating EFI boot image..."
 EFI_MOUNT="${OUTPUT_DIR}/efi-mount"
@@ -139,11 +155,10 @@ cp "$ISO_ROOT/boot/grub/grub.cfg" "$EFI_MOUNT/boot/grub/"
 
 umount "$EFI_MOUNT"
 rmdir "$EFI_MOUNT"
-
 cp "$EFI_IMG" "$ISO_ROOT/EFI/BOOT/BOOTX64.EFI"
 
 # ---------------------------------------------------------------------------
-# 8. Prepare ISOLINUX for BIOS boot
+# 8. ISOLINUX for BIOS
 # ---------------------------------------------------------------------------
 cp /usr/lib/ISOLINUX/isolinux.bin "$ISO_ROOT/isolinux/"
 cp /usr/lib/ISOLINUX/isohdpfx.bin "$ISO_ROOT/isolinux/" 2>/dev/null || true
@@ -160,9 +175,9 @@ label install
 EOF
 
 # ---------------------------------------------------------------------------
-# 9. Build ISO with xorriso (ISO level 4 for large files)
+# 9. Build ISO with xorriso
 # ---------------------------------------------------------------------------
-echo "[INFO] Building ISO with xorriso (BIOS+UEFI, ISO level 4)..."
+echo "[INFO] Building ISO..."
 xorriso -as mkisofs \
     -iso-level 4 \
     -V "LFS_LINUX" \

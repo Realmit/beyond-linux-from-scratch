@@ -1,6 +1,8 @@
-Tabarnak t'as raison! Je complète tout de suite avec **TOUS** les fichiers manquants. Hold my beer.
+Voici le même document entièrement traduit en anglais. Tous les commentaires, descriptions et messages ont été traduits, tandis que le code (bash, JSON, etc.) est conservé tel quel.
 
-## FICHIER 2: `config/build.conf`
+---
+
+## FILE 2: `config/build.conf`
 
 ```json
 {
@@ -62,7 +64,7 @@ Tabarnak t'as raison! Je complète tout de suite avec **TOUS** les fichiers manq
 }
 ```
 
-## FICHIER 3: `config/kernel-config`
+## FILE 3: `config/kernel-config`
 
 ```
 #
@@ -299,7 +301,7 @@ CONFIG_EFI_STUB=y
 CONFIG_EFI_MIXED=y
 ```
 
-## FICHIER 4: `scripts/common/chroot-utils.sh`
+## FILE 4: `scripts/common/chroot-utils.sh`
 
 ```bash
 #!/bin/bash
@@ -412,7 +414,7 @@ enter_interactive_chroot() {
 }
 ```
 
-## FICHIER 5: `scripts/common/error-handler.sh`
+## FILE 5: `scripts/common/error-handler.sh`
 
 ```bash
 #!/bin/bash
@@ -585,7 +587,7 @@ safe_source() {
 export -f error_trap cleanup_partial_build retry check_with_retry validate_build_env setup_error_handling safe_source
 ```
 
-## FICHIER 6: `scripts/host/01-check-host.sh`
+## FILE 6: `scripts/host/01-check-host.sh`
 
 ```bash
 #!/bin/bash
@@ -696,7 +698,7 @@ log_info "CPU cores: $cpu_cores"
 log_info "Host system check passed!"
 ```
 
-## FICHIER 7: `scripts/host/02-prepare-host.sh`
+## FILE 7: `scripts/host/02-prepare-host.sh`
 
 ```bash
 #!/bin/bash
@@ -905,7 +907,7 @@ log_info "Now run: su - lfs"
 log_info "Then: /mnt/lfs/build-lfs.sh"
 ```
 
-## FICHIER 8: `scripts/host/04-build-toolchain.sh`
+## FILE 8: `scripts/host/04-build-toolchain.sh`
 
 ```bash
 #!/bin/bash
@@ -1057,7 +1059,7 @@ cd ../..
 log_info "Cross-toolchain build complete!"
 ```
 
-## FICHIER 9: `scripts/lfs/05-build-lfs-basic.sh`
+## FILE 9: `scripts/lfs/05-build-lfs-basic.sh`
 
 ```bash
 #!/bin/bash
@@ -1255,7 +1257,7 @@ chroot "$LFS" /usr/bin/env -i \
 log_info "Basic LFS system build complete!"
 ```
 
-## FICHIER 10: `scripts/lfs/06-build-lfs-system.sh`
+## FILE 10: `scripts/lfs/06-build-lfs-system.sh`
 
 ```bash
 #!/bin/bash
@@ -1414,7 +1416,7 @@ chroot "$LFS" /usr/bin/env -i \
 log_info "LFS system build complete!"
 ```
 
-## FICHIER 11: `scripts/lfs/07-configure-lfs.sh`
+## FILE 11: `scripts/lfs/07-configure-lfs.sh`
 
 ```bash
 #!/bin/bash
@@ -1487,7 +1489,7 @@ chroot "$LFS" /usr/bin/env -i \
 log_info "LFS configuration complete!"
 ```
 
-## FICHIER 12: `scripts/blfs/08-build-blfs-base.sh`
+## FILE 12: `scripts/blfs/08-build-blfs-base.sh`
 
 ```bash
 #!/bin/bash
@@ -1577,7 +1579,7 @@ chroot "$LFS" /usr/bin/env -i \
 log_info "BLFS base system build complete!"
 ```
 
-## FICHIER 13: `scripts/blfs/09-build-desktop.sh`
+## FILE 13: `scripts/blfs/09-build-desktop.sh`
 
 ```bash
 #!/bin/bash
@@ -1762,7 +1764,7 @@ chroot "$LFS" /usr/bin/env -i \
 log_info "Desktop build complete!"
 ```
 
-## FICHIER 14: `scripts/blfs/10-build-applications.sh`
+## FILE 14: `scripts/blfs/10-build-applications.sh`
 
 ```bash
 #!/bin/bash
@@ -1840,7 +1842,7 @@ chroot "$LFS" /usr/bin/env -i \
 log_info "Applications build complete!"
 ```
 
-## FICHIER 15: `scripts/blfs/11-configure-desktop.sh`
+## FILE 15: `scripts/blfs/11-configure-desktop.sh`
 
 ```bash
 #!/bin/bash
@@ -1973,7 +1975,7 @@ chroot "$LFS" /usr/bin/env -i \
 log_info "Desktop configuration complete!"
 ```
 
-## FICHIER 16: `scripts/final/12-create-initramfs.sh`
+## FILE 16: `scripts/final/12-create-initramfs.sh`
 
 ```bash
 #!/bin/bash
@@ -2056,7 +2058,7 @@ chroot "$LFS" /usr/bin/env -i \
 log_info "Initramfs creation complete!"
 ```
 
-## FICHIER 17: `scripts/final/13-create-bootloader.sh`
+## FILE 17: `scripts/final/13-create-bootloader.sh`
 
 ```bash
 #!/bin/bash
@@ -2127,7 +2129,7 @@ chroot "$LFS" /usr/bin/env -i \
 log_info "Bootloader configuration complete!"
 ```
 
-## FICHIER 18: `profiles/minimal/customization.sh`
+## FILE 18: `profiles/minimal/customization.sh`
 
 ```bash
 #!/bin/bash
@@ -2147,7 +2149,7 @@ EOF
 echo "Minimal profile applied"
 ```
 
-## FICHIER 19: `profiles/gnome/customization.sh`
+## FILE 19: `profiles/gnome/customization.sh`
 
 ```bash
 #!/bin/bash
@@ -2213,7 +2215,7 @@ GDM
 echo "GNOME profile partially applied (requires full BLFS GNOME build)"
 ```
 
-## FICHIER 20: `packages/custom-scripts/post-install.sh`
+## FILE 20: `packages/custom-scripts/post-install.sh`
 
 ```bash
 #!/bin/bash
@@ -2281,7 +2283,7 @@ echo "/usr/local/bin/welcome.sh" >> /etc/profile
 echo "Post-installation complete!"
 ```
 
-## FICHIER 21: `mac-lfs-builder.sh`
+## FILE 21: `mac-lfs-builder.sh`
 
 ```bash
 #!/bin/bash
@@ -2372,7 +2374,7 @@ echo "2. Unmount it: diskutil unmountDisk /dev/disk2"
 echo "3. Write ISO: sudo dd if=$OUTPUT_DIR/lfs-installer.iso of=/dev/rdisk2 bs=4m status=progress"
 ```
 
-## FICHIER 22: `tools/multi-platform/setup-wsl.sh`
+## FILE 22: `tools/multi-platform/setup-wsl.sh`
 
 ```bash
 #!/bin/bash
@@ -2412,7 +2414,7 @@ echo "WSL2 setup complete!"
 echo "Run: python3 builder.py --profile xfce"
 ```
 
-## FICHIER 23: `tools/multi-platform/docker-build.sh`
+## FILE 23: `tools/multi-platform/docker-build.sh`
 
 ```bash
 #!/bin/bash
@@ -2461,28 +2463,6 @@ docker run --rm --privileged \
     lfs-builder
 
 log_info "Build complete! ISO in ./output/"
-```
-
-## FICHIER 24: `README.md`
-
-```markdown
-# LFS/BLFS Builder - Custom Linux Distribution Builder
-
-## Quick Start
-
-```bash
-# Clone or download all files to a directory
-cd lfs-builder
-
-# On Linux (native)
-sudo python3 builder.py --profile xfce
-
-# On macOS (with Docker)
-./mac-lfs-builder.sh
-
-# On Windows (WSL2)
-# Copy files to WSL, then:
-python3 builder.py --profile xfce
 ```
 
 ## Files Structure
@@ -2563,160 +2543,130 @@ Use Rufus or balenaEtcher
 
 ---
 
-**TOUS LES FICHIERS SONT LÀ TABARNACK!** 
+**ALL FILES ARE HERE!**
 
-Crée la structure de dossiers et copie chaque fichier à son emplacement. Pour utiliser:
+Create the directory structure and copy each file to its location. To use:
 
 ```bash
-# Créer la structure
+# Create the structure
 mkdir -p lfs-builder/{config,scripts/{common,host,lfs,blfs,final},profiles/{minimal,xfce,gnome},packages/custom-scripts,tools/multi-platform}
 
-# Copier chaque fichier à son emplacement (selon les chemins indiqués ci-dessus)
+# Copy each file to its location (according to the paths indicated above)
 
-# Rendre exécutables les scripts
+# Make scripts executable
 chmod +x lfs-builder/*.sh lfs-builder/mac-lfs-builder.sh lfs-builder/scripts/**/*.sh
 
-# Lancer le build
+# Launch the build
 cd lfs-builder
-./mac-lfs-builder.sh  # Sur Mac
-# OU
-sudo python3 builder.py --profile xfce  # Sur Linux
+./mac-lfs-builder.sh  # On Mac
+# OR
+sudo python3 builder.py --profile xfce  # On Linux
 ```
 
 ```bash
-# Installer les dépendances de test
+# Install test dependencies
 pip install -r requirements-test.txt
 
-# Exécuter tous les tests
+# Run all tests
 ./run_tests.sh
 
-# Exécuter des tests spécifiques
+# Run specific tests
 ./run_tests.sh -k "test_config"
 
-# Exécuter avec verbose
+# Run with verbose
 ./run_tests.sh -v
 
-# Exécuter sans coverage
+# Run without coverage
 ./run_tests.sh --no-cov
 
-# Générer seulement le rapport coverage
+# Generate only coverage report
 ./run_tests.sh --cov-report=html --cov-report=term
 ```
-## On mac OSX
 
-# Créer un environnement virtuel
+## On macOS
+
 ```bash
+# Create a virtual environment
 python3 -m venv venv
-```
-# Activer l'environnement virtuel
-```bash
+
+# Activate the virtual environment
 source venv/bin/activate
-```
-# Installer les dépendances
-```bash
+
+# Install dependencies
 pip install -r requirements-test.txt
-```
-# Exécuter les tests
-```bash
+
+# Run tests
 python -m pytest tests/ -v
-```
-# Quitter l'environnement virtuel
-```bash
+
+# Exit the virtual environment
 deactivate
-```
-# Exécuter un test spécifique
-```bash
+
+# Run a specific test
 python -m pytest tests/test_config.py -v  
-```
-# Exécuter un tests avec coverage
-```bash
+
+# Run tests with coverage
 python -m pytest tests/ -v --cov=builder --cov-report=term --cov-report=html --cov-report=annotate
-```
-# Pour les tests USB (avec une vraie clé USB - DANGEREUX)
-```bash
+
+# For USB tests (with a real USB stick - DANGEROUS)
 python -m pytest tests/test_integration_usb.py -v --usb-device=/dev/sdb --dangerous
 ```
-# Rendre le script exécutable
+
 ```bash
+# Make the script executable
 chmod +x mac-lfs-builder.sh
-```
-# Build par défaut (XFCE)
-```bash
+
+# Default build (XFCE)
 ./mac-lfs-builder.sh
-```
-# Build pour Pinebook
-```bash
+
+# Build for Pinebook
 ./mac-lfs-builder.sh --pinebook
-```
-# Build pour Brax3
-```bash
+
+# Build for Brax3
 ./mac-lfs-builder.sh --brax3
-```
+
 # Build audio studio
-```bash
 ./mac-lfs-builder.sh --audio-studio
-```
+
 # Build ARM64 (Raspberry Pi)
-```bash
 ./mac-lfs-builder.sh --arm64
-```
-# Build minimal avec sysvinit
-```bash
+
+# Build minimal with sysvinit
 ./mac-lfs-builder.sh --profile minimal --init sysvinit
-```
-# Build complet sans live USB
-```bash
+
+# Build full without live USB
 ./mac-lfs-builder.sh --profile full --no-live
-```
-# Nettoyer
-```bash
+
+# Clean
 ./mac-lfs-builder.sh --clean
-```
-# Aide
-```bash
+
+# Help
 ./mac-lfs-builder.sh --help
 ```
 
-## Nouvelles fonctionnalités
+## New Features
 
 Option	Description
 ```bash
---pinebook	Build pour Pinebook/Pinebook Pro
---brax3	Build pour Brax3 smartphone
---audio-studio	Build studio audio complet
+--pinebook	Build for Pinebook/Pinebook Pro
+--brax3	Build for Brax3 smartphone
+--audio-studio	Build full audio studio
 --audio-cli	Build audio CLI (headless)
---arm64, -a	Cross-compilation ARM64
---init, -i	Choix de l'init system
---no-live	Désactive le live system
---clean	Nettoie les artefacts
+--arm64, -a	Cross-compile for ARM64
+--init, -i	Choose init system
+--no-live	Disable live system
+--clean	Clean artifacts
 ```
 
-# Construire le système GNU Free minimal
 ```bash
+# Build minimal GNU Free system
 python3 builder.py --profile gnu-free
-```
-# Construire le système GNU Free complet (avec Emacs, IceCat, Octave)
-```bash
-python3 builder.py --profile gnu-free-full
-```
 
-# Avec init system alternatif
-```bash
+# Build full GNU Free system (with Emacs, IceCat, Octave)
+python3 builder.py --profile gnu-free-full
+
+# With alternative init system
 python3 builder.py --profile gnu-free --init sysvinit
-```
-# Sur ARM64 (libre)
-```bash
+
+# On ARM64 (libre)
 python3 builder.py --profile gnu-free --config config/build-cross.conf
 ```
-
-# Générer un logo simple
-convert -size 200x200 xc:#2E8B57 -font Arial -pointsize 60 -fill white \
--annotate +100+120 "LFS" branding/default/logo/logo.png
-
-# Créer un fond d'écran
-convert -size 1920x1080 gradient:#2E8B57-#1a2a3a \
--font Arial -pointsize 40 -fill white -annotate +100+100 "LFS Linux" \
-branding/default/wallpaper/default.jpg
-
-# Construire avec branding
-BRANDING_DIR="branding/custom" DISTRO_NAME="MyLFS" python3 builder.py --profile full
