@@ -62,13 +62,28 @@ tar -xf "$SOURCES_HOST/$KERNEL_TARBALL"
 KERNEL_DIR=$(tar -tf "$SOURCES_HOST/$KERNEL_TARBALL" | head -1 | cut -d/ -f1)
 cd "$KERNEL_DIR"
 
-# Force correct compiler
-MAKE_CMD="make ARCH=$MAKE_ARCH CC=gcc HOSTCC=gcc CXX=g++ HOSTCXX=g++ LD=ld HOSTLD=ld AR=ar HOSTAR=ar"
+# Force ALL tools – override any inherited false* variables
+MAKE_CMD="make ARCH=$MAKE_ARCH"
+MAKE_CMD="$MAKE_CMD CC=gcc HOSTCC=gcc CXX=g++ HOSTCXX=g++"
+MAKE_CMD="$MAKE_CMD LD=ld HOSTLD=ld"
+MAKE_CMD="$MAKE_CMD AR=ar HOSTAR=ar"
+MAKE_CMD="$MAKE_CMD NM=nm HOSTNM=nm"
+MAKE_CMD="$MAKE_CMD READELF=readelf HOSTREADELF=readelf"
+MAKE_CMD="$MAKE_CMD OBJCOPY=objcopy HOSTOBJCOPY=objcopy"
+MAKE_CMD="$MAKE_CMD OBJDUMP=objdump HOSTOBJDUMP=objdump"
+MAKE_CMD="$MAKE_CMD STRIP=strip HOSTSTRIP=strip"
+MAKE_CMD="$MAKE_CMD RANLIB=ranlib HOSTRANLIB=ranlib"
+
+log_info "Cleaning source tree (make mrproper)"
+$MAKE_CMD mrproper
 
 log_info "Configuring kernel (defconfig)"
 $MAKE_CMD defconfig
 
-log_info "Compiling kernel (make -j$(nproc))"
+log_info "Resolving new config symbols with olddefconfig"
+$MAKE_CMD olddefconfig
+
+log_info "Compiling kernel (using -j$(nproc))"
 $MAKE_CMD ${CROSS_COMPILE:+CROSS_COMPILE="$CROSS_COMPILE"} -j$(nproc)
 
 log_info "Installing modules to $LFS"
@@ -76,18 +91,27 @@ $MAKE_CMD ${CROSS_COMPILE:+CROSS_COMPILE="$CROSS_COMPILE"} modules_install INSTA
 
 log_info "Copying kernel image and System.map to $LFS/boot"
 mkdir -p "$LFS/boot"
-if [ -f "arch/$MAKE_ARCH/boot/bzImage" ]; then
-    cp "arch/$MAKE_ARCH/boot/bzImage" "$LFS/boot/vmlinuz"
+
+# Determine the correct kernel image path
+KERNEL_IMAGE=""
+if [ -f "arch/x86/boot/bzImage" ]; then
+    KERNEL_IMAGE="arch/x86/boot/bzImage"
+elif [ -f "arch/$MAKE_ARCH/boot/bzImage" ]; then
+    KERNEL_IMAGE="arch/$MAKE_ARCH/boot/bzImage"
 elif [ -f "arch/$MAKE_ARCH/boot/Image" ]; then
-    cp "arch/$MAKE_ARCH/boot/Image" "$LFS/boot/vmlinuz"
+    KERNEL_IMAGE="arch/$MAKE_ARCH/boot/Image"
 elif [ -f "vmlinuz" ]; then
-    cp vmlinuz "$LFS/boot/vmlinuz"
+    KERNEL_IMAGE="vmlinuz"
 elif [ -f "arch/$MAKE_ARCH/boot/zImage" ]; then
-    cp "arch/$MAKE_ARCH/boot/zImage" "$LFS/boot/vmlinuz"
+    KERNEL_IMAGE="arch/$MAKE_ARCH/boot/zImage"
 else
     log_error "No kernel image found"
     exit 1
 fi
+
+cp -v "$KERNEL_IMAGE" "$LFS/boot/vmlinuz-${KERNEL_VERSION}"
+# Create symlink for convenience
+ln -sf "vmlinuz-${KERNEL_VERSION}" "$LFS/boot/vmlinuz"
 cp System.map "$LFS/boot/System.map"
 cp .config "$LFS/boot/config-${KERNEL_VERSION}"
 
