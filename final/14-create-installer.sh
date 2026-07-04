@@ -16,18 +16,22 @@ echo "[INFO] Creating bootable ISO from $LFS"
 echo "[INFO] Output: $INSTALLER_ISO"
 
 # ---------------------------------------------------------------------------
-# Check required tools
+# Check required tools and files
 # ---------------------------------------------------------------------------
 check_tool() {
     if ! command -v "$1" >/dev/null 2>&1; then
-        echo "[ERROR] $1 not found. Please install it."
-        echo "  Ubuntu: apt-get install xorriso squashfs-tools isolinux"
+        echo "[ERROR] $1 not found. Please ensure it is installed in the container."
         exit 1
     fi
 }
 check_tool xorriso
 check_tool mksquashfs
-check_tool isolinux
+
+# Check isolinux files (not a command)
+if [ ! -f /usr/lib/ISOLINUX/isolinux.bin ] && [ ! -f /usr/lib/ISOLINUX/isohdpfx.bin ]; then
+    echo "[ERROR] isolinux files not found. Please install the 'isolinux' package."
+    exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Locate kernel and initramfs
@@ -105,6 +109,14 @@ if [ ! -f "$ISOHDPFX" ]; then
         echo "[WARNING] isohdpfx.bin not found; BIOS hybrid boot may not work"
         ISOHDPFX=""
     fi
+fi
+
+# Copy isolinux.bin to ISO root
+if [ -f /usr/lib/ISOLINUX/isolinux.bin ]; then
+    cp /usr/lib/ISOLINUX/isolinux.bin "$ISO_ROOT/isolinux/"
+else
+    echo "[ERROR] isolinux.bin not found"
+    exit 1
 fi
 
 xorriso -as mkisofs \
