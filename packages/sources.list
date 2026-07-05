@@ -1,5 +1,5 @@
 # LFS Sources - Automatically generated from official wget-lists
-# Generated: 2026-07-05T17:03:29.923007
+# Generated: 2026-07-05T18:40:20.529816
 # DO NOT EDIT MANUALLY – changes will be overwritten
 
 http://archive.xfce.org/src/xfce/xfce4-dev-tools/4.20/xfce4-dev-tools-4.20.0.tar.bz2
@@ -190,9 +190,6 @@ https://distfiles.adelielinux.org/source/a52dec/a52dec-0.8.0.tar.gz
 https://distfiles.ariadne.space/pkgconf/pkgconf-2.5.1.tar.xz
 https://distfiles.audacious-media-player.org/audacious-4.5.tar.bz2
 https://distfiles.audacious-media-player.org/audacious-plugins-4.5.tar.bz2
-https://docbook.org/sgml/3.1/docbk31.zip
-https://docbook.org/sgml/4.5/docbook-4.5.zip
-https://docbook.org/xml/4.5/docbook-xml-4.5.zip
 https://docbook.org/xml/5.0/docbook-5.0.zip
 https://dotat.at/prog/unifdef/unifdef-2.12.tar.gz
 https://download.documentfoundation.org/libreoffice/src/25.8.1/libreoffice-25.8.1.1.tar.xz
@@ -513,6 +510,7 @@ https://files.pythonhosted.org/packages/source/t/trove_classifiers/trove_classif
 https://files.pythonhosted.org/packages/source/t/typogrify/typogrify-2.1.0.tar.gz
 https://files.pythonhosted.org/packages/source/u/urllib3/urllib3-2.5.0.tar.gz
 https://files.pythonhosted.org/packages/source/w/webencodings/webencodings-0.5.1.tar.gz
+https://ftp.exim.org/pub/exim/exim4/exim-4.98.2.tar.xz
 https://ftp.exim.org/pub/exim/exim4/exim-4.99.4.tar.gz
 https://ftp.gnu.org/gnu/aspell/aspell-0.60.8.1.tar.gz
 https://ftp.gnu.org/gnu/aspell/dict/en/aspell6-en-2020.12.07-0.tar.bz2
@@ -861,7 +859,6 @@ https://imagemagick.org/archive/releases/ImageMagick-7.1.2-25.tar.xz
 https://inkscape.org/gallery/item/56344/inkscape-1.4.2.tar.xz
 https://invisible-mirror.net/archives/luit/luit-20240910.tgz
 https://invisible-mirror.net/archives/lynx/tarballs/lynx2.9.2.tar.bz2
-https://invisible-mirror.net/archives/ncurses/current/ncurses-6.6-20260704.tgz.asc
 https://invisible-mirror.net/archives/xterm/xterm-401.tgz
 https://jfs.sourceforge.net/project/pub/jfsutils-1.1.15.tar.gz
 https://kerberos.org/dist/krb5/1.22/krb5-1.22.1.tar.gz
@@ -883,7 +880,6 @@ https://pagure.io/libaio/archive/libaio-0.3.113/libaio-0.3.113.tar.gz
 https://pagure.io/xmlto/archive/0.0.29/xmlto-0.0.29.tar.gz
 https://people.freedesktop.org/~mccann/dist/sound-theme-freedesktop-0.8.tar.bz2
 https://people.freedesktop.org/~svu/libxklavier-5.4.tar.bz2
-https://people.redhat.com/~dhowells/keyutils/keyutils-1.6.tar.bz2
 https://pm-utils.freedesktop.org/releases/pm-utils-1.4.1.tar.gz
 https://poppler.freedesktop.org/poppler-25.08.0.tar.xz
 https://poppler.freedesktop.org/poppler-data-0.4.12.tar.gz
@@ -1007,7 +1003,6 @@ https://www.gnupg.org/ftp/gcrypt/npth/npth-1.8.tar.bz2
 https://www.gnupg.org/ftp/gcrypt/pinentry/pinentry-1.3.2.tar.bz2
 https://www.greenwoodsoftware.com/less/less-679.tar.gz
 https://www.iana.org/time-zones/repository/releases/tzdata2025b.tar.gz
-https://www.imagemagick.org/archive/releases/ImageMagick-7.1.2-1.tar.xz
 https://www.jedsoft.org/releases/slang/slang-2.3.3.tar.bz2
 https://www.jwz.org/xscreensaver/xscreensaver-6.12.tar.gz
 https://www.kernel.org/pub/linux/bluetooth/bluez-5.83.tar.xz
@@ -1131,7 +1126,6 @@ https://www.samba.org/ftp/linux-cifs/cifs-utils/cifs-utils-7.4.tar.bz2
 https://www.samba.org/ftp/rsync/src/rsync-3.4.1.tar.gz
 https://www.samba.org/ftp/talloc/talloc-2.4.3.tar.gz
 https://www.sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
-https://www.stunnel.org/downloads/archive/5.x/stunnel-5.75.tar.gz
 https://www.stunnel.org/downloads/stunnel-5.75.tar.gz
 https://www.sudo.ws/dist/sudo-1.9.17p2.tar.gz
 https://www.surina.net/soundtouch/soundtouch-2.4.0.tar.gz
@@ -1156,8 +1150,6 @@ https://www.x.org/pub/individual/lib/libxcvt-0.1.3.tar.xz
 https://www.x.org/pub/individual/util/util-macros-1.20.2.tar.xz
 https://www.x.org/pub/individual/xserver/xorg-server-21.1.18.tar.xz
 https://www.x.org/pub/individual/xserver/xwayland-24.1.8.tar.xz
-https://www.zsh.org/pub/zsh-5.9.1.tar.xz
-https://www.zsh.org/pub/zsh-5.9.tar.xz
 https://xcb.freedesktop.org/dist/xcb-util-0.4.1.tar.xz
 https://xorg.freedesktop.org/archive/individual/lib/libxcb-1.17.0.tar.xz
 https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-1.17.0.tar.xz
