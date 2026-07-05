@@ -114,10 +114,9 @@ cd /sources
 INIT_SYSTEM="${1:-sysvinit}"
 
 compile_package() {
-    local pattern=$1
-    local archive=$(ls -1 $pattern 2>/dev/null | head -n1)
-    if [ -z "$archive" ]; then
-        echo "WARNING: No source found for $pattern"
+    local archive=$1
+    if [ ! -f "$archive" ]; then
+        echo "WARNING: No source found for $archive"
         return 1
     fi
     local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
