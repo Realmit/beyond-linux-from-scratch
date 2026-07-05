@@ -83,10 +83,9 @@ set -e
 cd /sources
 
 compile_package() {
-    local pattern=$1
-    local archive=$(ls -1 $pattern 2>/dev/null | head -n1)
-    if [ -z "$archive" ]; then
-        echo "WARNING: No source found for $pattern"
+    local archive=$1
+    if [ ! -f "$archive" ]; then
+        echo "WARNING: No source found for $archive"
         return 1
     fi
     local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
@@ -105,11 +104,13 @@ compile_package() {
     echo "=== $dir done ==="
 }
 
-for pkg in "firefox-*.tar.xz" "firefox-*.tar.gz" \
-           "libreoffice-*.tar.xz" "libreoffice-*.tar.gz" \
-           "gimp-*.tar.xz" "gimp-*.tar.gz" \
-           "vlc-*.tar.xz" "vlc-*.tar.gz"; do
-    compile_package "$pkg" || true
+for pattern in firefox-*.tar.xz firefox-*.tar.gz libreoffice-*.tar.xz libreoffice-*.tar.gz gimp-*.tar.xz gimp-*.tar.gz vlc-*.tar.xz vlc-*.tar.gz; do
+    for archive in $pattern; do
+        if [ -f "$archive" ]; then
+            compile_package "$archive" || true
+            break
+        fi
+    done
 done
 
 echo "Applications installation complete."
