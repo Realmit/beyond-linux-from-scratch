@@ -22,9 +22,6 @@ https://ftp.postfix.org/postfix-release/official/postfix-3.10.4.tar.gz
 # keyutils
 https://people.redhat.com/~dhowells/keyutils/keyutils-1.6.3.tar.gz
 
-# exim (updated version, adjust if you need exact 4.98.2)
-https://ftp.exim.org/pub/exim/exim4/exim-4.98.3.tar.xz
-
 # ncurses (GNU mirror)
 https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz
 
@@ -48,3 +45,5 @@ https://docbook.org/xml/4.5/docbook-xml-4.5.zip
 
 # zsh (updated version)
 https://www.zsh.org/pub/zsh-5.9.1.tar.xz
+
+https://ftp.exim.org/pub/exim/exim4/exim-4.99.4.tar.gz
