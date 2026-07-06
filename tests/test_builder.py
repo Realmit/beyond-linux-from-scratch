@@ -299,3 +299,189 @@ class TestLFSBuilder:
 
             assert result is False
             mock_logger.error.assert_called()
+
+    def test_usb_write_iso_with_mounted_partitions(self, mocker):
+        from builder import USBWriter
+        import platform
+
+        mocker.patch('platform.system', return_value='Linux')
+
+        mounts_content = (
+            "/dev/sdb1 /boot ext4 rw,relatime 0 0\n"
+            "/dev/sdb2 / ext4 rw,relatime 0 0\n"
+            "/dev/sda1 /home ext4 rw,relatime 0 0\n"
+        )
+        mocker.patch('builtins.open', mocker.mock_open(read_data=mounts_content))
+        mock_run = mocker.patch('subprocess.run')
+        mocker.patch('builtins.input', return_value='YES')
+
+        iso_path = Path('/tmp/test.iso')
+        iso_path.touch()
+
+        USBWriter.write_iso(iso_path, '/dev/sdb', mocker.Mock())
+
+        # One umount call for both partitions of /dev/sdb
+        mock_run.assert_any_call(
+            ['sudo', 'umount', '/dev/sdb1', '/dev/sdb2'],
+            capture_output=True, text=True
+        )
+        # dd call should also be present
+        mock_run.assert_any_call(
+            ['sudo', 'dd', f'if={iso_path}', 'of=/dev/sdb', 'bs=4M', 'status=progress', 'conv=fsync'],
+            check=True
+        )
+
+    def test_usb_write_iso_proc_mounts_unreadable(self, mocker):
+        from builder import USBWriter
+        import platform
+
+        mocker.patch('platform.system', return_value='Linux')
+        mocker.patch('builtins.open', side_effect=IOError("Permission denied"))
+        mock_run = mocker.patch('subprocess.run')
+        mocker.patch('builtins.input', return_value='YES')
+
+        iso_path = Path('/tmp/test.iso')
+        iso_path.touch()
+
+        USBWriter.write_iso(iso_path, '/dev/sdb', mocker.Mock())
+
+        # dd must have been called (eject may be last)
+        mock_run.assert_any_call(
+            ['sudo', 'dd', f'if={iso_path}', 'of=/dev/sdb', 'bs=4M', 'status=progress', 'conv=fsync'],
+            check=True
+        )
+
+    def test_main_profile_info_invalid(self, monkeypatch, capsys):
+        """--profile-info avec un nom inconnu doit afficher une erreur et quitter."""
+        import sys
+        from builder import main
+
+        test_args = ['builder.py', '--profile-info', 'inexistant']
+        monkeypatch.setattr(sys, 'argv', test_args)
+
+        with pytest.raises(SystemExit) as exc:
+            main()
+
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Error: Unknown profile: inexistant" in captured.err
+
+    def test_update_sources_list_no_repos(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)   # ← isolate
+        from builder import LFSBuilder, LFSConfig
+
+        output_dir = tmp_path / 'lfs-build'
+        output_dir.mkdir()
+        config_file = tmp_path / 'config.json'
+        config = LFSConfig(config_file)
+        config.set('repositories', [])
+
+        builder = LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+        builder.config = config
+
+        result = builder._update_sources_list()
+        assert result is False
+
+        sources_file = Path('packages/sources.list')
+        assert not sources_file.exists()
+
+    def test_update_sources_list_all_fetch_fail_no_file(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)   # ← isolate
+        from builder import LFSBuilder, LFSConfig
+        import urllib.request
+
+        output_dir = tmp_path / 'lfs-build'
+        output_dir.mkdir()
+        config_file = tmp_path / 'config.json'
+        config = LFSConfig(config_file)
+        config.set('repositories', ['https://fail1.com', 'https://fail2.com'])
+
+        builder = LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+        builder.config = config
+
+        # Create packages directory (needed for custom file check, but we don't create it)
+        # Ensure no custom file exists
+        with monkeypatch.context() as m:
+            m.setattr('urllib.request.urlopen', lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Network error")))
+            result = builder._update_sources_list()
+
+        assert result is False
+        sources_file = Path('packages/sources.list')
+        assert not sources_file.exists()
+
+    def test_update_sources_list_with_custom_only(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)   # ← isolate
+        from builder import LFSBuilder, LFSConfig
+        import urllib.request
+
+        output_dir = tmp_path / 'lfs-build'
+        output_dir.mkdir()
+        config_file = tmp_path / 'config.json'
+        config = LFSConfig(config_file)
+        config.set('repositories', ['https://fail.com'])
+
+        builder = LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+        builder.config = config
+
+        # Create packages/ directory and custom-sources.list
+        packages_dir = tmp_path / 'packages'
+        packages_dir.mkdir()
+        custom_file = packages_dir / 'custom-sources.list'
+        custom_file.write_text("https://custom.url/src.tar.gz\n")
+
+        with monkeypatch.context() as m:
+            m.setattr('urllib.request.urlopen', lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Network error")))
+            result = builder._update_sources_list()
+
+        assert result is True
+        sources_file = packages_dir / 'sources.list'
+        assert sources_file.exists()
+        content = sources_file.read_text()
+        assert "https://custom.url/src.tar.gz" in content
+
+    def test_source_downloader_download_retries_zero(self, sources_dir, mock_logger):
+        """Couvre le return False final de download lorsque retries=0."""
+        from builder import SourceDownloader
+        from unittest.mock import patch
+
+        downloader = SourceDownloader(sources_dir, mock_logger)
+        with patch('urllib.request.urlretrieve', side_effect=Exception("Mock error")):
+            result = downloader.download('http://example.com/file', 'file', retries=0)
+            assert result is False
+
+    def test_script_executor_find_script_fallback(self, tmp_path):
+        """
+        Cover the fallback in find_script when the script is found only by its base name.
+        """
+        from builder import ScriptExecutor
+        import os
+        import logging
+
+        old_cwd = os.getcwd()
+        os.chdir(tmp_path)
+        try:
+            # Create a script in the current directory
+            script_name = "myscript.sh"
+            script_path = tmp_path / script_name
+            script_path.write_text("#!/bin/bash\necho hello\n")
+            script_path.chmod(0o755)
+
+            executor = ScriptExecutor(env={}, output_dir=tmp_path, logger=logging.getLogger())
+
+            # Call with a path that does not exist directly, but the base name exists.
+            # This will skip the first two checks and hit the fallback (line 734).
+            found = executor.find_script("subdir/myscript.sh")
+            assert found == Path(script_name)  # Should return a Path with just the base name
+
+        finally:
+            os.chdir(old_cwd)
+
+    def test_main_entry_point(self):
+        """Couvre la ligne 1790 (if __name__ == '__main__') en exécutant builder.py en sous-processus."""
+        import subprocess
+        import sys
+        from pathlib import Path
+        script = Path(__file__).parent.parent / 'builder.py'
+        result = subprocess.run([sys.executable, str(script), '--help'], capture_output=True, text=True)
+        assert result.returncode == 0
+        assert 'LFS/BLFS Builder' in result.stdout
