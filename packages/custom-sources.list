@@ -1,4 +1,5 @@
 # Corrected URLs for failed downloads – add to packages/custom-sources.list
+# Fallback mirrors for packages that failed to download from ftp.gnu.org
 
 https://dist.torproject.org/tor-0.4.9.7.tar.gz
 https://git.zx2c4.com/wireguard-tools/snapshot/wireguard-tools-1.0.20210914.tar.xz
@@ -32,9 +33,8 @@ https://archive.mesa3d.org/mesa-25.1.8.tar.xz
 https://docbook.org/sgml/3.1/docbk31.zip
 
 # ImageMagick (use newer stable version)
-https://imagemagick.org/archive/releases/ImageMagick-7.1.2-25.tar.xz
 
-https://imagemagick.org/download/ImageMagick 7.1.2-27.tar.xz
+https://download.imagemagick.org/archive/releases/ImageMagick-7.1.2-27.tar.gz
 
 # docbook-4.5
 https://docbook.org/sgml/4.5/docbook-4.5.zip
@@ -71,8 +71,6 @@ https://ftp.gnu.org/gnu/grep/grep-3.12.tar.gz
 https://ftp.gnu.org/gnu/groff/groff-1.24.1.tar.gz
 
 https://ftp.gnu.org/gnu/grub/grub-2.14.tar.gz
-
-https://ftp.gnu.org/gnu/gsl/gsl-2.8.tar.gz
 
 https://ftp.gnu.org/gnu/gsl/gsl-2.8.tar.gz
 
