@@ -1,36 +1,39 @@
 #!/usr/bin/env bash
-# make-release.sh – Crée une release du projet LFS/BLFS Builder
-# Utilisation : ./make-release.sh [--no-tag] [--no-tar]
+# make-release.sh – Prepare a release of the LFS/BLFS Builder project
+# Usage: ./make-release.sh [--no-tag] [--no-tar] [--skip-tests] [--skip-clean]
 
 set -e
 
-# ---------- Couleurs ----------
+# ---------- Colors ----------
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# ---------- Aide ----------
+# ---------- Help ----------
 show_help() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
 Options:
-  --no-tag       Ne pas créer le tag Git (seulement le tarball)
-  --no-tar       Ne pas créer le tarball (seulement le tag)
-  --help         Affiche cette aide
+  --no-tag       Do not create the Git tag (only the tarball)
+  --no-tar       Do not create the tarball (only the tag)
+  --skip-tests   Skip running tests before release
+  --skip-clean   Skip cleaning build artifacts before release
+  --help         Show this help
 
 Description:
-  Ce script prépare une release du projet :
-    - Vérifie que le dépôt Git est propre
-    - Extrait la version depuis builder.py
-    - Demande confirmation
-    - Crée un tarball du code source
-    - Crée un tag Git (optionnel)
-    - Affiche les instructions pour pousser et publier
+  This script prepares a project release:
+    - Checks that the Git repository is clean (or offers to commit changes)
+    - Extracts the version from builder.py
+    - Optionally runs tests (if tools/run-tests.sh exists)
+    - Optionally cleans build artifacts (if tools/clean-build.sh exists)
+    - Creates a tarball of the source code
+    - Creates a Git tag (optional)
+    - Displays instructions for pushing and publishing
 
-La version est lue dans builder.py (__version__ = "X.Y.Z").
+The version is read from builder.py (__version__ = "X.Y.Z").
 EOF
     exit 0
 }
@@ -38,89 +41,112 @@ EOF
 # ---------- Parse arguments ----------
 CREATE_TAG=true
 CREATE_TAR=true
+RUN_TESTS=true
+RUN_CLEAN=true
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --no-tag)  CREATE_TAG=false ;;
-        --no-tar)  CREATE_TAR=false ;;
-        --help)    show_help ;;
-        *)         echo -e "${RED}Option inconnue : $1${NC}"; show_help ;;
+        --no-tag)      CREATE_TAG=false ;;
+        --no-tar)      CREATE_TAR=false ;;
+        --skip-tests)  RUN_TESTS=false ;;
+        --skip-clean)  RUN_CLEAN=false ;;
+        --help)        show_help ;;
+        *)             echo -e "${RED}Unknown option: $1${NC}"; show_help ;;
     esac
     shift
 done
 
-# ---------- Vérifications ----------
-# Être dans le répertoire du script
+# ---------- Checks ----------
+# Go to the script's directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Vérifier que c'est un dépôt Git
+# Verify it's a Git repository
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
-    echo -e "${RED}Erreur : ce répertoire n'est pas un dépôt Git.${NC}"
+    echo -e "${RED}Error: this directory is not a Git repository.${NC}"
     exit 1
 fi
 
-# Vérifier qu'il n'y a pas de modifications non commitées
+# Check for uncommitted changes
 if ! git diff --quiet || ! git diff --cached --quiet; then
-    echo -e "${YELLOW}Attention : il y a des modifications non commitées.${NC}"
-    read -p "Voulez-vous les commiter maintenant ? (y/N) " -n 1 -r
+    echo -e "${YELLOW}Warning: there are uncommitted changes.${NC}"
+    read -p "Do you want to commit them now? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo -e "${BLUE}Commit en cours...${NC}"
+        echo -e "${BLUE}Committing...${NC}"
         git add -A
-        git commit -m "WIP avant release"
+        git commit -m "WIP before release"
     else
-        echo -e "${RED}Abandon : les modifications doivent être commitées.${NC}"
+        echo -e "${RED}Aborting: changes must be committed.${NC}"
         exit 1
     fi
 fi
 
-# Vérifier qu'il n'y a pas de tags en attente de push ? On ne bloque pas.
+# ---------- Run tests ----------
+if [ "$RUN_TESTS" = true ] && [ -f "./tools/run-tests.sh" ]; then
+    echo -e "${BLUE}Running tests...${NC}"
+    if ! ./tools/run-tests.sh; then
+        echo -e "${RED}Tests failed. Aborting release.${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}Tests passed.${NC}"
+elif [ "$RUN_TESTS" = true ]; then
+    echo -e "${YELLOW}No tests script found (tools/run-tests.sh). Skipping.${NC}"
+fi
 
-# ---------- Extraire la version depuis builder.py ----------
+# ---------- Clean build artifacts ----------
+if [ "$RUN_CLEAN" = true ] && [ -f "./tools/clean-build.sh" ]; then
+    echo -e "${BLUE}Cleaning build artifacts...${NC}"
+    ./tools/clean-build.sh
+    echo -e "${GREEN}Cleanup done.${NC}"
+elif [ "$RUN_CLEAN" = true ]; then
+    echo -e "${YELLOW}No clean script found (tools/clean-build.sh). Skipping.${NC}"
+fi
+
+# ---------- Extract version from builder.py ----------
 VERSION_FILE="builder.py"
 if [ ! -f "$VERSION_FILE" ]; then
-    echo -e "${RED}Erreur : $VERSION_FILE introuvable.${NC}"
+    echo -e "${RED}Error: $VERSION_FILE not found.${NC}"
     exit 1
 fi
 
 VERSION=$(grep -E '^__version__\s*=\s*"[0-9]+\.[0-9]+\.[0-9]+"' "$VERSION_FILE" | sed -E 's/.*"([0-9]+\.[0-9]+\.[0-9]+)".*/\1/')
 if [ -z "$VERSION" ]; then
-    echo -e "${RED}Erreur : impossible d'extraire la version depuis $VERSION_FILE.${NC}"
-    echo "Recherchez une ligne comme : __version__ = \"X.Y.Z\""
+    echo -e "${RED}Error: unable to extract version from $VERSION_FILE.${NC}"
+    echo "Look for a line like: __version__ = \"X.Y.Z\""
     exit 1
 fi
 
-echo -e "${GREEN}Version détectée : ${VERSION}${NC}"
+echo -e "${GREEN}Detected version: ${VERSION}${NC}"
 
-# ---------- Vérifier que le tag n'existe pas déjà ----------
+# ---------- Check if tag already exists ----------
 if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-    echo -e "${YELLOW}Le tag v$VERSION existe déjà.${NC}"
-    read -p "Voulez-vous le supprimer et le recréer ? (y/N) " -n 1 -r
+    echo -e "${YELLOW}Tag v$VERSION already exists.${NC}"
+    read -p "Do you want to delete it and recreate it? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         git tag -d "v$VERSION"
-        echo -e "${GREEN}Tag supprimé.${NC}"
+        echo -e "${GREEN}Tag deleted.${NC}"
     else
-        echo -e "${RED}Abandon.${NC}"
+        echo -e "${RED}Aborting.${NC}"
         exit 1
     fi
 fi
 
-# ---------- Résumé et confirmation ----------
-echo -e "${BLUE}Préparation de la release v${VERSION}${NC}"
-echo "  - Créer un tag ?     : $([ "$CREATE_TAG" = true ] && echo "OUI" || echo "NON")"
-echo "  - Créer un tarball ? : $([ "$CREATE_TAR" = true ] && echo "OUI" || echo "NON")"
+# ---------- Summary and confirmation ----------
+echo -e "${BLUE}Preparing release v${VERSION}${NC}"
+echo "  - Create tag ?     : $([ "$CREATE_TAG" = true ] && echo "YES" || echo "NO")"
+echo "  - Create tarball ? : $([ "$CREATE_TAR" = true ] && echo "YES" || echo "NO")"
 echo
 
-read -p "Continuer ? (y/N) " -n 1 -r
+read -p "Continue? (y/N) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo -e "${RED}Abandon.${NC}"
+    echo -e "${RED}Aborting.${NC}"
     exit 1
 fi
 
-# ---------- Créer le tarball ----------
+# ---------- Create tarball ----------
 if [ "$CREATE_TAR" = true ]; then
     TAR_NAME="lfs-builder-${VERSION}.tar.gz"
     EXCLUDE=(
@@ -141,36 +167,36 @@ if [ "$CREATE_TAR" = true ]; then
         --exclude='*.qcow2'
         --exclude='.DS_Store'
     )
-    echo -e "${BLUE}Création du tarball $TAR_NAME...${NC}"
+    echo -e "${BLUE}Creating tarball $TAR_NAME...${NC}"
     tar -czf "$TAR_NAME" "${EXCLUDE[@]}" .
-    echo -e "${GREEN}Tarball créé : $TAR_NAME${NC}"
+    echo -e "${GREEN}Tarball created: $TAR_NAME${NC}"
 fi
 
-# ---------- Créer le tag ----------
+# ---------- Create tag ----------
 if [ "$CREATE_TAG" = true ]; then
-    echo -e "${BLUE}Création du tag v$VERSION...${NC}"
+    echo -e "${BLUE}Creating tag v$VERSION...${NC}"
     git tag -a "v$VERSION" -m "Release v$VERSION"
-    echo -e "${GREEN}Tag créé.${NC}"
+    echo -e "${GREEN}Tag created.${NC}"
 fi
 
 # ---------- Instructions ----------
 echo
-echo -e "${GREEN}=== Release v$VERSION préparée avec succès ! ===${NC}"
+echo -e "${GREEN}=== Release v$VERSION prepared successfully! ===${NC}"
 echo
-echo "Prochaines étapes :"
+echo "Next steps:"
 if [ "$CREATE_TAG" = true ]; then
-    echo "  1. Pousser le tag :"
+    echo "  1. Push the tag:"
     echo "     git push origin v$VERSION"
 fi
 if [ "$CREATE_TAR" = true ]; then
-    echo "  2. Publier le tarball :"
-    echo "     - Créer une release sur GitHub avec le tag v$VERSION"
-    echo "     - Uploader $TAR_NAME comme asset"
-    echo "  3. (Optionnel) Vérifier le contenu du tarball :"
+    echo "  2. Publish the tarball:"
+    echo "     - Create a GitHub release with the tag v$VERSION"
+    echo "     - Upload $TAR_NAME as an asset"
+    echo "  3. (Optional) Verify the tarball content:"
     echo "     tar -tzf $TAR_NAME | head -20"
 fi
 echo
-echo "Pour créer une release GitHub en ligne de commande :"
+echo "To create a GitHub release from the command line:"
 echo "  gh release create v$VERSION $TAR_NAME --title \"LFS Builder v$VERSION\" --notes \"Release notes...\""
 echo
-echo -e "${BLUE}Bonne release !${NC}"
+echo -e "${BLUE}Happy releasing!${NC}"
