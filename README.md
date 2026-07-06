@@ -1,6 +1,6 @@
 # Way Beyond Linux From Scratch
 
-[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/lfs-builder/lfs-builder)
+[![Version](https://img.shields.io/badge/version-0.4.3-blue.svg)](https://github.com/lfs-builder/lfs-builder)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)]()
 ![Tests](https://github.com/landrevillejf/beyond-linux-from-scratch/actions/workflows/python-app.yml/badge.svg)
@@ -64,7 +64,7 @@ Way Beyond Linux From Scratch is an automated toolchain that builds a complete L
 
 ### Network Stack
 - 🌐 **Web Browsers**: Firefox 128.8.0esr, Brave 1.76.82, Chromium 133.0.6943.98
-- 📧 **Email Clients**: Thunderbird 140.8.0esr, Claws Mail 4.3.0, Mutt 2.2.15
+- 📧 **Email Clients**: Thunderbird 140.8.0esr, Claws Mail 0.4.3, Mutt 2.2.15
 - 🖥️ **Terminal Browsers**: Lynx 2.9.2, Links 2.30, w3m 0.5.3
 - 📥 **Download Managers**: Wget2 2.2.0, Aria2 1.37.0
 - 🔧 **Network Configuration**: DHCP/static, DNS, Wi-Fi, proxy settings
@@ -859,7 +859,7 @@ w3m https://lfs-builder.org
 lpm install thunderbird-140.8.0esr
 
 # Lightweight GTK
-lpm install claws-mail-4.3.0
+lpm install claws-mail-0.4.3
 
 # Terminal-based
 lpm install mutt-2.2.15
