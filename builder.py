@@ -605,9 +605,15 @@ class SourceDownloader:
         self.session = self._create_session()
 
     def _create_session(self):
-        """Create urllib session with retry logic"""
-        opener = urllib.request.build_opener()
+        """Create urllib session with retry logic and permissive SSL"""
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx))
         opener.addheaders = [('User-Agent', f'LFS-Builder/{__version__}')]
+        urllib.request.install_opener(opener)
         return opener
 
     def download(self, url: str, filename: Optional[str] = None, retries: int = 3) -> bool:
