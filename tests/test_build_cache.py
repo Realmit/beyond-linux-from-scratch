@@ -49,23 +49,23 @@ class TestBuildCache:
             assert cache.metadata is None
 
     def test_get_cached_entry_no_metadata(self, cache):
-        assert cache.get_cached_entry("kde", "systemd", "x86_64", "4.3.0") is None
+        assert cache.get_cached_entry("kde", "systemd", "x86_64", "0.4.3") is None
 
     def test_get_cached_entry_profile_missing(self, cache, sample_metadata):
         cache.metadata = sample_metadata
-        assert cache.get_cached_entry("gnome", "systemd", "x86_64", "4.3.0") is None
+        assert cache.get_cached_entry("gnome", "systemd", "x86_64", "0.4.3") is None
 
     def test_get_cached_entry_init_missing(self, cache, sample_metadata):
         cache.metadata = sample_metadata
-        assert cache.get_cached_entry("kde", "sysvinit", "x86_64", "4.3.0") is None
+        assert cache.get_cached_entry("kde", "sysvinit", "x86_64", "0.4.3") is None
 
     def test_get_cached_entry_arch_missing(self, cache, sample_metadata):
         cache.metadata = sample_metadata
-        assert cache.get_cached_entry("kde", "systemd", "aarch64", "4.3.0") is None
+        assert cache.get_cached_entry("kde", "systemd", "aarch64", "0.4.3") is None
 
     def test_get_cached_entry_success(self, cache, sample_metadata):
         cache.metadata = sample_metadata
-        entry = cache.get_cached_entry("kde", "systemd", "x86_64", "4.3.0")
+        entry = cache.get_cached_entry("kde", "systemd", "x86_64", "0.4.3")
         assert entry == sample_metadata["profiles"]["kde"]["systemd"]["x86_64"]
 
     def test_download_and_extract_no_url(self, cache, tmp_path, mock_logger):
@@ -208,7 +208,7 @@ class TestLFSBuilderCacheIntegration:
                 profile=builder.profile,
                 init=builder.get_init_system(),
                 arch='x86_64',  # matches the default config architecture
-                builder_version='4.3.0'
+                builder_version='0.4.3'
             )
             mock_cache_instance.download_and_extract.assert_called_once()
 
