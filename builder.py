@@ -438,7 +438,8 @@ class ProfileManager:
             'privacy_tools': False,
             'live_system': False,
             'system_updater': True
-        },'pinebook': {
+        },
+        'pinebook': {
             'description': 'Pinebook / Pinebook Pro ARM64 laptop',
             'size_gb': 4,
             'build_time_hours': 4,
@@ -604,9 +605,15 @@ class SourceDownloader:
         self.session = self._create_session()
 
     def _create_session(self):
-        """Create urllib session with retry logic"""
-        opener = urllib.request.build_opener()
+        """Create urllib session with retry logic and permissive SSL"""
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx))
         opener.addheaders = [('User-Agent', f'LFS-Builder/{__version__}')]
+        urllib.request.install_opener(opener)
         return opener
 
     def download(self, url: str, filename: Optional[str] = None, retries: int = 3) -> bool:
@@ -845,7 +852,15 @@ class USBWriter:
         system = platform.system()
 
         if system == "Linux":
-            subprocess.run(['sudo', 'umount', f'{device}*'], capture_output=True, text=True)
+            try:
+                with open('/proc/mounts', 'r') as f:
+                    mounts = f.readlines()
+                partitions = [line.split()[0] for line in mounts if line.startswith(device)]
+                if partitions:
+                    subprocess.run(['sudo', 'umount'] + partitions, capture_output=True, text=True)
+            except IOError:
+                # Fallback if /proc/mounts is unreadable
+                pass
             cmd = ['sudo', 'dd', f'if={iso_path}', f'of={device}', 'bs=4M', 'status=progress', 'conv=fsync']
         elif system == "Darwin":
             raw_device = device.replace('disk', 'rdisk')
@@ -1624,61 +1639,6 @@ def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
         return False
 
 
-def _update_sources_list(self) -> bool:
-    """Update packages/sources.list with official LFS/BLFS URLs + custom sources."""
-    sources_file = Path('packages/sources.list')
-    custom_file = Path('packages/custom-sources.list')
-    repo_urls = self.config.get('repositories', [])
-
-    if not repo_urls:
-        self.logger.warning("No repository URLs configured, skipping sources update")
-        return False
-
-    all_urls = set()
-    success = False
-
-    for repo_url in repo_urls:
-        try:
-            self.logger.info(f"Fetching sources list from {repo_url}")
-            with urllib.request.urlopen(repo_url, timeout=30) as resp:
-                content = resp.read().decode('utf-8')
-                for line in content.splitlines():
-                    line = line.strip()
-                    if line and not line.startswith('#'):
-                        all_urls.add(line)
-            success = True
-        except Exception as e:
-            self.logger.warning(f"Failed to fetch {repo_url}: {e}")
-
-    if not success and not sources_file.exists():
-        self.logger.error("No sources could be fetched and no existing sources.list found")
-        return False
-
-    # Write the merged list
-    with open(sources_file, 'w') as f:
-        f.write("# LFS Sources - Automatically generated from official wget-lists\n")
-        f.write(f"# Generated: {datetime.now().isoformat()}\n")
-        f.write("# DO NOT EDIT MANUALLY – changes will be overwritten\n\n")
-        for url in sorted(all_urls):
-            f.write(f"{url}\n")
-        f.write("\n")
-
-    # Append custom sources if they exist
-    if custom_file.exists():
-        self.logger.info(f"Appending custom sources from {custom_file}")
-        with open(custom_file, 'r') as cf:
-            custom_lines = cf.readlines()
-        with open(sources_file, 'a') as f:
-            f.write("\n# ============================================================================\n")
-            f.write("# CUSTOM SOURCES (from packages/custom-sources.list)\n")
-            f.write("# ============================================================================\n\n")
-            for line in custom_lines:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    f.write(f"{line}\n")
-
-    self.logger.info(f"Updated sources.list with {len(all_urls)} official URLs + custom entries")
-    return True
 
 
 def main():
@@ -1707,7 +1667,11 @@ def main():
     if args.profile_info:
         # Pour `--profile-info`, on peut aussi afficher les valeurs par défaut,
         # mais on peut garder la version simple.
-        print(ProfileManager.get_profile_info(args.profile_info))
+        try:
+            print(ProfileManager.get_profile_info(args.profile_info))
+        except ValueError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
         return
 
     if args.clean:

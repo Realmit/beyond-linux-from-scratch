@@ -119,29 +119,43 @@ compile_package() {
     echo "=== $pkg_name done ==="
 }
 
-if ls glibc-*.tar.xz 1>/dev/null 2>&1; then
-    compile_package "$(ls glibc-*.tar.xz | head -n1)"
-else
-    echo "WARNING: glibc source not found"
-fi
+found_glibc=0
+for archive in glibc-*.tar.xz; do
+    if [ -f "$archive" ]; then
+        compile_package "$archive"
+        found_glibc=1
+        break
+    fi
+done
+[ $found_glibc -eq 0 ] && echo "WARNING: glibc source not found"
 
-if ls binutils-*.tar.xz 1>/dev/null 2>&1; then
-    compile_package "$(ls binutils-*.tar.xz | head -n1)"
-else
-    echo "WARNING: binutils source not found"
-fi
+found_binutils=0
+for archive in binutils-*.tar.xz; do
+    if [ -f "$archive" ]; then
+        compile_package "$archive"
+        found_binutils=1
+        break
+    fi
+done
+[ $found_binutils -eq 0 ] && echo "WARNING: binutils source not found"
 
-if ls gcc-*.tar.xz 1>/dev/null 2>&1; then
-    compile_package "$(ls gcc-*.tar.xz | head -n1)"
-else
-    echo "WARNING: gcc source not found"
-fi
+found_gcc=0
+for archive in gcc-*.tar.xz; do
+    if [ -f "$archive" ]; then
+        compile_package "$archive"
+        found_gcc=1
+        break
+    fi
+done
+[ $found_gcc -eq 0 ] && echo "WARNING: gcc source not found"
 
 for pkg in coreutils bash make grep sed gawk findutils tar gzip; do
-    if ls "$pkg"-*.tar.* 1>/dev/null 2>&1; then
-        archive=$(ls "$pkg"-*.tar.* | head -n1)
-        compile_package "$archive"
-    fi
+    for archive in "$pkg"-*.tar.*; do
+        if [ -f "$archive" ]; then
+            compile_package "$archive"
+            break
+        fi
+    done
 done
 
 echo "=== Base system compilation complete ==="

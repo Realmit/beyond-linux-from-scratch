@@ -1,6 +1,9 @@
-name: Minimal SYSVINIT x86_64 Build Cache
+name: FULL SYSVINIT x86_64 Build Live ISO
 
 on:
+  push:
+    tags:
+      - 'v*'
   schedule:
     - cron: '0 0 * * 0'
   workflow_dispatch:
@@ -13,11 +16,11 @@ permissions:
   contents: write
 
 jobs:
-  build-cache:
+  build-live-iso:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        profile: [minimal]
+        profile: [full]
         init: [sysvinit]
         arch: [x86_64]
     steps:
@@ -33,7 +36,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential bison flex gawk texinfo wget git python3 python3-pip \
-            xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev ca-certificates
+            xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev \
+            squashfs-tools ca-certificates
           command -v makeinfo || { echo "makeinfo not found"; exit 1; }
 
       - name: Install Python dependencies
@@ -41,28 +45,14 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install pytest pytest-cov requests-mock pytest-mock
 
-      - name: Check compilation
-        run: |
-          python3 -m py_compile builder.py
-          echo "✅ builder.py compiled successfully"
-
-      - name: Run tests
-        run: |
-          python3 -m pytest tests/ --cov=builder --cov-report=xml -v --tb=short 2>&1 | head -100
-
       - name: Show disk space
         run: df -h
 
       - name: Update sources.list with official LFS/BLFS URLs
         run: |
-          # Télécharge les listes officielles à jour
           wget -q https://www.linuxfromscratch.org/lfs/view/stable/wget-list -O /tmp/lfs.list
-          wget -q https://www.linuxfromscratch.org/blfs/view/stable-systemd/wget-list -O /tmp/blfs.list
-          
-          # Fusionne, supprime les doublons
+          wget -q https://www.linuxfromscratch.org/blfs/view/stable/wget-list -O /tmp/blfs.list
           cat /tmp/lfs.list /tmp/blfs.list | sort -u > packages/sources.list
-          
-          # Ajoute les outils de confidentialité à la fin
           cat >> packages/sources.list << 'EOF'
           # Privacy tools
           https://dist.torproject.org/tor-0.4.9.7.tar.gz
@@ -71,7 +61,6 @@ jobs:
           https://github.com/i2p/i2p.i2p/archive/refs/tags/i2p-2.12.0.tar.gz
           https://0xacab.org/jvoisin/mat2/-/archive/0.13.4/mat2-0.13.4.tar.gz
           EOF
-          
           echo "✅ sources.list mis à jour avec $(wc -l < packages/sources.list) URLs"
 
       - name: Create output directory
@@ -83,6 +72,15 @@ jobs:
           path: /tmp/lfs-build/sources
           key: lfs-sources-${{ matrix.profile }}-${{ hashFiles('packages/sources.list') }}
           restore-keys: lfs-sources-
+
+      - name: Run Python tests
+        run: |
+          python3 -m pytest tests/ --cov=builder --cov-report=xml -v --tb=short 2>&1 | tee test_output.log
+
+      - name: Check compilation
+        run: |
+          python3 -m py_compile builder.py
+          echo "✅ builder.py compiled successfully"
 
       - name: Patch host-check.sh
         run: |
@@ -110,7 +108,7 @@ jobs:
         run: |
           sudo chown -R lfs:lfs /tmp/lfs-build
 
-      - name: Build profile (as lfs user)
+      - name: Build profile (as lfs user) – WITH LIVE ISO
         id: build
         continue-on-error: true
         run: |
@@ -118,8 +116,8 @@ jobs:
           sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
-            --no-live \
             --output /tmp/lfs-build
+          # --no-live est retiré → l'ISO sera généré
 
       - name: Compress rootfs (exclude virtual filesystems)
         id: compress
@@ -138,18 +136,33 @@ jobs:
           sudo chown $USER:$USER /tmp/rootfs.tar.xz
           ls -lh /tmp/rootfs.tar.xz
 
-      - name: Create Release and Upload Rootfs
+      - name: Verify ISO creation
+        id: check_iso
+        if: success() || failure()
+        run: |
+          ISO_PATH="/tmp/lfs-build/lfs-installer.iso"
+          if [ -f "$ISO_PATH" ]; then
+            echo "✅ ISO found: $(ls -lh $ISO_PATH)"
+            echo "iso_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ ISO not found – maybe live system was disabled in profile"
+            echo "iso_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release and Upload Artifacts
         if: success() && steps.compress.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v4.3.0-cache
-          name: Way Beyond LFS Minimal SYSVINIT Cache v4.3.0
+          tag_name: v4.3.0-live-full-sysvinit
+          name: Way Beyond LFS Full SYSVINIT Live ISO v4.3.0
           body: |
-            Cache pour LFS/BLFS 13.0
-            Profil : ${{ matrix.profile }}
+            Live ISO and Cache for LFS/BLFS 13.0
+            Profile: ${{ matrix.profile }}
             Init   : ${{ matrix.init }}
             Arch   : ${{ matrix.arch }}
-          files: /tmp/rootfs.tar.xz
+          files: |
+            /tmp/rootfs.tar.xz
+            /tmp/lfs-build/lfs-installer.iso
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
