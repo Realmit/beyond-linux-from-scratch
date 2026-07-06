@@ -5,7 +5,20 @@ All notable changes to the LFS/BLFS Builder project will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.3.0] – 2026-06-27
+## [0.4.4] – 2026-07-06
+
+### Added
+- **New wallpaper variants** with enhanced visual effects and color schemes.
+- **Improved documentation** for the wallpaper generator, including usage examples and configuration options.
+
+### Fixed
+- **Minor bug fixes** in the wallpaper generator script to ensure compatibility with different Python versions and operating systems.
+- **Font path** in the wallpaper generator – fallback to macOS system font (Helvetica) if DejaVu is unavailable.
+- **Image quality** improvements in the wallpaper generator – enhanced rendering and compression settings.
+- **Ls error in lfs and blfs scripts** – fixed incorrect path handling in certain environments. Realmit
+- **Fix github workflows** 
+
+## [0.4.3] – 2026-06-27
 
 ### Added
 - **Wallpaper generator** (`generate_wallpapers.py`)
@@ -70,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Network Stack Enhancement**
   - Web browsers: Firefox 128.8.0esr, Brave 1.76.82, Chromium 133.0.6943.98
-  - Email clients: Thunderbird 140.8.0esr, Claws Mail 4.3.0, Mutt 2.2.15, NeoMutt 20241212
+  - Email clients: Thunderbird 140.8.0esr, Claws Mail 0.4.3, Mutt 2.2.15, NeoMutt 20241212
   - Terminal browsers: Lynx 2.9.2, Links 2.30, w3m 0.5.3
   - Download managers: Wget2 2.2.0, Aria2 1.37.0
   - Network libraries: libevent 2.1.12, nss 3.107, nspr 4.37, libvpx 1.15.0, dav1d 1.5.1
