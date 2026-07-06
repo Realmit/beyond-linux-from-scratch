@@ -2,8 +2,9 @@
 """
 LFS/BLFS Builder - Main orchestrator
 Works on Linux, macOS, and Windows (WSL2)
-Version: 4.3.0 - Fixed script paths and config loading
-Author: Jean-Francois Landreville
+Version: 0.4.3
+Author: Jean-Francois Landreville (Dr Land Evil), landrevillejf@protonmail.com, 2026
+Contributors: Realmit kirills1
 """
 
 import os
@@ -26,7 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 # ============================================================================
 # VERSION INFO
 # ============================================================================
-__version__ = "4.3.0"
+__version__ = "0.4.3"
 __build_date__ = datetime.now().strftime("%Y-%m-%d")
 
 # ============================================================================
