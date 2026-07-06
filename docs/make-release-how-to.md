@@ -1,107 +1,105 @@
-Pour utiliser `make-release.sh` avec la nouvelle stratégie de release (cache + ISO), voici comment orchestrer le tout.
+## Using `make-release.sh` with the new release strategy (cache + ISO)
+
+### 1. The role of `make-release.sh`
+
+This script **versions the source code**:
+- Extracts the version from `builder.py`
+- Creates a Git tag (e.g. `v4.3.0`)
+- Generates a tarball of the code (without heavy build artifacts)
+
+It does **not** build the cache or the ISO.  
+Those are produced and published by GitHub Actions workflows.
 
 ---
 
-## 1. Le rôle de `make-release.sh`
+### 2. New release strategy (cache + ISO)
 
-Ce script **versionne le code source** :
-- Extrait la version depuis `builder.py`
-- Crée un tag Git (ex: `v4.3.0`)
-- Génère un tarball du code (sans les artefacts lourds)
+You have two workflows:
 
-**Il ne crée pas** le cache ni l’ISO.  
-Ce sont les workflows GitHub Actions qui les produisent et les publient.
-
----
-
-## 2. Nouvelle stratégie de release (cache + ISO)
-
-Vous avez deux workflows :
-
-| Workflow | Déclenchement | Produit |
-|----------|---------------|---------|
-| `XFCE SYSVINIT x86_64 Build Live ISO` (ou similaire) | Manuel ou schedule | Construit tout depuis zéro → cache `.tar.xz` + ISO, publiés dans une **release** |
-| `Build ISO from Cache` | Manuel | Télécharge le cache de la **dernière release**, exécute les étapes finales → ISO, publié dans une **release** séparée |
+| Workflow | Trigger | Produces |
+|----------|---------|----------|
+| `XFCE SYSVINIT x86_64 Build Live ISO` (or similar) | Manual or scheduled | Builds everything from scratch → cache `.tar.xz` + ISO, published in a **release** |
+| `Build ISO from Cache` | Manual | Downloads the cache from the **latest release**, runs the final stages → ISO, published in a separate **release** |
 
 ---
 
-## 3. Comment utiliser `make-release.sh` dans ce contexte
+### 3. How to use `make-release.sh` in this context
 
-### Cas A – Vous voulez publier une nouvelle version majeure du code source (et ensuite déclencher les builds)
+#### Case A – You want to publish a new major source code version (and then trigger builds)
 
-1. **Mettez à jour la version** dans `builder.py` (par exemple `__version__ = "4.4.0"`).
-2. **Exécutez** `./make-release.sh --no-tar` (ou avec `--no-tar` si vous ne voulez pas le tarball local, ou l'inclure selon vos besoins).
+1. **Update the version** in `builder.py` (e.g. `__version__ = "4.4.0"`).
+2. **Run** `./make-release.sh --no-tar` (or without `--no-tar` if you want a local tarball).
    ```bash
-   ./make-release.sh --no-tar   # crée le tag sans tarball
+   ./make-release.sh --no-tar   # creates the tag without a tarball
    ```
-   Ou bien avec tarball si vous voulez l'uploader manuellement.
-3. **Poussez le tag** :
+   Or with tarball if you plan to upload it manually.
+3. **Push the tag**:
    ```bash
    git push origin v4.4.0
    ```
-4. **Déclenchez manuellement** le workflow de build complet (ou attendez le schedule).  
-   Dans GitHub Actions, allez sur le workflow `XFCE SYSVINIT x86_64 Build Live ISO` et cliquez sur **Run workflow**.  
-   Il utilisera le code du tag que vous venez de pousser (car vous êtes sur la branche par défaut).  
-   → Une release sera créée avec le cache et l’ISO (tag par défaut `v4.3.0-live` ou similaire – vous pouvez adapter le tag dans le workflow).
+4. **Manually trigger** the full build workflow (or wait for the schedule).  
+   In GitHub Actions, go to the `XFCE SYSVINIT x86_64 Build Live ISO` workflow and click **Run workflow**.  
+   It will use the code from the tag you just pushed (since you are on the default branch).  
+   → A release will be created with the cache and ISO (default tag `v4.3.0-live` or similar – you can adjust the tag in the workflow).
 
-### Cas B – Vous voulez simplement reconstruire un ISO à partir d’un cache existant (sans recompiler)
+#### Case B – You only want to rebuild an ISO from an existing cache (no recompilation)
 
-1. Assurez-vous qu’une release précédente contient `rootfs.tar.xz`.
-2. Lancez le workflow `Build ISO from Cache` manuellement (via GitHub Actions).
-    - Il va télécharger le cache de la dernière release, exécuter les scripts finaux, et publier une nouvelle release avec l’ISO (tag `v4.3.0-live-from-cache-<numéro>`).
-
----
-
-## 4. Adapter `make-release.sh` pour le nouveau flux (optionnel)
-
-Si vous voulez que `make-release.sh` crée également un tag qui sera utilisé par les workflows, vous pouvez modifier les workflows pour qu’ils utilisent **le même tag** que celui créé par le script.
-
-Par exemple, dans le workflow `Build ISO from Cache`, au lieu de créer un tag fixe, vous pourriez :
-
-- Récupérer le dernier tag Git (via `git describe --tags`) et l’utiliser comme base.
-- Ou utiliser le tag créé par `make-release.sh` pour nommer la release.
-
-Mais actuellement, les workflows utilisent des tags dédiés (`v4.3.0-live`, `v4.3.0-live-from-cache-...`). C’est plus simple pour distinguer les artefacts.
+1. Ensure a previous release contains `rootfs.tar.xz`.
+2. Manually run the `Build ISO from Cache` workflow (via GitHub Actions).
+   - It will download the cache from the latest release, run the final scripts, and publish a new release with the ISO (tag `v4.3.0-live-from-cache-<number>`).
 
 ---
 
-## 5. Recommandation finale
+### 4. Adapting `make-release.sh` for the new flow (optional)
 
-- Utilisez `make-release.sh` uniquement pour **versionner le code source** (tag + tarball).
-- Pour les builds (cache et ISO), **utilisez les workflows GitHub Actions**.
-- Si vous voulez lier les deux, vous pouvez automatiser le déclenchement du workflow de build après la création du tag (via un trigger `on: push tags`). Mais ce n’est pas nécessaire.
+If you want `make-release.sh` to also create a tag that the workflows will use, you can modify the workflows to use **the same tag** created by the script.
 
-**En résumé** :
+For example, in the `Build ISO from Cache` workflow, instead of using a fixed tag, you could:
+
+- Fetch the latest Git tag (via `git describe --tags`) and use it as a base.
+- Or use the tag created by `make-release.sh` to name the release.
+
+However, currently the workflows use dedicated tags (`v4.3.0-live`, `v4.3.0-live-from-cache-...`). This is simpler for distinguishing artifacts.
+
+---
+
+### 5. Final recommendation
+
+- Use `make-release.sh` **only for versioning the source code** (tag + tarball).
+- For builds (cache and ISO), **use the GitHub Actions workflows**.
+- If you want to link them, you can automate triggering the build workflow after tag creation (via `on: push tags`). But it's not required.
+
+**In short**:
 
 ```bash
-# 1. Mettre à jour la version dans builder.py
+# 1. Update version in builder.py
 vim builder.py
 
-# 2. Créer le tag et le tarball
+# 2. Create tag and tarball
 ./make-release.sh
 
-# 3. Pousser le tag
+# 3. Push the tag
 git push origin vX.Y.Z
 
-# 4. Aller sur GitHub Actions et lancer manuellement le workflow de build complet ou le workflow "Build ISO from Cache"
+# 4. Go to GitHub Actions and manually trigger the full build workflow or the "Build ISO from Cache" workflow
 ```
 
 ---
 
-## 6. Si vous voulez que le workflow de build utilise le tag créé par `make-release.sh`
+### 6. If you want the build workflow to use the tag created by `make-release.sh`
 
-Modifiez le workflow `XFCE SYSVINIT x86_64 Build Live ISO` pour qu’il utilise le tag comme nom de release :
+Modify the `XFCE SYSVINIT x86_64 Build Live ISO` workflow to use the tag as the release name:
 
 ```yaml
 - name: Create Release and Upload Artifacts
   uses: softprops/action-gh-release@v2
   with:
-    tag_name: ${{ github.ref_name }}   # utilise le tag déclencheur
+    tag_name: ${{ github.ref_name }}   # uses the triggering tag
     name: "LFS Builder ${{ github.ref_name }}"
     # ...
 ```
 
-Mais alors, il faut que le workflow soit déclenché par `on: push tags` pour récupérer le tag. Vous pouvez ajouter :
+But then the workflow must be triggered by `on: push tags` to capture the tag. You can add:
 
 ```yaml
 on:
@@ -110,8 +108,8 @@ on:
       - 'v*'
 ```
 
-Et ainsi, dès que vous poussez un tag, le workflow construira tout et publiera la release avec ce tag.
+Thus, whenever you push a tag, the workflow will build everything and publish the release with that tag.
 
 ---
 
-**Avec ces explications, vous pouvez utiliser `make-release.sh` en toute connaissance de cause, et orchestrer vos releases comme vous le souhaitez.**
+With these explanations, you can use `make-release.sh` with full understanding and orchestrate your releases as you wish.
