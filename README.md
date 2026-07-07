@@ -91,18 +91,18 @@ Way Beyond Linux From Scratch is an automated toolchain that builds a complete L
 
 | Profile | Desktop | Size | Build Time | RAM | Init System | Use Case |
 |---------|---------|------|------------|-----|-------------|----------|
-| **minimal** | None | 1GB | 2h | 256MB | sysvinit | Servers, embedded |
-| **xfce** | XFCE | 4GB | 4h | 600MB | systemd | Lightweight desktop |
-| **lxqt** | LXQt | 2GB | 3h | 500MB | systemd | Very lightweight |
-| **gnome** | GNOME | 8GB | 8h | 1.5GB | systemd | Modern desktop |
-| **kde** | KDE Plasma | 10GB | 12h | 1.8GB | systemd | Full-featured desktop |
-| **java-dev** | XFCE | 10GB | 6h | 2GB | systemd | Java development |
-| **server** | None | 2GB | 3h | 256MB | sysvinit | Production server |
-| **secure** | XFCE | 6GB | 5h | 800MB | sysvinit | Security-focused |
-| **full** | GNOME | 20GB | 12h | 2GB | systemd | Complete system |
-| **arm64** | None | 2GB | 3h | 256MB | sysvinit | ARM64 SBCs |
-| **audio-cli** | None | 2GB | 3h | 512MB | sysvinit | Headless audio production |
-| **audio-studio** | XFCE | 8GB | 6h | 1GB | systemd | Audio production studio |
+| **minimal** | None | 1GB | 2h | 256MB | sysvinit / systemd      | Servers, embedded |
+| **xfce** | XFCE | 4GB | 4h | 600MB | sysvinit / systemd     | Lightweight desktop |
+| **lxqt** | LXQt | 2GB | 3h | 500MB | sysvinit / systemd       | Very lightweight |
+| **gnome** | GNOME | 8GB | 8h | 1.5GB | sysvinit / systemd       | Modern desktop |
+| **kde** | KDE Plasma | 10GB | 12h | 1.8GB | sysvinit / systemd       | Full-featured desktop |
+| **java-dev** | XFCE | 10GB | 6h | 2GB | sysvinit / systemd       | Java development |
+| **server** | None | 2GB | 3h | 256MB | sysvinit / systemd      | Production server |
+| **secure** | XFCE | 6GB | 5h | 800MB | sysvinit / systemd      | Security-focused |
+| **full** | GNOME | 20GB | 12h | 2GB | sysvinit / systemd       | Complete system |
+| **arm64** | None | 2GB | 3h | 256MB | sysvinit / systemd      | ARM64 SBCs |
+| **audio-cli** | None | 2GB | 3h | 512MB | sysvinit / systemd      | Headless audio production |
+| **audio-studio** | XFCE | 8GB | 6h | 1GB | sysvinit / systemd       | Audio production studio |
 | **custom** | User-defined | Variable | Variable | Variable | User-choice | Custom builds |
 
 ## System Requirements
