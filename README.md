@@ -124,6 +124,31 @@ Way Beyond Linux From Scratch is an automated toolchain that builds a complete L
 | **WSL2** | Ubuntu 22.04 | Ubuntu 24.04 |
 | **Windows** | Windows 10 2004+ | Windows 11 |
 
+---
+
+## Command‑line Options
+
+| Option | Description |
+|--------|-------------|
+| `--profile` | Build profile (default: `xfce`). Choices: `minimal`, `gnu-free`, `gnu-free-full`, `xfce`, `gnome`, `java-dev`, `secure`, `full`, `arm64`, `audio-cli`, `pinebook`, `audio-studio`, `kde`, `lxqt`, `server`, `brax3`, `custom`. |
+| `--output` | Output directory (default: `./lfs-build`). |
+| `--config` | Configuration file path (default: `config/build.conf`). |
+| `--resume-from` | Resume build from a specific stage (e.g., `desktop`). |
+| `--write-usb` | Write the generated ISO to a USB device (e.g., `/dev/sdb`). |
+| `--list-profiles` | List all available profiles. |
+| `--profile-info` | Show detailed information about a specific profile. |
+| `--clean` | Delete the build directory (interactive confirmation). |
+| `--verbose` / `-v` | Enable DEBUG logging. |
+| `--init` | Override the init system (`systemd`, `sysvinit`, `openrc`, `runit`, `s6`). |
+| `--no-live` | Disable live system creation (only produce the root filesystem). |
+| `--version` | Show version information. |
+| `--use-cache` | Use a pre‑built cache (skip compilation) if available. |
+| `--cache-only` | Only use the cache; fail if not found. |
+| `--cache-url` | Custom URL for cache metadata (default: a predefined JSON). |
+| `--kernel-type` | Kernel type: `linux`, `linux-libre`, `gnu-hurd`, `freebsd`. |
+
+---
+
 ## Quick Start
 
 ```bash
