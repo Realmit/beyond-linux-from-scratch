@@ -29,6 +29,7 @@ A complete set of scripts to build a custom Linux From Scratch distribution with
 - [Cross-Compilation](#cross-compilation)
 - [Troubleshooting](#troubleshooting)
 - [Directory Structure](#directory-structure)
+- [Roadmap](roadmap.md)
 - [Contributing](#contributing)
 - [License](#license)
 
