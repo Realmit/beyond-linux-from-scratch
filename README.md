@@ -1,6 +1,6 @@
 # Way Beyond Linux From Scratch
 
-[![Version](https://img.shields.io/badge/version-0.4.3-blue.svg)](https://github.com/lfs-builder/lfs-builder)
+[![Version](https://img.shields.io/github/v/release/landrevillejf/beyond-linux-from-scratch?color=blue)](https://github.com/landrevillejf/beyond-linux-from-scratch/releases)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)]()
 ![Tests](https://github.com/landrevillejf/beyond-linux-from-scratch/actions/workflows/python-app.yml/badge.svg)
