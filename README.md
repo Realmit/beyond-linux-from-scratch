@@ -35,7 +35,7 @@ A complete set of scripts to build a custom Linux From Scratch distribution with
 
 ## Overview
 
-Way Beyond Linux From Scratch is an automated toolchain that builds a complete Linux distribution from source code using the Linux From Scratch (LFS) and Beyond Linux From Scratch (BLFS) methodologies. It creates bootable ISO images with live system capability, multiple desktop environments, professional audio production tools, flexible init systems (sysvinit/systemd), development tools, and security hardening.
+**Way Beyond Linux From Scratch** is a Python‑based automated build system that creates custom Linux distributions from LFS/BLFS sources. It supports multiple desktop environments, init systems, audio production stacks, security hardening, and cross‑compilation for ARM64, producing bootable ISO images and live USB installers.
 
 ## Features
 
