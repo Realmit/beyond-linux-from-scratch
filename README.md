@@ -40,7 +40,7 @@ Way Beyond Linux From Scratch is an automated toolchain that builds a complete L
 ## Features
 
 ### Core Features
-- ✅ Complete LFS 13.0 + BLFS 13.0 build system
+- ✅ Complete LFS + BLFS build system
 - ✅ Live USB "Try before install" capability
 - ✅ Automated installer with disk partitioning
 - ✅ Multiple init systems (sysvinit, systemd, OpenRC, runit, s6) with unified `svc` command
@@ -49,25 +49,25 @@ Way Beyond Linux From Scratch is an automated toolchain that builds a complete L
 - 🎵 **CLI Audio Profile** - Headless, low-latency audio production
 - 🎚️ **Studio Profile** - Full XFCE desktop with professional DAWs
 - 🔥 **Real-time Kernel** - PREEMPT_RT for ultra-low latency
-- 🎹 **DAWs**: Ardour 8.12.0, LMMS 1.2.2, Audacity 3.8.2
-- 🎧 **MIDI Tools**: FluidSynth 2.5.0, TiMidity++ 2.15.0, LinuxSampler 2.3.0
+- 🎹 **DAWs**: Ardour , LMMS , Audacity
+- 🎧 **MIDI Tools**: FluidSynth, TiMidity++ , LinuxSampler
 - 🔊 **Audio Servers**: JACK2, PipeWire, ALSA
 - 🎛️ **Plugins**: Calf Studio Gear, LSP Plugins, Dragonfly Reverb
 - 🎼 **SoundFonts**: FluidR3 GM/GS, Timidity Freepats
-- 🖥️ **GUI Tools**: QjackCtl 1.0.1, Patchage 1.0.12, Qpwgraph 1.8.0
+- 🖥️ **GUI Tools**: QjackCtl, Patchage, Qpwgraph
 
 ### Desktop Environments
-- 🖥️ **XFCE 4.20** - Lightweight, fast desktop
-- 🖥️ **GNOME 46** - Modern, feature-rich desktop
-- 🖥️ **KDE Plasma 6.2** - Full-featured, customizable desktop
-- 🖥️ **LXQt 2.1.0** - Extremely lightweight Qt desktop
+- 🖥️ **XFCE ** - Lightweight, fast desktop
+- 🖥️ **GNOME** - Modern, feature-rich desktop
+- 🖥️ **KDE Plasma** - Full-featured, customizable desktop
+- 🖥️ **LXQt** - Extremely lightweight Qt desktop
 - 🖥️ **Minimal** - Command-line only (servers/embedded)
 
 ### Network Stack
-- 🌐 **Web Browsers**: Firefox 128.8.0esr, Brave 1.76.82, Chromium 133.0.6943.98
-- 📧 **Email Clients**: Thunderbird 140.8.0esr, Claws Mail 0.4.3, Mutt 2.2.15
-- 🖥️ **Terminal Browsers**: Lynx 2.9.2, Links 2.30, w3m 0.5.3
-- 📥 **Download Managers**: Wget2 2.2.0, Aria2 1.37.0
+- 🌐 **Web Browsers**: Firefox, Brave, Chromium
+- 📧 **Email Clients**: Thunderbird, Claws Mail, Mutt 
+- 🖥️ **Terminal Browsers**: Lynx, Links, w3m
+- 📥 **Download Managers**: Wget2, Aria2
 - 🔧 **Network Configuration**: DHCP/static, DNS, Wi-Fi, proxy settings
 - 🚀 **Performance**: TCP BBR congestion control
 
