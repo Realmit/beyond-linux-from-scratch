@@ -13,18 +13,27 @@ jobs:
       fail-fast: false
       matrix:
         distro:
-          - image: ubuntu:22.04
-            packages: 'build-essential bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libssl-dev libelf-dev'
-            install: 'apt update && apt install -y'
-          - image: fedora:39
-            packages: 'dnf groupinstall -y "Development Tools" && dnf install -y bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod openssl-devel elfutils-libelf-devel'
-            install: 'bash -c'
-          - image: archlinux:latest
-            packages: 'pacman -Syu --noconfirm && pacman -S --noconfirm base-devel bison flex gawk texinfo wget curl git python python-pip xorriso libisoburn mtools dosfstools parted rsync bc cpio kmod openssl elfutils'
-            install: 'bash -c'
-          - image: opensuse/leap:15.5
-            packages: 'zypper --non-interactive install -t pattern devel_basis && zypper --non-interactive install bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libopenssl-devel elfutils-devel'
-            install: 'bash -c'
+          - name: ubuntu
+            image: ubuntu:22.04
+            setup: |
+              apt update
+              apt install -y build-essential bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libssl-dev libelf-dev
+          - name: fedora
+            image: fedora:39
+            setup: |
+              dnf install -y 'dnf-command(group)'
+              dnf groupinstall -y "Development Tools"
+              dnf install -y bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod openssl-devel elfutils-libelf-devel
+          - name: arch
+            image: archlinux:latest
+            setup: |
+              pacman -Syu --noconfirm
+              pacman -S --noconfirm base-devel bison flex gawk texinfo wget curl git python python-pip xorriso libisoburn mtools dosfstools parted rsync bc cpio kmod openssl elfutils
+          - name: opensuse
+            image: opensuse/leap:15.5
+            setup: |
+              zypper --non-interactive install -t pattern devel_basis
+              zypper --non-interactive install bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libopenssl-devel elfutils-devel
 
     container:
       image: ${{ matrix.distro.image }}
@@ -33,17 +42,16 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: |
-          if [[ "${{ matrix.distro.image }}" == *"ubuntu"* ]]; then
-            ${{ matrix.distro.install }} ${{ matrix.distro.packages }}
-          elif [[ "${{ matrix.distro.image }}" == *"fedora"* ]]; then
-            ${{ matrix.distro.install }} "${{ matrix.distro.packages }}"
-          elif [[ "${{ matrix.distro.image }}" == *"arch"* ]]; then
-            ${{ matrix.distro.install }} "${{ matrix.distro.packages }}"
-          elif [[ "${{ matrix.distro.image }}" == *"opensuse"* ]]; then
-            ${{ matrix.distro.install }} "${{ matrix.distro.packages }}"
-          fi
+        run: ${{ matrix.distro.setup }}
+
+      - name: Verify Python is installed
+        run: python3 --version
 
       - name: Run builder smoke test (minimal profile)
         run: |
           python3 builder.py --profile minimal --no-live --output ./build-test
+
+      - name: Verify build artifacts
+        run: |
+          test -d ./build-test/image
+          test -f ./build-test/build_info.json
