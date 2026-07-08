@@ -1,0 +1,42 @@
+# .github/workflows/multi-distro-test.yml
+name: Multi-Distro Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-distro:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+          - image: ubuntu:22.04
+            packages: 'build-essential bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libssl-dev libelf-dev'
+          - image: fedora:39
+            packages: 'dnf groupinstall -y "Development Tools" && dnf install -y bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod openssl-devel elfutils-libelf-devel'
+          - image: archlinux:latest
+            packages: 'pacman -Syu --noconfirm && pacman -S --noconfirm base-devel bison flex gawk texinfo wget curl git python python-pip xorriso libisoburn mtools dosfstools parted rsync bc cpio kmod openssl elfutils'
+          - image: opensuse/leap:15.5
+            packages: 'zypper --non-interactive install -t pattern devel_basis && zypper --non-interactive install bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libopenssl-devel elfutils-devel'
+    container:
+      image: ${{ matrix.distro }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          if [[ "${{ matrix.distro }}" == *"ubuntu"* ]]; then
+            apt update && apt install -y ${{ matrix.packages }}
+          elif [[ "${{ matrix.distro }}" == *"fedora"* ]]; then
+            ${{ matrix.packages }}
+          elif [[ "${{ matrix.distro }}" == *"arch"* ]]; then
+            ${{ matrix.packages }}
+          elif [[ "${{ matrix.distro }}" == *"opensuse"* ]]; then
+            ${{ matrix.packages }}
+          fi
+      - name: Run builder smoke test (minimal profile)
+        run: |
+          python3 builder.py --profile minimal --no-live --output ./build-test

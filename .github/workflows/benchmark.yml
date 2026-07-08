@@ -1,0 +1,24 @@
+# .github/workflows/benchmark.yml
+name: Benchmark
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'   # weekly on Monday
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libssl-dev libelf-dev time
+      - name: Build minimal (with time)
+        run: |
+          /usr/bin/time -v python3 builder.py --profile minimal --no-live --output ./bench 2>&1 | tee bench.log
+      - name: Upload benchmark log
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-log
+          path: bench.log

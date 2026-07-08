@@ -1,0 +1,22 @@
+# .github/workflows/cross-compile.yml
+name: Cross-Compile ARM64
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  cross:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libssl-dev libelf-dev gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu qemu-user-static
+      - name: Build ARM64 (minimal)
+        run: |
+          python3 builder.py --profile arm64 --config config/build-cross.conf --no-live --output ./build-arm64
+      - name: Verify output image
+        run: |
+          test -f ./build-arm64/lfs-arm64.img
