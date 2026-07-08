@@ -1,6 +1,6 @@
 #!/bin/bash
 # macOS LFS Builder using Docker
-# Version: 4.3.0 - Updated for all profiles and cross-compilation
+# Version: 0.4.3 - Updated for all profiles and cross-compilation
 
 set -e
 
@@ -150,7 +150,7 @@ print_banner() {
 ║     ███████╗██║     ███████║    ██████╔╝╚██████╔╝██║███████╗██████╔╝     ║
 ║     ╚══════╝╚═╝     ╚══════╝    ╚═════╝  ╚═════╝ ╚═╝╚══════╝╚═════╝      ║
 ║                                                                           ║
-║                    macOS LFS Builder v4.3.0                               ║
+║                    macOS LFS Builder v0.4.3                               ║
 ║                                                                           ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 BANNER
