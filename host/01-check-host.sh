@@ -90,7 +90,7 @@ fi
 # Check required commands (full check for native systems)
 required_commands=(
     "bash" "gcc" "g++" "ld" "bison" "flex" "gawk" "m4"
-    "make" "patch" "sed" "tar" "texinfo" "xz" "grep" "awk"
+    "make" "patch" "sed" "tar" "makeinfo" "xz" "grep" "awk"
     "wget" "python3" "git" "rsync" "parted" "xorriso"
 )
 
@@ -108,9 +108,11 @@ if [ ${#missing_commands[@]} -ne 0 ]; then
     if [ -f /etc/debian_version ]; then
         echo "  sudo apt install build-essential bison flex gawk texinfo wget git \\"
         echo "    xorriso parted rsync python3 make patch sed tar gzip xz-utils"
+        echo "  (Note: texinfo package provides the 'makeinfo' command)"
     elif [ -f /etc/redhat-release ]; then
         echo "  sudo dnf install gcc gcc-c++ make bison flex gawk m4 texinfo wget \\"
         echo "    xorriso parted rsync python3 git"
+        echo "  (Note: texinfo package provides the 'makeinfo' command)"
     fi
     exit 1
 fi
