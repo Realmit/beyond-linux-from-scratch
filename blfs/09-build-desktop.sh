@@ -40,7 +40,7 @@ run_privileged() {
 }
 
 log_info "========================================="
-log_info "Setting up desktop environment (XFCE)"
+log_info "Setting up desktop environment"
 log_info "========================================="
 
 if [ "$IN_DOCKER" = true ]; then
@@ -63,7 +63,7 @@ SESSION
     exit 0
 fi
 
-log_info "Native mode – installing XFCE desktop from sources"
+log_info "Native mode – installing desktop environment from sources"
 
 log_info "Copying head and cut into chroot"
 for tool in head cut; do
@@ -99,7 +99,9 @@ if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     run_privileged chown -R lfs:lfs "$LFS/sources"
 fi
 
-cat > "$LFS/build-xfce.sh" << 'INNEREOF'
+if [ "$DESKTOP_TYPE" = "kde" ] || [ "$LFS_CONFIG_DESKTOP_TYPE" = "kde" ] || [ "$LFS_PROFILE_DESKTOP" = "kde" ]; then
+    log_info "KDE Selected – creating build-kde.sh"
+    cat > "$LFS/build-desktop.sh" << 'INNEREOF'
 #!/bin/bash
 set -e
 cd /sources
@@ -110,9 +112,53 @@ compile_package() {
         echo "WARNING: No source found for $archive"
         return 1
     fi
-    local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
-    echo "=== Building $dir ==="
+    local pkg_name=$(echo "$archive" | sed -e 's/\.tar\.[a-z0-9]*$//')
+    echo "=== Building $pkg_name ==="
     tar -xf "$archive"
+    local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
+    cd "$dir"
+    if [ -f "configure" ]; then
+        ./configure --prefix=/usr --sysconfdir=/etc
+    elif [ -f "CMakeLists.txt" ]; then
+        cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release ..
+    elif [ -f "Makefile" ]; then
+        true
+    fi
+    make -j$(nproc)
+    make install
+    cd /sources
+    rm -rf "$dir"
+    echo "=== $dir done ==="
+}
+
+# Compile Qt and KDE packages
+for pattern in extra-cmake-modules-*.tar.xz qt-everywhere-*.tar.xz breeze-icons-*.tar.xz kconfig-*.tar.xz kwindowsystem-*.tar.xz plasma-*.tar.xz; do
+    for archive in $pattern; do
+        if [ -f "$archive" ]; then
+            compile_package "$archive" || true
+            break
+        fi
+    done
+done
+echo "KDE desktop installation complete."
+INNEREOF
+else
+    log_info "XFCE Selected – creating build-xfce.sh"
+    cat > "$LFS/build-desktop.sh" << 'INNEREOF'
+#!/bin/bash
+set -e
+cd /sources
+
+compile_package() {
+    local archive=$1
+    if [ ! -f "$archive" ]; then
+        echo "WARNING: No source found for $archive"
+        return 1
+    fi
+    local pkg_name=$(echo "$archive" | sed -e 's/\.tar\.[a-z0-9]*$//')
+    echo "=== Building $pkg_name ==="
+    tar -xf "$archive"
+    local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
     cd "$dir"
     if [ -f "configure" ]; then
         ./configure --prefix=/usr --sysconfdir=/etc
@@ -136,9 +182,10 @@ for pattern in xfce4-*.tar.bz2 xfce4-*.tar.xz gtk-*.tar.xz libxfce4util-*.tar.xz
 done
 echo "XFCE desktop installation complete."
 INNEREOF
+fi
 
-run_privileged chmod +x "$LFS/build-xfce.sh"
-run_privileged chroot "$LFS" /bin/bash /build-xfce.sh
+run_privileged chmod +x "$LFS/build-desktop.sh"
+run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; /build-desktop.sh"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
@@ -146,4 +193,4 @@ run_privileged umount $LFS/proc 2>/dev/null || true
 run_privileged umount $LFS/sys 2>/dev/null || true
 run_privileged umount $LFS/run 2>/dev/null || true
 
-log_success "XFCE desktop environment installed successfully"
+log_success "Desktop environment installed successfully"

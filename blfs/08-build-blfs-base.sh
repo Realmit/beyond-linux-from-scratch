@@ -96,9 +96,10 @@ compile_package() {
         echo "WARNING: No source found for $archive"
         return 1
     fi
-    local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
-    echo "=== Building $dir ==="
+    local pkg_name=$(echo "$archive" | sed -e 's/\.tar\.[a-z0-9]*$//')
+    echo "=== Building $pkg_name ==="
     tar -xf "$archive"
+    local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
     cd "$dir"
     if [ -f "configure" ]; then
         ./configure --prefix=/usr --sysconfdir=/etc
@@ -127,7 +128,7 @@ INNEREOF
 run_privileged chmod +x "$LFS/build-blfs-base.sh"
 
 # --- Pass KERNEL_TYPE inside chroot ---
-run_privileged chroot "$LFS" /bin/bash -c "export KERNEL_TYPE=$KERNEL_TYPE; /build-blfs-base.sh"
+run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; export KERNEL_TYPE=$KERNEL_TYPE; /build-blfs-base.sh"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true

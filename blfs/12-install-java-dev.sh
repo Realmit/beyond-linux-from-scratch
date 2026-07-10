@@ -82,12 +82,12 @@ cd /sources
 install_package() {
     local archive=$1
     local target_dir=$2
-    local name=$(basename "$archive" | sed -E 's/\.tar\.[a-z0-9]+$//')
-    echo "=== Installing $name ==="
+    local pkg_name=$(basename "$archive" | sed -e 's/\.tar\.[a-z0-9]*$//')
+    echo "=== Installing $pkg_name ==="
     tar -xf "$archive"
     local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
     mv "$dir" "$target_dir"
-    echo "=== $name installed to $target_dir ==="
+    echo "=== $pkg_name installed to $target_dir ==="
 }
 
 if ls OpenJDK21U-jdk_*.tar.gz 1> /dev/null 2>&1; then
@@ -151,7 +151,7 @@ echo "Java tools installed."
 INNEREOF
 
 run_privileged chmod +x "$LFS/install-java.sh"
-run_privileged chroot "$LFS" /bin/bash /install-java.sh
+run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; /install-java.sh"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true

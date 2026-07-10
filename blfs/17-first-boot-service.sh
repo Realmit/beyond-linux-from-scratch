@@ -92,7 +92,7 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 SERVICE
-    run_privileged chroot "$LFS" systemctl enable first-boot.service 2>/dev/null || true
+    run_privileged chroot "$LFS" /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; systemctl enable first-boot.service 2>/dev/null || true"
 elif [ -d "$LFS/etc/init.d" ]; then
     run_privileged tee "$LFS/etc/init.d/first-boot" << 'INIT' > /dev/null
 #!/bin/sh
@@ -106,7 +106,7 @@ case "$1" in
 esac
 INIT
     run_privileged chmod +x "$LFS/etc/init.d/first-boot"
-    run_privileged chroot "$LFS" update-rc.d first-boot defaults 2>/dev/null || true
+    run_privileged chroot "$LFS" /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; update-rc.d first-boot defaults 2>/dev/null || true"
 fi
 
 run_privileged umount $LFS/dev 2>/dev/null || true

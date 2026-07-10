@@ -18,8 +18,8 @@ mount --bind /sys "$LFS/sys" 2>/dev/null || true
 
 # Installer GRUB (BIOS)
 if [ -f "$LFS/usr/sbin/grub-install" ]; then
-    chroot "$LFS" grub-install --target=i386-pc /dev/sda || echo "GRUB BIOS install skipped"
-    chroot "$LFS" grub-mkconfig -o /boot/grub/grub.cfg
+    chroot "$LFS" /usr/bin/env -i PATH=/bin:/usr/bin:/sbin:/usr/sbin grub-install --target=i386-pc /dev/sda || echo "GRUB BIOS install skipped"
+    chroot "$LFS" /usr/bin/env -i PATH=/bin:/usr/bin:/sbin:/usr/sbin grub-mkconfig -o /boot/grub/grub.cfg
 else
     echo "[WARNING] GRUB not installed in LFS"
 fi

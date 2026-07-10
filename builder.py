@@ -477,7 +477,7 @@ class ProfileManager:
             'build_time_hours': 12,
             'packages': ['base', 'network', 'ssh', 'xorg', 'kde', 'apps', 'multimedia'],
             'desktop': 'kde',
-            'init_system': 'systemd',
+            'init_system': 'sysvinit',
             'java_dev': False,
             'package_manager': True,
             'security_hardening': True,

@@ -74,17 +74,28 @@ set -e
 echo "Configuring desktop..."
 mkdir -pv /etc/X11/xorg.conf.d
 mkdir -pv /usr/share/xsessions
-cat > /usr/share/xsessions/xfce.desktop << 'XFCE'
+if [ "$DESKTOP_TYPE" = "kde" ] || [ "$LFS_CONFIG_DESKTOP_TYPE" = "kde" ] || [ "$LFS_PROFILE_DESKTOP" = "kde" ]; then
+    cat > /usr/share/xsessions/kde.desktop << 'KDE'
+[Desktop Entry]
+Name=KDE Plasma
+Exec=startplasma-x11
+Type=Application
+KDE
+    echo "exec startplasma-x11" > /root/.xinitrc
+else
+    cat > /usr/share/xsessions/xfce.desktop << 'XFCE'
 [Desktop Entry]
 Name=XFCE
 Exec=startxfce4
 Type=Application
 XFCE
+    echo "exec startxfce4" > /root/.xinitrc
+fi
 echo "Desktop configured."
 INNEREOF
 
 run_privileged chmod +x "$LFS/configure-desktop.sh"
-run_privileged chroot "$LFS" /bin/bash /configure-desktop.sh
+run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; /configure-desktop.sh"
 
 run_privileged umount $LFS/dev 2>/dev/null || true
 run_privileged umount $LFS/proc 2>/dev/null || true

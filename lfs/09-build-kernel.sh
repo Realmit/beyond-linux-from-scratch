@@ -43,7 +43,7 @@ if [ -z "$KERNEL_TARBALL" ]; then
     exit 1
 fi
 
-KERNEL_VERSION=$(echo "$KERNEL_TARBALL" | sed -E 's/^[^-]+-([0-9]+\.[0-9]+\.[0-9]+)\.tar\..*$/\1/')
+KERNEL_VERSION=$(echo "$KERNEL_TARBALL" | sed -e 's/^[^-]*-//' -e 's/\.tar\..*$//')
 log_info "Using kernel source: $KERNEL_TARBALL (version $KERNEL_VERSION)"
 
 # Skip if already installed

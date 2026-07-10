@@ -107,7 +107,7 @@ fi
 
 # Tester le chroot
 log_info "Testing chroot"
-if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
+if ! run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "exit 0" 2>/dev/null; then
     log_error "chroot test failed"
     exit 1
 fi

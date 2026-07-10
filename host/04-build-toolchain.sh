@@ -55,6 +55,10 @@ mkdir -pv "$LFS"/{tools,sources}
 
 # Check if toolchain already exists
 check_toolchain() {
+    # Skip checking toolchain cache in Docker to ensure it builds correctly
+    if [ "$IN_DOCKER" = true ]; then
+        return 1
+    fi
     if [ -f "$LFS/tools/bin/ld" ] && [ -f "$LFS/tools/bin/gcc" ]; then
         log_success "Toolchain already exists at $LFS/tools"
         return 0
@@ -129,7 +133,7 @@ build_toolchain() {
     }
 
     # Check if we have source files
-    if ! ls -1 binutils-*.tar.xz &>/dev/null; then
+    if ! ls -1 binutils-*.tar.* &>/dev/null; then
         log_warning "No source files found in $LFS/sources"
         log_info "Creating minimal toolchain instead"
         create_minimal_toolchain
@@ -141,7 +145,7 @@ build_toolchain() {
     BINUTILS_TAR=$(ls -1 binutils-*.tar.xz 2>/dev/null | head -n1)
     if [ -n "$BINUTILS_TAR" ]; then
         tar -xf "$BINUTILS_TAR"
-        BINUTILS_DIR=$(ls -1d binutils-* 2>/dev/null | grep -v '\.tar' | head -n1)
+        BINUTILS_DIR=$(tar -tf "$BINUTILS_TAR" | head -1 | cut -d/ -f1)
         if [ -n "$BINUTILS_DIR" ]; then
             cd "$BINUTILS_DIR"
             mkdir -pv build
@@ -175,10 +179,10 @@ build_toolchain() {
 
     # Build GCC
     log_info "Building GCC"
-    GCC_TAR=$(ls -1 gcc-*.tar.xz 2>/dev/null | head -n1)
+    GCC_TAR=$(ls -1 gcc-*.tar.* 2>/dev/null | head -n1)
     if [ -n "$GCC_TAR" ]; then
         tar -xf "$GCC_TAR"
-        GCC_DIR=$(ls -1d gcc-* 2>/dev/null | grep -v '\.tar' | head -n1)
+        GCC_DIR=$(tar -tf "$GCC_TAR" | head -1 | cut -d/ -f1)
         if [ -n "$GCC_DIR" ]; then
             cd "$GCC_DIR"
             mkdir -pv build

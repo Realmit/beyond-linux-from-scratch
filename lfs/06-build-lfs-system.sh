@@ -63,7 +63,7 @@ if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin – run lfs-basic first"
     exit 1
 fi
-if ! run_privileged chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
+if ! run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "exit 0" 2>/dev/null; then
     log_error "chroot not working – run lfs-basic first"
     exit 1
 fi
@@ -96,10 +96,11 @@ cd /sources
 
 compile_package() {
     local archive=$1
-    local pkg_name=$(echo "$archive" | sed -E 's/\.tar\.[a-z0-9]+$//')
+    local pkg_name=$(echo "$archive" | sed -e 's/\.tar\.[a-z0-9]*$//')
     echo "=== Building $pkg_name ==="
     tar -xf "$archive"
-    cd "$pkg_name"
+    local dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
+    cd "$dir"
     if [ -d "build" ]; then
         cd build
     elif [ -d "build-aux" ]; then
@@ -149,6 +150,24 @@ for archive in gcc-*.tar.xz; do
 done
 [ $found_gcc -eq 0 ] && echo "WARNING: gcc source not found"
 
+# Install missing tools for compilation
+copy_tool() {
+    local tool="$1"
+    local src="$(which "$tool" 2>/dev/null || echo "/bin/$tool")"
+    [ -f "$src" ] || { log_warning "Source not found for $tool"; return 0; }
+    run_privileged cp -L -v "$src" "$LFS/usr/bin/" 2>/dev/null || true
+    ldd "$src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+        local dest_dir="$LFS/lib"
+        [[ "$lib" == *"/lib64/"* ]] && dest_dir="$LFS/lib64"
+        run_privileged mkdir -p "$dest_dir"
+        run_privileged cp -v "$lib" "$dest_dir/" 2>/dev/null || true
+    done
+}
+
+for tool in tar sed grep awk make gawk flex bison xz patch; do
+    copy_tool "$tool" || true
+done
+
 for pkg in coreutils bash make grep sed gawk findutils tar gzip; do
     for archive in "$pkg"-*.tar.*; do
         if [ -f "$archive" ]; then
@@ -165,7 +184,7 @@ run_privileged chmod +x "$LFS/build-lfs-system.sh"
 
 # --- Pass INIT_SYSTEM and KERNEL_TYPE inside chroot (fix #2) ---
 log_info "Entering chroot and compiling..."
-run_privileged chroot "$LFS" /bin/bash -c "export INIT_SYSTEM=$INIT_SYSTEM; export KERNEL_TYPE=$KERNEL_TYPE; /build-lfs-system.sh"
+run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; export INIT_SYSTEM=$INIT_SYSTEM; export KERNEL_TYPE=$KERNEL_TYPE; /build-lfs-system.sh"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
