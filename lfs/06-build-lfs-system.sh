@@ -63,7 +63,7 @@ if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin – run lfs-basic first"
     exit 1
 fi
-if ! run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "exit 0" 2>/dev/null; then
+if ! run_privileged env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     log_error "chroot not working – run lfs-basic first"
     exit 1
 fi
@@ -186,7 +186,7 @@ run_privileged chmod +x "$LFS/build-lfs-system.sh"
 
 # --- Pass INIT_SYSTEM and KERNEL_TYPE inside chroot (fix #2) ---
 log_info "Entering chroot and compiling..."
-run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; export INIT_SYSTEM=$INIT_SYSTEM; export KERNEL_TYPE=$KERNEL_TYPE; /build-lfs-system.sh"
+run_privileged env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin chroot "$LFS" /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; export INIT_SYSTEM=$INIT_SYSTEM; export KERNEL_TYPE=$KERNEL_TYPE; /build-lfs-system.sh"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true

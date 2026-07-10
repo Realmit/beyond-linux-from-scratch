@@ -64,7 +64,7 @@ if [ ! -f "$LFS/bin/bash" ]; then
     log_error "/bin/bash not found in $LFS/bin – run lfs-basic first"
     exit 1
 fi
-if ! run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "exit 0" 2>/dev/null; then
+if ! run_privileged env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin chroot "$LFS" /bin/bash -c "exit 0" 2>/dev/null; then
     log_error "chroot not working – run lfs-basic first"
     exit 1
 fi
@@ -174,7 +174,7 @@ run_privileged chmod +x "$LFS/build-init.sh"
 
 # Exécution avec PATH explicite
 log_info "Entering chroot and building init system with argument: $INIT_SYSTEM"
-run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; /build-init.sh $INIT_SYSTEM"
+run_privileged env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin chroot "$LFS" /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; /build-init.sh $INIT_SYSTEM"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true

@@ -100,6 +100,6 @@ INNEREOF
 chmod +x "$LFS/build-blfs-base.sh"
 
 # Exécution dans le chroot
-run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; export KERNEL_TYPE=$KERNEL_TYPE; /build-blfs-base.sh"
+run_privileged env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin chroot "$LFS" /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; export KERNEL_TYPE=$KERNEL_TYPE; /build-blfs-base.sh"
 
 log_success "BLFS base packages built successfully"

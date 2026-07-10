@@ -151,7 +151,7 @@ echo "Java tools installed."
 INNEREOF
 
 run_privileged chmod +x "$LFS/install-java.sh"
-run_privileged chroot "$LFS" /usr/bin/env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; /install-java.sh"
+run_privileged env -i HOME=/root TERM="$TERM" PS1='(lfs chroot) \u:\w\$ ' PATH=/bin:/usr/bin:/sbin:/usr/sbin chroot "$LFS" /bin/bash -c "export PATH=/bin:/usr/bin:/sbin:/usr/sbin; /install-java.sh"
 
 run_privileged umount $LFS/dev/pts 2>/dev/null || true
 run_privileged umount $LFS/dev 2>/dev/null || true
