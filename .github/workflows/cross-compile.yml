@@ -1,8 +1,7 @@
 name: Cross-Compile ARM64
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   cross:
