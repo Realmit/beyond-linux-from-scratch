@@ -78,10 +78,14 @@ if [ "$DESKTOP_TYPE" = "kde" ] || [ "$LFS_CONFIG_DESKTOP_TYPE" = "kde" ] || [ "$
     cat > /usr/share/xsessions/kde.desktop << 'KDE'
 [Desktop Entry]
 Name=KDE Plasma
-Exec=startplasma-x11
+Exec=dbus-launch --exit-with-session startplasma-x11
 Type=Application
 KDE
-    echo "exec startplasma-x11" > /root/.xinitrc
+    echo "exec dbus-launch --exit-with-session startplasma-x11" > /root/.xinitrc
+    if [ -d "/home/lfsuser" ]; then
+        echo "exec dbus-launch --exit-with-session startplasma-x11" > /home/lfsuser/.xinitrc
+        chown 1000:1000 /home/lfsuser/.xinitrc
+    fi
 else
     cat > /usr/share/xsessions/xfce.desktop << 'XFCE'
 [Desktop Entry]
@@ -90,6 +94,10 @@ Exec=startxfce4
 Type=Application
 XFCE
     echo "exec startxfce4" > /root/.xinitrc
+    if [ -d "/home/lfsuser" ]; then
+        echo "exec startxfce4" > /home/lfsuser/.xinitrc
+        chown 1000:1000 /home/lfsuser/.xinitrc
+    fi
 fi
 echo "Desktop configured."
 INNEREOF

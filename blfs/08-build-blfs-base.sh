@@ -113,13 +113,35 @@ compile_package() {
     echo "=== $dir done ==="
 }
 
-for pattern in curl-*.tar.xz openssl-*.tar.gz expat-*.tar.xz libxml2-*.tar.xz; do
+for pattern in openssl-*.tar.gz expat-*.tar.xz curl-*.tar.xz libxml2-*.tar.xz; do
     for archive in $pattern; do
         if [ -f "$archive" ]; then
             compile_package "$archive" || true
             break
         fi
     done
+done
+
+# Compile dbus
+for archive in dbus-*.tar.xz; do
+    if [ -f "$archive" ]; then
+        compile_package "$archive" || true
+        break
+    fi
+done
+
+# Install blfs-bootscripts for dbus
+for archive in blfs-bootscripts-*.tar.xz; do
+    if [ -f "$archive" ]; then
+        echo "=== Installing blfs-bootscripts ==="
+        tar -xf "$archive"
+        dir=$(tar -tf "$archive" | head -1 | cut -d/ -f1)
+        cd "$dir"
+        make install-dbus || true
+        cd /sources
+        rm -rf "$dir"
+        break
+    fi
 done
 
 echo "BLFS base packages built."

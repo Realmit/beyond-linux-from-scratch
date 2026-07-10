@@ -86,6 +86,26 @@ else
     exit 1
 fi
 
+# Install missing tools for compilation on host BEFORE chroot
+copy_tool() {
+    local tool="$1"
+    local src="$(which "$tool" 2>/dev/null || echo "/bin/$tool")"
+    [ -f "$src" ] || { log_warning "Source not found for $tool"; return 0; }
+    run_privileged cp -L -v "$src" "$LFS/usr/bin/" 2>/dev/null || true
+    ldd "$src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
+        local dest_dir="$LFS/lib"
+        [[ "$lib" == *"/lib64/"* ]] && dest_dir="$LFS/lib64"
+        run_privileged mkdir -p "$dest_dir"
+        run_privileged cp -v "$lib" "$dest_dir/" 2>/dev/null || true
+    done
+}
+
+log_info "Copying compilation tools to chroot"
+run_privileged mkdir -p "$LFS/usr/bin"
+for tool in tar sed grep awk make gawk flex bison xz patch; do
+    copy_tool "$tool" || true
+done
+
 # Create internal compilation script
 log_info "Creating internal compilation script"
 cat > "$LFS/build-lfs-system.sh" << 'INNEREOF'
@@ -116,8 +136,8 @@ compile_package() {
     make -j$(nproc)
     make install
     cd /sources
-    rm -rf "$pkg_name"
-    echo "=== $pkg_name done ==="
+    rm -rf "$dir"
+    echo "=== $dir done ==="
 }
 
 found_glibc=0
@@ -149,24 +169,6 @@ for archive in gcc-*.tar.xz; do
     fi
 done
 [ $found_gcc -eq 0 ] && echo "WARNING: gcc source not found"
-
-# Install missing tools for compilation
-copy_tool() {
-    local tool="$1"
-    local src="$(which "$tool" 2>/dev/null || echo "/bin/$tool")"
-    [ -f "$src" ] || { log_warning "Source not found for $tool"; return 0; }
-    run_privileged cp -L -v "$src" "$LFS/usr/bin/" 2>/dev/null || true
-    ldd "$src" 2>/dev/null | grep "=> /" | awk '{print $3}' | while read lib; do
-        local dest_dir="$LFS/lib"
-        [[ "$lib" == *"/lib64/"* ]] && dest_dir="$LFS/lib64"
-        run_privileged mkdir -p "$dest_dir"
-        run_privileged cp -v "$lib" "$dest_dir/" 2>/dev/null || true
-    done
-}
-
-for tool in tar sed grep awk make gawk flex bison xz patch; do
-    copy_tool "$tool" || true
-done
 
 for pkg in coreutils bash make grep sed gawk findutils tar gzip; do
     for archive in "$pkg"-*.tar.*; do
