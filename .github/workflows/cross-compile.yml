@@ -19,16 +19,29 @@ jobs:
             libssl-dev libelf-dev \
             gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu qemu-user-static
 
+      - name: Create lfs user
+        run: |
+          if ! id lfs &>/dev/null; then
+            sudo useradd -m -s /bin/bash lfs
+          fi
+          sudo -u lfs touch /home/lfs/.bashrc
+
+      - name: Prepare lfs build directory
+        run: |
+          sudo mkdir -p /tmp/lfs-build
+          sudo cp -a $GITHUB_WORKSPACE/. /tmp/lfs-build/
+          sudo chown -R lfs:lfs /tmp/lfs-build
+
       - name: Build ARM64 (minimal)
         run: |
-          python3 builder.py --profile arm64 --no-live --output ./build-arm64
+          cd /tmp/lfs-build
+          sudo -u lfs python3 builder.py --profile arm64 --no-live --output ./build-arm64
 
       - name: Verify output image
         run: |
-          # The arm64 profile typically produces an .img file, but fallback to .iso
-          if [ -f ./build-arm64/lfs-arm64.img ]; then
+          if [ -f /tmp/lfs-build/build-arm64/lfs-arm64.img ]; then
             echo "Found lfs-arm64.img"
-          elif [ -f ./build-arm64/lfs-installer.iso ]; then
+          elif [ -f /tmp/lfs-build/build-arm64/lfs-installer.iso ]; then
             echo "Found lfs-installer.iso"
           else
             echo "No image file found"
