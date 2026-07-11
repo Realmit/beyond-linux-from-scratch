@@ -70,8 +70,9 @@ class TestLFSBuilder:
             with patch('shutil.which', return_value=True):
                 with patch('os.path.exists', return_value=False):
                     with patch('shutil.disk_usage', return_value=MagicMock(free=100 * 1024**3)):
-                        result = builder.check_prerequisites()
-                        assert result is True
+                        with patch.object(builder, 'ensure_lfs_user', return_value=True):
+                            result = builder.check_prerequisites()
+                            assert result is True
 
     def test_check_prerequisites_missing_commands(self, builder):
         """Test prerequisites with missing commands"""

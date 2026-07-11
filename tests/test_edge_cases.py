@@ -191,8 +191,9 @@ class TestDockerEnvironment:
             with patch('platform.system', return_value='Linux'):
                 with patch('shutil.which', return_value='/usr/bin/gcc'):
                     with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
-                        result = builder.check_prerequisites()
-                        assert result is True
+                        with patch.object(builder, 'ensure_lfs_user', return_value=True):
+                            result = builder.check_prerequisites()
+                            assert result is True
 
     def test_docker_environment_with_cross_compile(self, tmp_path):
         config_file = tmp_path / "test.conf"

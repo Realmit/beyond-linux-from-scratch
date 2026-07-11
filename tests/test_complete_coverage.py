@@ -153,14 +153,14 @@ class TestLFSBuilderCoverage:
         """Test check_prerequisites warning for low disk space (line 930-935)"""
         config_file = tmp_path / "test.conf"
         config_file.write_text("{}")
-
         builder = LFSBuilder("minimal", tmp_path, config_file)
 
         with patch('platform.system', return_value='Linux'):
             with patch('shutil.which', return_value='/usr/bin/gcc'):
                 with patch('shutil.disk_usage', return_value=MagicMock(free=10*1024**3)):
-                    result = builder.check_prerequisites()
-                    assert result is True  # Should still pass with warning
+                    with patch.object(builder, 'ensure_lfs_user', return_value=True):
+                        result = builder.check_prerequisites()
+                        assert result is True  # Should still pass with warning
 
     def test_download_sources_failure(self, tmp_path):
         """Test download_sources when sources file not found (line 1000-1008)"""
