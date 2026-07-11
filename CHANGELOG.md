@@ -8,7 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.5] – 2026-07-11
 
 #### Added
-- **--bootloader option** in builder.py to allow users to specify the bootloader type (GRUB, Syslinux, U-Boot) for cross-compilation builds.
+- **`--bootloader` option** in builder.py to allow users to specify the bootloader type (GRUB, Syslinux, U-Boot) for cross-compilation builds.
+- **`--host-distro` option** in builder.py to allow users to specify the host distribution (Ubuntu, Fedora, Arch, openSUSE) for dependency installation.
+- **`--kernel-type` option** in builder.py to allow users to specify the kernel type (linux, linux-libre, linux-rt) for the build.
+- **Enhanced logging** in builder.py to include host distribution, kernel type, and bootloader information in the build summary.
+- **New configuration file** `config/build-cross.conf` for cross-compilation builds, including bootloader and kernel type settings.
+
+### Fixed
+- **Cross-compilation detection** in builder.py to correctly identify the target architecture and set the appropriate environment variables.
+- **Bootloader selection** in cross-compilation builds to ensure the correct bootloader is installed based on the `--bootloader` option.
+- **Kernel type selection** in cross-compilation builds to ensure the correct kernel sources are downloaded and built based on the `--kernel-type` option.
+- **Host distribution detection** in builder.py to correctly identify the host OS and install the necessary dependencies for building LFS/BLFS.
+- **Tests** for the new options to ensure they work as expected.
+- **Github workflows updated** to include cross-compilation tests for ARM64 and RISC-V architectures, ensuring that the new options work as expected across different host distributions.
 
 ## [0.4.4] – 2026-07-06
 
