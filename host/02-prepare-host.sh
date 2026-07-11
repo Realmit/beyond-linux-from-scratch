@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Prepare host system for LFS build - Compatible with Docker and native
 # Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
@@ -19,6 +19,62 @@ if [ -f "$SCRIPT_DIR/../common/error-handler.sh" ]; then
     source "$SCRIPT_DIR/../common/error-handler.sh"
     setup_error_handling 2>/dev/null || true
 fi
+
+# Detect distribution
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    elif [ -f /etc/redhat-release ]; then
+        echo "rhel"
+    elif [ -f /etc/alpine-release ]; then
+        echo "alpine"
+    else
+        echo "unknown"
+    fi
+}
+
+# Install packages using the appropriate package manager
+install_packages() {
+    local distro="$1"
+    shift
+    local packages=("$@")
+
+    log_info "Installing packages: ${packages[*]}"
+
+    case "$distro" in
+        debian|ubuntu)
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq "${packages[@]}"
+            ;;
+        fedora|rhel|centos|rocky)
+            if command -v dnf &>/dev/null; then
+                sudo dnf install -y "${packages[@]}"
+            else
+                sudo yum install -y "${packages[@]}"
+            fi
+            ;;
+        opensuse*|sles)
+            sudo zypper install -y "${packages[@]}"
+            ;;
+        arch|manjaro)
+            sudo pacman -Syu --noconfirm "${packages[@]}"
+            ;;
+        alpine)
+            sudo apk add "${packages[@]}"
+            ;;
+        gentoo)
+            log_error "Gentoo detected. Please install the following packages manually using emerge: ${packages[*]}"
+            exit 1
+            ;;
+        *)
+            log_error "Unknown distribution. Please install the following packages manually: ${packages[*]}"
+            exit 1
+            ;;
+    esac
+}
 
 # Detect if running in Docker
 IN_DOCKER=false
@@ -54,12 +110,15 @@ create_lfs_user() {
 
     if ! id "lfs" &>/dev/null; then
         log_info "Creating lfs user"
-        if command -v groupadd &>/dev/null; then
-            groupadd lfs 2>/dev/null || true
+        # Create group if it doesn't exist
+        if ! getent group lfs >/dev/null; then
+            groupadd lfs 2>/dev/null || addgroup lfs 2>/dev/null || true
         fi
-        if command -v useradd &>/dev/null; then
-            useradd -s /bin/bash -g lfs -m -k /dev/null lfs 2>/dev/null || true
-        fi
+        # Portable useradd: -m (create home), -s (shell), -g (group)
+        useradd -s /bin/bash -g lfs -m -k /dev/null lfs 2>/dev/null || {
+            log_warning "useradd failed, trying with -d /home/lfs explicitly"
+            useradd -s /bin/bash -g lfs -m -d /home/lfs -k /dev/null lfs
+        }
         echo "lfs:lfs123" | chpasswd 2>/dev/null || true
         echo "lfs ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers 2>/dev/null || true
     else
@@ -157,59 +216,71 @@ EOF
     fi
 }
 
-# Install build dependencies (native only)
+# Install build dependencies (uses the generic install_packages)
 install_dependencies() {
     if [ "$IN_DOCKER" = true ]; then
         log_info "Skipping dependency installation in Docker (already installed)"
         return 0
     fi
 
-    log_info "Checking and installing build dependencies..."
+    local distro
+    distro=$(detect_distro)
 
-    if command -v apt-get &> /dev/null; then
-        log_info "Installing dependencies for Debian/Ubuntu"
-        DEBIAN_FRONTEND=noninteractive apt-get update 2>/dev/null || true
-        DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            build-essential bison flex gawk texinfo \
-            wget curl git python3 python3-pip \
-            xorriso isolinux mtools dosfstools \
-            parted rsync sudo \
-            bc cpio unzip xz-utils \
-            libssl-dev libelf-dev \
-            kmod cpio 2>/dev/null || {
-                log_warning "Some packages failed to install"
-            }
+    # Common packages for all LFS builds
+    local common_packages=(
+        build-essential bison flex gawk texinfo
+        wget curl git python3 python3-pip
+        xorriso isolinux mtools dosfstools
+        parted rsync sudo
+        bc cpio unzip xz-utils
+        libssl-dev libelf-dev
+        kmod cpio
+    )
 
-    elif command -v yum &> /dev/null; then
-        log_info "Installing dependencies for RHEL/CentOS/Fedora"
-        yum groupinstall -y "Development Tools" 2>/dev/null || true
-        yum install -y bison flex gawk texinfo wget curl git \
-            python3 xorriso isolinux mtools dosfstools \
-            parted rsync bc cpio xz unzip \
-            openssl-devel elfutils-libelf-devel kmod 2>/dev/null || {
-                log_warning "Some packages failed to install"
-            }
-
-    elif command -v pacman &> /dev/null; then
-        log_info "Installing dependencies for Arch"
-        pacman -S --noconfirm base-devel bison flex gawk texinfo \
-            wget curl git python xorriso libisoburn mtools \
-            dosfstools parted rsync bc cpio 2>/dev/null || {
-                log_warning "Some packages failed to install"
-            }
-
-    elif command -v dnf &> /dev/null; then
-        log_info "Installing dependencies for Fedora"
-        dnf groupinstall -y "Development Tools" 2>/dev/null || true
-        dnf install -y bison flex gawk texinfo wget curl git \
-            python3 xorriso isolinux mtools dosfstools \
-            parted rsync bc cpio xz unzip \
-            openssl-devel elfutils-libelf-devel kmod 2>/dev/null || {
-                log_warning "Some packages failed to install"
-            }
-    else
-        log_warning "Unknown package manager - please install dependencies manually"
-    fi
+    # Adjust package names per distribution
+    case "$distro" in
+        debian|ubuntu)
+            install_packages "$distro" "${common_packages[@]}"
+            ;;
+        fedora|rhel|centos|rocky)
+            # Map Debian names to Red Hat equivalents
+            local rh_packages=(
+                gcc gcc-c++ make bison flex gawk texinfo
+                wget curl git python3 python3-pip
+                xorriso syslinux mtools dosfstools
+                parted rsync sudo
+                bc cpio unzip xz
+                openssl-devel elfutils-libelf-devel kmod cpio
+            )
+            install_packages "$distro" "${rh_packages[@]}"
+            ;;
+        arch|manjaro)
+            local arch_packages=(
+                base-devel bison flex gawk texinfo
+                wget curl git python python-pip
+                xorriso libisoburn mtools
+                dosfstools parted rsync sudo
+                bc cpio unzip xz
+                openssl elfutils kmod cpio
+            )
+            install_packages "$distro" "${arch_packages[@]}"
+            ;;
+        opensuse*|sles)
+            local suse_packages=(
+                gcc gcc-c++ make bison flex gawk texinfo
+                wget curl git python3 python3-pip
+                xorriso syslinux mtools dosfstools
+                parted rsync sudo
+                bc cpio unzip xz
+                libopenssl-devel libelf-devel kmod cpio
+            )
+            install_packages "$distro" "${suse_packages[@]}"
+            ;;
+        *)
+            log_warning "Unknown distribution, attempt to install common packages anyway"
+            install_packages "$distro" "${common_packages[@]}" || true
+            ;;
+    esac
 }
 
 # Create build script
@@ -217,7 +288,7 @@ create_build_script() {
     log_info "Creating LFS build script..."
 
     cat > "$LFS/build-lfs.sh" << "EOF"
-#!/bin/bash
+#!/usr/bin/env bash
 # Main LFS build script to be run as lfs user
 
 set -e

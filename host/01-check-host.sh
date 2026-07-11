@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Check host system requirements - Compatible with Docker and native
 # Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
@@ -10,6 +10,61 @@ source "$SCRIPT_DIR/../common/utils.sh" 2>/dev/null || {
     log_error() { echo "[ERROR] $*" >&2; }
     log_warning() { echo "[WARNING] $*"; }
     log_success() { echo "[SUCCESS] $*"; }
+}
+
+# Helper functions for distribution detection and package management
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    elif [ -f /etc/redhat-release ]; then
+        echo "rhel"
+    elif [ -f /etc/alpine-release ]; then
+        echo "alpine"
+    else
+        echo "unknown"
+    fi
+}
+
+install_packages() {
+    local distro="$1"
+    shift
+    local packages=("$@")
+
+    log_info "Installing missing packages: ${packages[*]}"
+
+    case "$distro" in
+        debian|ubuntu)
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq "${packages[@]}"
+            ;;
+        fedora|rhel|centos|rocky)
+            if command -v dnf &>/dev/null; then
+                sudo dnf install -y "${packages[@]}"
+            else
+                sudo yum install -y "${packages[@]}"
+            fi
+            ;;
+        opensuse*|sles)
+            sudo zypper install -y "${packages[@]}"
+            ;;
+        arch|manjaro)
+            sudo pacman -Syu --noconfirm "${packages[@]}"
+            ;;
+        alpine)
+            sudo apk add "${packages[@]}"
+            ;;
+        gentoo)
+            log_error "Gentoo detected. Please install the following packages manually using emerge: ${packages[*]}"
+            exit 1
+            ;;
+        *)
+            log_error "Unknown distribution. Please install the following packages manually: ${packages[*]}"
+            exit 1
+            ;;
+    esac
 }
 
 # Detect if running in Docker
@@ -41,17 +96,12 @@ else
     USE_SUDO=false
 fi
 
-# Check distribution
+# Distribution detection
+DISTRO=$(detect_distro)
+log_info "Distribution: $DISTRO"
 if [ -f /etc/os-release ]; then
     . /etc/os-release
-    log_info "Distribution: $NAME $VERSION"
-    if [ -f /etc/debian_version ]; then
-        log_info "Debian/Ubuntu detected"
-    elif [ -f /etc/redhat-release ]; then
-        log_info "Red Hat/Fedora detected"
-    elif [ -f /etc/alpine-release ]; then
-        log_info "Alpine Linux detected"
-    fi
+    log_info "Version: $VERSION"
 fi
 
 # Check architecture
@@ -80,7 +130,8 @@ if [ "$IN_DOCKER" = true ]; then
 
     if [ ${#missing_commands[@]} -ne 0 ]; then
         log_warning "Some commands missing in Docker: ${missing_commands[*]}"
-        log_info "Attempting to continue anyway..."
+        log_info "Attempting to install missing packages inside container"
+        install_packages "$DISTRO" "${missing_commands[@]}"
     fi
 
     log_success "Docker environment check passed"
@@ -103,21 +154,19 @@ done
 
 if [ ${#missing_commands[@]} -ne 0 ]; then
     log_error "Missing required commands: ${missing_commands[*]}"
-    echo ""
-    echo "Install missing packages:"
-    if [ -f /etc/debian_version ]; then
-        echo "  sudo apt install build-essential bison flex gawk texinfo wget git \\"
-        echo "    xorriso parted rsync python3 make patch sed tar gzip xz-utils"
-        echo "  (Note: texinfo package provides the 'makeinfo' command)"
-    elif [ -f /etc/redhat-release ]; then
-        echo "  sudo dnf install gcc gcc-c++ make bison flex gawk m4 texinfo wget \\"
-        echo "    xorriso parted rsync python3 git"
-        echo "  (Note: texinfo package provides the 'makeinfo' command)"
-    fi
-    exit 1
+    log_info "Attempting automatic installation..."
+    install_packages "$DISTRO" "${missing_commands[@]}"
+    # Re-check after installation
+    for cmd in "${missing_commands[@]}"; do
+        if ! command -v $cmd &> /dev/null; then
+            log_error "Command '$cmd' still missing after installation. Please install it manually."
+            exit 1
+        fi
+    done
+    log_success "All missing packages successfully installed."
 fi
 
-# Check library versions
+# Check library versions (unchanged)
 check_version() {
     local cmd=$1
     local min_version=$2
@@ -174,7 +223,7 @@ if [ "$kernel_major" -lt 5 ] || { [ "$kernel_major" -eq 5 ] && [ "$kernel_minor"
     log_warning "Kernel version $kernel_version is old (recommended: 5.10+)"
 fi
 
-# Check disk space (skip if not enough space but continue)
+# Check disk space
 available_space=$(df -BG / 2>/dev/null | awk 'NR==2 {print $4}' | sed 's/G//')
 if [ -z "$available_space" ]; then
     available_space=0
@@ -187,7 +236,7 @@ else
     log_info "Disk space: ${available_space}GB available"
 fi
 
-# Check memory (skip if can't determine)
+# Check memory
 total_mem=$(free -g 2>/dev/null | awk '/^Mem:/{print $2}')
 if [ -n "$total_mem" ]; then
     if [ "$total_mem" -lt 8 ]; then
@@ -228,7 +277,7 @@ log_info "System is ready for LFS build"
 # Print summary
 echo ""
 echo "System Summary:"
-echo "  OS: $NAME $VERSION"
+echo "  OS: ${PRETTY_NAME:-$DISTRO}"
 echo "  Architecture: $ARCH"
 echo "  Kernel: $kernel_version"
 echo "  CPU cores: $cpu_cores"

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Build cross-toolchain - Compatible with Docker and native
 # Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
@@ -15,17 +15,91 @@ else
     log_success() { echo "[SUCCESS] $*"; }
 fi
 
-# ============================================================================
-# INTÉGRATION DU TYPE DE NOYAU (KERNEL_TYPE)
-# ============================================================================
-# Récupère la variable d'environnement ou utilise la valeur par défaut
-# Cette variable sera exportée pour les scripts ultérieurs
+# -------------------------------------------------------------------
+# Distribution and package management helpers
+# -------------------------------------------------------------------
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    elif [ -f /etc/redhat-release ]; then
+        echo "rhel"
+    elif [ -f /etc/alpine-release ]; then
+        echo "alpine"
+    else
+        echo "unknown"
+    fi
+}
+
+install_packages() {
+    local distro="$1"
+    shift
+    local packages=("$@")
+    log_info "Installing packages: ${packages[*]}"
+
+    case "$distro" in
+        debian|ubuntu)
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq "${packages[@]}"
+            ;;
+        fedora|rhel|centos|rocky)
+            if command -v dnf &>/dev/null; then
+                sudo dnf install -y "${packages[@]}"
+            else
+                sudo yum install -y "${packages[@]}"
+            fi
+            ;;
+        opensuse*|sles)
+            sudo zypper install -y "${packages[@]}"
+            ;;
+        arch|manjaro)
+            sudo pacman -Syu --noconfirm "${packages[@]}"
+            ;;
+        alpine)
+            sudo apk add "${packages[@]}"
+            ;;
+        gentoo)
+            log_error "Gentoo detected. Please install the following manually using emerge: ${packages[*]}"
+            exit 1
+            ;;
+        *)
+            log_error "Unknown distribution. Please install the following manually: ${packages[*]}"
+            exit 1
+            ;;
+    esac
+}
+
+ensure_compiler() {
+    # If gcc is already available, nothing to do
+    if command -v gcc &>/dev/null; then
+        log_info "GCC is already installed: $(gcc --version | head -1)"
+        return 0
+    fi
+    log_warning "GCC not found, attempting to install via package manager"
+    local distro
+    distro=$(detect_distro)
+    case "$distro" in
+        debian|ubuntu) install_packages "$distro" gcc ;;
+        fedora|rhel|centos|rocky) install_packages "$distro" gcc ;;
+        arch|manjaro) install_packages "$distro" gcc ;;
+        opensuse*|sles) install_packages "$distro" gcc ;;
+        *) log_error "Cannot install GCC automatically. Please install it manually."; exit 1 ;;
+    esac
+    if ! command -v gcc &>/dev/null; then
+        log_error "GCC installation failed"
+        exit 1
+    fi
+    log_success "GCC installed successfully"
+}
+
+# -------------------------------------------------------------------
+# Kernel type (env variable or default)
+# -------------------------------------------------------------------
 KERNEL_TYPE="${KERNEL_TYPE:-linux}"
 export KERNEL_TYPE
-
 log_info "Kernel type: $KERNEL_TYPE"
-
-# ============================================================================
 
 # Detect if running in Docker
 IN_DOCKER=false
@@ -62,32 +136,27 @@ check_toolchain() {
     return 1
 }
 
-# Create minimal toolchain for Docker
+# Create minimal toolchain for Docker (fallback)
 create_minimal_toolchain() {
     log_info "Creating minimal toolchain for Docker"
 
     mkdir -pv "$LFS/tools/bin"
 
-    # Use system GCC if available
     if command -v gcc &> /dev/null; then
         log_info "Using system GCC: $(gcc --version | head -n1)"
-        # Create symlinks to system tools
         for tool in gcc g++ ld ar ranlib nm strip; do
             if command -v $tool &> /dev/null; then
                 ln -sfv $(which $tool) "$LFS/tools/bin/$tool"
             fi
         done
     else
-        log_warning "No system compiler found, creating wrappers"
-        # Create wrapper scripts
+        # This should rarely happen after ensure_compiler, but fallback
         cat > "$LFS/tools/bin/gcc" << 'WRAPPER'
-#!/bin/bash
+#!/usr/bin/env bash
 echo "WARNING: Using minimal GCC wrapper"
 if [ "$1" = "--version" ]; then
     echo "gcc (LFS Minimal) 13.0"
 else
-    echo "GCC: $*"
-    # Try to use system GCC if available
     if command -v gcc &> /dev/null; then
         exec gcc "$@"
     fi
@@ -99,10 +168,9 @@ WRAPPER
         ln -sfv gcc "$LFS/tools/bin/g++"
     fi
 
-    # Create ld wrapper if needed
     if [ ! -f "$LFS/tools/bin/ld" ]; then
         cat > "$LFS/tools/bin/ld" << 'WRAPPER'
-#!/bin/bash
+#!/usr/bin/env bash
 if command -v ld &> /dev/null; then
     exec ld "$@"
 else
@@ -128,7 +196,6 @@ build_toolchain() {
         return $?
     }
 
-    # Check if we have source files
     if ! ls -1 binutils-*.tar.xz &>/dev/null; then
         log_warning "No source files found in $LFS/sources"
         log_info "Creating minimal toolchain instead"
@@ -136,7 +203,7 @@ build_toolchain() {
         return $?
     fi
 
-    # Build binutils
+    # Binutils
     log_info "Building binutils"
     BINUTILS_TAR=$(ls -1 binutils-*.tar.xz 2>/dev/null | head -n1)
     if [ -n "$BINUTILS_TAR" ]; then
@@ -173,7 +240,7 @@ build_toolchain() {
         fi
     fi
 
-    # Build GCC
+    # GCC
     log_info "Building GCC"
     GCC_TAR=$(ls -1 gcc-*.tar.xz 2>/dev/null | head -n1)
     if [ -n "$GCC_TAR" ]; then
@@ -223,7 +290,6 @@ build_toolchain() {
         fi
     fi
 
-    # Create cc symlink
     if [ -f "$LFS/tools/bin/gcc" ] && [ ! -f "$LFS/tools/bin/cc" ]; then
         ln -sfv gcc "$LFS/tools/bin/cc"
     fi
@@ -232,30 +298,28 @@ build_toolchain() {
     return 0
 }
 
-# Main execution
+# Main
 main() {
+    # Ensure a working compiler is present (try to install if missing)
+    ensure_compiler
+
     if [ "$IN_DOCKER" = true ]; then
         log_info "Running in Docker"
-
         if check_toolchain; then
             log_success "Toolchain already exists, skipping"
             exit 0
         fi
-
         log_info "Building toolchain for Docker"
         build_toolchain || create_minimal_toolchain
-
         log_success "Toolchain setup complete"
         exit 0
     fi
 
-    # Native mode
     if check_toolchain; then
         log_success "Toolchain already exists, skipping"
         exit 0
     fi
 
-    # Check if running as lfs user
     if [ "$(whoami)" != "lfs" ]; then
         log_warning "Not running as lfs user. Switch to lfs user first:"
         log_info "  su - lfs"
