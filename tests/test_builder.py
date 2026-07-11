@@ -7,8 +7,7 @@ import pytest
 import json
 from unittest.mock import patch, MagicMock, call
 from pathlib import Path
-from builder import LFSBuilder
-
+from builder import LFSBuilder, ScriptExecutor, SourceDownloader, main
 
 class TestLFSBuilder:
     """Test LFSBuilder class"""
