@@ -1,25 +1,34 @@
-#!/bin/bash
-# Java Development Profile for LFS
+#!/usr/bin/env bash
+# Java Development Profile for LFS / BLFS
 # Complete Java development environment setup
+# Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
+#
+# This script must be run as root (or with sudo).
+# It installs a full Java development stack into /opt.
 
-set -e
+set -euo pipefail
 
-log_info() { echo -e "\033[0;32m[INFO]\033[0m $1"; }
-log_error() { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
-log_success() { echo -e "\033[0;34m[SUCCESS]\033[0m $1"; }
-log_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
+# ----------------------------------------------------------------------
+# Colors and logging
+# ----------------------------------------------------------------------
+C_RED='\033[0;31m' C_GREEN='\033[0;32m' C_YELLOW='\033[1;33m' C_BLUE='\033[0;34m' C_NC='\033[0m'
+log_info()    { echo -e "${C_GREEN}[INFO]${C_NC} $*"; }
+log_warning() { echo -e "${C_YELLOW}[WARNING]${C_NC} $*"; }
+log_error()   { echo -e "${C_RED}[ERROR]${C_NC} $*" >&2; }
+log_success() { echo -e "${C_BLUE}[SUCCESS]${C_NC} $*"; }
 
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
-
-JAVA_VERSION="21.0.8"
-MAVEN_VERSION="3.9.9"
-GRADLE_VERSION="8.13"
-TOMCAT_VERSION="10.1.39"
-NODE_VERSION="22.14.0"
-DOCKER_VERSION="27.4.1"
-JENKINS_VERSION="2.492.2"
+# ----------------------------------------------------------------------
+# Configuration (can be overridden by environment)
+# ----------------------------------------------------------------------
+JAVA_VERSION="${JAVA_VERSION:-21.0.8}"
+MAVEN_VERSION="${MAVEN_VERSION:-3.9.9}"
+GRADLE_VERSION="${GRADLE_VERSION:-8.13}"
+TOMCAT_VERSION="${TOMCAT_VERSION:-10.1.39}"
+NODE_VERSION="${NODE_VERSION:-22.14.0}"
+DOCKER_VERSION="${DOCKER_VERSION:-27.4.1}"
+JENKINS_VERSION="${JENKINS_VERSION:-2.492.2}"
+KUBECTL_VERSION="${KUBECTL_VERSION:-1.32.3}"
+SPRING_BOOT_VERSION="${SPRING_BOOT_VERSION:-3.2.0}"
 
 JAVA_HOME="/opt/jdk-${JAVA_VERSION}"
 MAVEN_HOME="/opt/maven"
@@ -27,644 +36,397 @@ GRADLE_HOME="/opt/gradle"
 TOMCAT_HOME="/opt/tomcat"
 NODE_HOME="/opt/node"
 
-PACKAGE_LIST="profiles/java-dev/packages.list"
-NUM_JOBS=${NUM_JOBS:-$(nproc)}
+LFS_USER_HOME="${LFS_USER_HOME:-/home/lfsuser}"
+NUM_JOBS="${NUM_JOBS:-$(nproc)}"
 
-# ============================================================================
-# INSTALL JAVA
-# ============================================================================
-install_java() {
-    log_info "Installing OpenJDK ${JAVA_VERSION}..."
-
-    cd /sources
-
-    # Download from Eclipse Temurin (Adoptium)
-    JDK_URL="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-${JAVA_VERSION}%2B9/OpenJDK21U-jdk_x64_linux_hotspot_${JAVA_VERSION}_9.tar.gz"
-    JDK_FILE="OpenJDK21U-jdk_x64_linux_hotspot_${JAVA_VERSION}_9.tar.gz"
-
-    if [ ! -f "$JDK_FILE" ]; then
-        wget "$JDK_URL" -O "$JDK_FILE"
+# ----------------------------------------------------------------------
+# System helpers – package installation on the host (if needed)
+# ----------------------------------------------------------------------
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "${ID}"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    elif [ -f /etc/redhat-release ]; then
+        echo "rhel"
+    else
+        echo "unknown"
     fi
+}
 
-    # Extract and install
-    tar -xzf "$JDK_FILE" -C /opt
+install_host_packages() {
+    local distro="$1" pkgs=("${@:2}")
+    log_info "Installing host packages: ${pkgs[*]}"
+    case "$distro" in
+        debian|ubuntu)
+            apt-get update -qq; apt-get install -y -qq "${pkgs[@]}" ;;
+        fedora|rhel|centos|rocky)
+            if command -v dnf &>/dev/null; then dnf install -y "${pkgs[@]}";
+            else yum install -y "${pkgs[@]}"; fi ;;
+        arch|manjaro) pacman -Syu --noconfirm "${pkgs[@]}" ;;
+        alpine) apk add "${pkgs[@]}" ;;
+        *) log_error "Unsupported distro. Install manually: ${pkgs[*]}"; exit 1 ;;
+    esac
+}
+
+ensure_command() {
+    local cmd="$1" pkg="$2"
+    if ! command -v "$cmd" &>/dev/null; then
+        log_warning "'$cmd' not found. Installing via package manager..."
+        install_host_packages "$(detect_distro)" "$pkg"
+    fi
+}
+
+# ----------------------------------------------------------------------
+# Download helper with retry and optional checksum
+# ----------------------------------------------------------------------
+download() {
+    local url="$1" dest="$2" sha256="${3:-}" retries=3
+    if [ -f "$dest" ]; then
+        log_info "Already downloaded: $(basename "$dest")"
+        if [ -n "$sha256" ]; then
+            echo "$sha256  $dest" | sha256sum -c --quiet 2>/dev/null && return 0
+            log_warning "Checksum mismatch, re-downloading."
+        else
+            return 0
+        fi
+    fi
+    for ((i=1; i<=retries; i++)); do
+        log_info "Downloading $(basename "$dest") (attempt $i/$retries)..."
+        if wget -q --show-progress "$url" -O "$dest"; then
+            if [ -n "$sha256" ]; then
+                echo "$sha256  $dest" | sha256sum -c --quiet && return 0
+                log_error "Checksum verification failed for $(basename "$dest")"
+                return 1
+            fi
+            return 0
+        fi
+        log_warning "Download attempt $i failed."
+        sleep 2
+    done
+    log_error "Failed to download $url"
+    return 1
+}
+
+# ----------------------------------------------------------------------
+# Init system detection and service creation
+# ----------------------------------------------------------------------
+init_system() {
+    if command -v systemctl &>/dev/null; then echo "systemd"; else echo "sysvinit"; fi
+}
+
+create_service() {
+    local name="$1" description="$2" exec_start="$3" exec_stop="${4:-}" \
+          user="${5:-root}" group="${6:-root}" env_vars="${7:-}" type="${8:-forking}"
+    case "$(init_system)" in
+        systemd)
+            cat > "/etc/systemd/system/${name}.service" << EOF
+[Unit]
+Description=${description}
+After=network.target
+
+[Service]
+Type=${type}
+User=${user}
+Group=${group}
+ExecStart=${exec_start}
+ExecStop=${exec_stop}
+${env_vars:+"Environment=${env_vars}"}
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+            systemctl daemon-reload && systemctl enable "${name}.service" 2>/dev/null || true
+            ;;
+        sysvinit)
+            cat > "/etc/init.d/${name}" << EOF
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          ${name}
+# Required-Start:    \$network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: ${description}
+# Description:       ${description}
+### END INIT INFO
+
+case "\$1" in
+    start)
+        echo "Starting ${name}..."
+        ${exec_start} &
+        ;;
+    stop)
+        echo "Stopping ${name}..."
+        ${exec_stop}
+        ;;
+    restart)
+        \$0 stop; sleep 2; \$0 start ;;
+    status)
+        pidof \$(basename \$(echo ${exec_start} | awk '{print \$1}')) >/dev/null && echo "${name} is running" || echo "${name} is not running"
+        ;;
+    *) echo "Usage: \$0 {start|stop|restart|status}"; exit 1 ;;
+esac
+exit 0
+EOF
+            chmod +x "/etc/init.d/${name}"
+            # enable in runlevels
+            update-rc.d "${name}" defaults 2>/dev/null || true
+            ;;
+    esac
+}
+
+# ----------------------------------------------------------------------
+# Prerequisites check – run as root
+# ----------------------------------------------------------------------
+if [ "$(id -u)" -ne 0 ]; then
+    log_error "This script must be run as root. Use sudo."
+    exit 1
+fi
+
+mkdir -p /sources /opt
+ensure_command wget wget
+ensure_command tar tar
+ensure_command unzip unzip
+ensure_command groupadd shadow    # usually present on LFS
+
+# ----------------------------------------------------------------------
+# 1. Java
+# ----------------------------------------------------------------------
+install_java() {
+    log_info "Installing OpenJDK ${JAVA_VERSION} (Eclipse Temurin)"
+    local jdk_url="https://github.com/adoptium/temurin21-binaries/releases/download/jdk-${JAVA_VERSION}%2B9/OpenJDK21U-jdk_x64_linux_hotspot_${JAVA_VERSION}_9.tar.gz"
+    local jdk_file="/sources/jdk-${JAVA_VERSION}.tar.gz"
+    local sha256=""
+
+    download "$jdk_url" "$jdk_file" "$sha256"
+    tar -xzf "$jdk_file" -C /opt
+    # Move to expected name
     mv /opt/jdk-${JAVA_VERSION}* "$JAVA_HOME" 2>/dev/null || true
-
-    # Set environment variables
+    ln -sf "$JAVA_HOME" /opt/jdk-latest
     cat > /etc/profile.d/java.sh << EOF
 export JAVA_HOME=${JAVA_HOME}
 export PATH=\$JAVA_HOME/bin:\$PATH
-export CLASSPATH=.:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar
 EOF
-
-    chmod +x /etc/profile.d/java.sh
-    source /etc/profile.d/java.sh
-
-    # Verify installation
-    if ${JAVA_HOME}/bin/java -version 2>&1 | grep -q "version"; then
-        log_success "Java ${JAVA_VERSION} installed successfully"
-    else
-        log_error "Java installation failed"
-        return 1
-    fi
+    chmod 644 /etc/profile.d/java.sh
+    # Verify
+    ${JAVA_HOME}/bin/java -version 2>&1 | grep -q "version" || { log_error "Java verification failed"; return 1; }
+    log_success "Java ${JAVA_VERSION} installed"
 }
 
-# ============================================================================
-# INSTALL MAVEN
-# ============================================================================
+# ----------------------------------------------------------------------
+# 2. Maven
+# ----------------------------------------------------------------------
 install_maven() {
-    log_info "Installing Maven ${MAVEN_VERSION}..."
-
-    cd /sources
-
-    MAVEN_URL="https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
-    MAVEN_FILE="apache-maven-${MAVEN_VERSION}-bin.tar.gz"
-
-    if [ ! -f "$MAVEN_FILE" ]; then
-        wget "$MAVEN_URL"
-    fi
-
-    tar -xzf "$MAVEN_FILE" -C /opt
+    log_info "Installing Maven ${MAVEN_VERSION}"
+    local url="https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+    local file="/sources/apache-maven-${MAVEN_VERSION}.tar.gz"
+    download "$url" "$file"
+    tar -xzf "$file" -C /opt
     ln -sf "/opt/apache-maven-${MAVEN_VERSION}" "$MAVEN_HOME"
-
+    mkdir -p /opt/maven/repository && chmod 777 /opt/maven/repository
     cat > /etc/profile.d/maven.sh << EOF
-export MAVEN_HOME=/opt/maven
+export MAVEN_HOME=${MAVEN_HOME}
 export PATH=\$MAVEN_HOME/bin:\$PATH
 EOF
-
-    chmod +x /etc/profile.d/maven.sh
-
-    # Create local repository
-    mkdir -p /opt/maven/repository
-    chmod -R 777 /opt/maven/repository
-
-    log_success "Maven ${MAVEN_VERSION} installed"
+    chmod 644 /etc/profile.d/maven.sh
+    log_success "Maven installed"
 }
 
-# ============================================================================
-# INSTALL GRADLE
-# ============================================================================
+# ----------------------------------------------------------------------
+# 3. Gradle
+# ----------------------------------------------------------------------
 install_gradle() {
-    log_info "Installing Gradle ${GRADLE_VERSION}..."
-
-    cd /sources
-
-    GRADLE_URL="https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
-    GRADLE_FILE="gradle-${GRADLE_VERSION}-bin.zip"
-
-    if [ ! -f "$GRADLE_FILE" ]; then
-        wget "$GRADLE_URL"
-    fi
-
-    unzip -q "$GRADLE_FILE" -d /opt
+    log_info "Installing Gradle ${GRADLE_VERSION}"
+    local url="https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
+    local file="/sources/gradle-${GRADLE_VERSION}-bin.zip"
+    download "$url" "$file"
+    unzip -q "$file" -d /opt
     ln -sf "/opt/gradle-${GRADLE_VERSION}" "$GRADLE_HOME"
-
     cat > /etc/profile.d/gradle.sh << EOF
-export GRADLE_HOME=/opt/gradle
+export GRADLE_HOME=${GRADLE_HOME}
 export PATH=\$GRADLE_HOME/bin:\$PATH
 EOF
-
-    chmod +x /etc/profile.d/gradle.sh
-
-    log_success "Gradle ${GRADLE_VERSION} installed"
+    chmod 644 /etc/profile.d/gradle.sh
+    log_success "Gradle installed"
 }
 
-# ============================================================================
-# INSTALL TOMCAT
-# ============================================================================
+# ----------------------------------------------------------------------
+# 4. Tomcat
+# ----------------------------------------------------------------------
 install_tomcat() {
-    log_info "Installing Apache Tomcat ${TOMCAT_VERSION}..."
-
-    # Create tomcat user
+    log_info "Installing Apache Tomcat ${TOMCAT_VERSION}"
     groupadd -r tomcat 2>/dev/null || true
     useradd -r -g tomcat -d "$TOMCAT_HOME" -s /bin/false tomcat 2>/dev/null || true
 
-    cd /sources
-
-    TOMCAT_URL="https://dlcdn.apache.org/tomcat/tomcat-10/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz"
-    TOMCAT_FILE="apache-tomcat-${TOMCAT_VERSION}.tar.gz"
-
-    if [ ! -f "$TOMCAT_FILE" ]; then
-        wget "$TOMCAT_URL"
-    fi
-
-    tar -xzf "$TOMCAT_FILE" -C /opt
+    local url="https://dlcdn.apache.org/tomcat/tomcat-10/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz"
+    local file="/sources/apache-tomcat-${TOMCAT_VERSION}.tar.gz"
+    download "$url" "$file"
+    tar -xzf "$file" -C /opt
     ln -sf "/opt/apache-tomcat-${TOMCAT_VERSION}" "$TOMCAT_HOME"
-
-    # Set permissions
     chown -R tomcat:tomcat "$TOMCAT_HOME"
     chmod +x "$TOMCAT_HOME"/bin/*.sh
 
-    # Create systemd service
-    cat > /etc/systemd/system/tomcat.service << EOF
-[Unit]
-Description=Apache Tomcat Web Application Container
-After=network.target
-
-[Service]
-Type=forking
-User=tomcat
-Group=tomcat
-Environment=JAVA_HOME=${JAVA_HOME}
-Environment=CATALINA_PID=${TOMCAT_HOME}/temp/tomcat.pid
-Environment=CATALINA_HOME=${TOMCAT_HOME}
-Environment=CATALINA_BASE=${TOMCAT_HOME}
-ExecStart=${TOMCAT_HOME}/bin/startup.sh
-ExecStop=${TOMCAT_HOME}/bin/shutdown.sh
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl daemon-reload
-    systemctl enable tomcat
-
-    log_success "Tomcat ${TOMCAT_VERSION} installed"
+    create_service "tomcat" "Apache Tomcat" \
+        "${TOMCAT_HOME}/bin/startup.sh" \
+        "${TOMCAT_HOME}/bin/shutdown.sh" \
+        tomcat tomcat \
+        "JAVA_HOME=${JAVA_HOME}"
+    log_success "Tomcat installed"
 }
 
-# ============================================================================
-# INSTALL NODE.JS
-# ============================================================================
+# ----------------------------------------------------------------------
+# 5. Node.js
+# ----------------------------------------------------------------------
 install_nodejs() {
-    log_info "Installing Node.js ${NODE_VERSION}..."
-
-    cd /sources
-
-    NODE_URL="https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz"
-    NODE_FILE="node-v${NODE_VERSION}-linux-x64.tar.xz"
-
-    if [ ! -f "$NODE_FILE" ]; then
-        wget "$NODE_URL"
-    fi
-
-    tar -xJf "$NODE_FILE" -C /opt
+    log_info "Installing Node.js ${NODE_VERSION}"
+    local url="https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz"
+    local file="/sources/node-v${NODE_VERSION}.tar.xz"
+    download "$url" "$file"
+    tar -xJf "$file" -C /opt
     ln -sf "/opt/node-v${NODE_VERSION}-linux-x64" "$NODE_HOME"
-
     cat > /etc/profile.d/node.sh << EOF
-export NODE_HOME=/opt/node
+export NODE_HOME=${NODE_HOME}
 export PATH=\$NODE_HOME/bin:\$PATH
 EOF
-
-    chmod +x /etc/profile.d/node.sh
-    source /etc/profile.d/node.sh
-
-    # Install global npm packages
-    npm install -g npm@latest
-    npm install -g yarn pnpm typescript ts-node nodemon \
-        @angular/cli @vue/cli create-react-app \
-        pm2 forever nodemon
-
-    log_success "Node.js ${NODE_VERSION} installed"
+    chmod 644 /etc/profile.d/node.sh
+    . /etc/profile.d/node.sh
+    npm install -g npm@latest yarn pnpm typescript ts-node nodemon pm2 2>/dev/null || true
+    log_success "Node.js installed"
 }
 
-# ============================================================================
-# INSTALL DOCKER
-# ============================================================================
+# ----------------------------------------------------------------------
+# 6. Docker (static binary)
+# ----------------------------------------------------------------------
 install_docker() {
-    log_info "Installing Docker ${DOCKER_VERSION}..."
-
-    cd /sources
-
-    DOCKER_URL="https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz"
-    DOCKER_FILE="docker-${DOCKER_VERSION}.tgz"
-
-    if [ ! -f "$DOCKER_FILE" ]; then
-        wget "$DOCKER_URL"
-    fi
-
-    tar -xzf "$DOCKER_FILE" -C /opt
-
+    log_info "Installing Docker ${DOCKER_VERSION}"
+    local url="https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz"
+    local file="/sources/docker-${DOCKER_VERSION}.tgz"
+    download "$url" "$file"
+    tar -xzf "$file" -C /opt
     ln -sf /opt/docker/docker /usr/local/bin/docker
     ln -sf /opt/docker/dockerd /usr/local/bin/dockerd
-
     groupadd -r docker 2>/dev/null || true
-
-    cat > /etc/systemd/system/docker.service << EOF
-[Unit]
-Description=Docker Application Container Engine
-After=network.target
-
-[Service]
-Type=notify
-ExecStart=/usr/local/bin/dockerd
-ExecReload=/bin/kill -s HUP \$MAINPID
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl daemon-reload
-    systemctl enable docker
-
-    log_success "Docker ${DOCKER_VERSION} installed"
+    create_service "docker" "Docker Engine" \
+        "/usr/local/bin/dockerd" \
+        "/bin/kill -s HUP \$(pidof dockerd)" root docker
+    log_success "Docker installed"
 }
 
-# ============================================================================
-# INSTALL KUBECTL
-# ============================================================================
+# ----------------------------------------------------------------------
+# 7. kubectl
+# ----------------------------------------------------------------------
 install_kubectl() {
-    log_info "Installing kubectl..."
-
-    KUBECTL_VERSION="1.32.3"
-    cd /sources
-
-    wget "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
-    chmod +x kubectl
-    mv kubectl /usr/local/bin/
-
-    log_success "kubectl ${KUBECTL_VERSION} installed"
+    log_info "Installing kubectl ${KUBECTL_VERSION}"
+    local url="https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    local file="/sources/kubectl-${KUBECTL_VERSION}"
+    download "$url" "$file"
+    install -m 755 "$file" /usr/local/bin/kubectl
+    log_success "kubectl installed"
 }
 
-# ============================================================================
-# INSTALL JENKINS
-# ============================================================================
+# ----------------------------------------------------------------------
+# 8. Jenkins
+# ----------------------------------------------------------------------
 install_jenkins() {
-    log_info "Installing Jenkins CI/CD..."
-
-    # Create jenkins user
+    log_info "Installing Jenkins ${JENKINS_VERSION}"
     groupadd -r jenkins 2>/dev/null || true
     useradd -r -g jenkins -d /var/lib/jenkins -s /bin/false jenkins 2>/dev/null || true
-
     mkdir -p /var/lib/jenkins /var/log/jenkins /var/cache/jenkins
     chown -R jenkins:jenkins /var/lib/jenkins /var/log/jenkins /var/cache/jenkins
 
-    cd /sources
-    wget "https://get.jenkins.io/war/${JENKINS_VERSION}/jenkins.war"
-
+    local url="https://get.jenkins.io/war/${JENKINS_VERSION}/jenkins.war"
+    local file="/sources/jenkins-${JENKINS_VERSION}.war"
+    download "$url" "$file"
     mkdir -p /opt/jenkins
-    mv jenkins.war /opt/jenkins/
-
-    cat > /etc/systemd/system/jenkins.service << EOF
-[Unit]
-Description=Jenkins Continuous Integration Server
-After=network.target
-
-[Service]
-User=jenkins
-Group=jenkins
-Environment=JAVA_HOME=${JAVA_HOME}
-Environment=JENKINS_HOME=/var/lib/jenkins
-ExecStart=${JAVA_HOME}/bin/java -jar /opt/jenkins/jenkins.war --httpPort=8080
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl daemon-reload
-    systemctl enable jenkins
-
-    log_success "Jenkins ${JENKINS_VERSION} installed"
+    cp "$file" /opt/jenkins/jenkins.war
+    create_service "jenkins" "Jenkins CI" \
+        "${JAVA_HOME}/bin/java -jar /opt/jenkins/jenkins.war --httpPort=8080" \
+        "" jenkins jenkins \
+        "JAVA_HOME=${JAVA_HOME}" forking
+    log_success "Jenkins installed"
 }
 
-# ============================================================================
-# INSTALL SPRING BOOT CLI
-# ============================================================================
+# ----------------------------------------------------------------------
+# 9. Spring Boot CLI
+# ----------------------------------------------------------------------
 install_spring_boot_cli() {
-    log_info "Installing Spring Boot CLI..."
-
-    cd /sources
-
-    SPRING_VERSION="3.2.0"
-    wget "https://repo.spring.io/release/org/springframework/boot/spring-boot-cli/${SPRING_VERSION}/spring-boot-cli-${SPRING_VERSION}-bin.tar.gz"
-    tar -xzf spring-boot-cli-${SPRING_VERSION}-bin.tar.gz -C /opt
-    ln -sf /opt/spring-${SPRING_VERSION} /opt/spring-boot-cli
-
+    log_info "Installing Spring Boot CLI ${SPRING_BOOT_VERSION}"
+    local url="https://repo.spring.io/release/org/springframework/boot/spring-boot-cli/${SPRING_BOOT_VERSION}/spring-boot-cli-${SPRING_BOOT_VERSION}-bin.tar.gz"
+    local file="/sources/spring-boot-cli-${SPRING_BOOT_VERSION}.tar.gz"
+    download "$url" "$file"
+    tar -xzf "$file" -C /opt
+    ln -sf "/opt/spring-${SPRING_BOOT_VERSION}" /opt/spring-boot-cli
     cat > /etc/profile.d/spring.sh << EOF
 export SPRING_HOME=/opt/spring-boot-cli
 export PATH=\$SPRING_HOME/bin:\$PATH
 EOF
-
+    chmod 644 /etc/profile.d/spring.sh
     log_success "Spring Boot CLI installed"
 }
 
-# ============================================================================
-# CONFIGURE JAVA OPTIMIZATIONS
-# ============================================================================
-configure_java_optimizations() {
-    log_info "Configuring Java optimizations..."
-
-    cat >> /etc/profile.d/java-dev.sh << 'EOF'
-
-# Java optimization flags
-export JAVA_OPTS="-server -Xms2g -Xmx4g -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+OptimizeStringConcat"
+# ----------------------------------------------------------------------
+# Java optimizations and aliases (global)
+# ----------------------------------------------------------------------
+configure_developer_env() {
+    log_info "Setting up Java developer environment"
+    cat > /etc/profile.d/java-dev.sh << 'EOF'
+# Java developer environment
+export JAVA_OPTS="-server -Xms2g -Xmx4g -XX:+UseG1GC -XX:+UseStringDeduplication"
 export MAVEN_OPTS="-Xms512m -Xmx2g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m"
 export GRADLE_OPTS="-Dorg.gradle.daemon=true -Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Xms512m -Xmx2g"
 
-# Enable JVM performance flags
-export JAVA_TOOL_OPTIONS="-XX:+PrintCommandLineFlags -XX:+PrintGCDetails -XX:+PrintGCTimeStamps"
-EOF
-
-    # Create systemd override for Tomcat
-    mkdir -p /etc/systemd/system/tomcat.service.d
-    cat > /etc/systemd/system/tomcat.service.d/override.conf << EOF
-[Service]
-Environment="CATALINA_OPTS=-Xms512m -Xmx2g -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
-EOF
-
-    log_success "Java optimizations configured"
-}
-
-# ============================================================================
-# CREATE DEMO PROJECTS
-# ============================================================================
-create_demo_projects() {
-    log_info "Creating demo projects..."
-
-    mkdir -p /home/lfsuser/projects
-
-    # Spring Boot Maven project
-    cat > /home/lfsuser/projects/spring-boot-demo/pom.xml << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
-    </parent>
-
-    <groupId>com.lfs</groupId>
-    <artifactId>demo</artifactId>
-    <version>1.0.0</version>
-    <name>LFS Spring Boot Demo</name>
-
-    <properties>
-        <java.version>21</java.version>
-    </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
-</project>
-EOF
-
-    # Spring Boot application
-    mkdir -p /home/lfsuser/projects/spring-boot-demo/src/main/java/com/lfs/demo
-    cat > /home/lfsuser/projects/spring-boot-demo/src/main/java/com/lfs/demo/DemoApplication.java << 'EOF'
-package com.lfs.demo;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-@SpringBootApplication
-@RestController
-public class DemoApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class, args);
-    }
-
-    @GetMapping("/")
-    public String home() {
-        return "Welcome to LFS Java Development Environment!";
-    }
-
-    @GetMapping("/health")
-    public String health() {
-        return "OK";
-    }
-}
-EOF
-
-    # Dockerfile for the demo
-    cat > /home/lfsuser/projects/spring-boot-demo/Dockerfile << 'EOF'
-FROM openjdk:21-slim
-COPY target/*.jar app.jar
-ENTRYPOINT ["java", "-jar", "/app.jar"]
-EXPOSE 8080
-EOF
-
-    # Gradle example
-    cat > /home/lfsuser/projects/gradle-demo/build.gradle << 'EOF'
-plugins {
-    id 'java'
-    id 'application'
-}
-
-group = 'com.lfs'
-version = '1.0.0'
-
-java {
-    sourceCompatibility = '21'
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'com.google.guava:guava:33.0.0-jre'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
-}
-
-application {
-    mainClass = 'com.lfs.demo.Main'
-}
-
-test {
-    useJUnitPlatform()
-}
-EOF
-
-    mkdir -p /home/lfsuser/projects/gradle-demo/src/main/java/com/lfs/demo
-    cat > /home/lfsuser/projects/gradle-demo/src/main/java/com/lfs/demo/Main.java << 'EOF'
-package com.lfs.demo;
-
-import com.google.common.base.Joiner;
-import java.util.List;
-
-public class Main {
-    public static void main(String[] args) {
-        String result = Joiner.on(", ").join(List.of("Hello", "from", "LFS", "Gradle"));
-        System.out.println(result);
-        System.out.println("Java version: " + System.getProperty("java.version"));
-    }
-}
-EOF
-
-    chown -R lfsuser:lfsuser /home/lfsuser/projects
-
-    log_success "Demo projects created"
-}
-
-# ============================================================================
-# CONFIGURE ALIASES AND PROFILE
-# ============================================================================
-configure_aliases() {
-    log_info "Configuring developer aliases..."
-
-    cat >> /home/lfsuser/.bashrc << 'EOF'
-
-# ============================================================================
-# Java Development Aliases
-# ============================================================================
-
-# Maven aliases
+# Aliases and functions
 alias mci='mvn clean install'
 alias mcp='mvn clean package'
 alias mct='mvn clean test'
-alias mvn-update='mvn versions:use-latest-versions'
-
-# Gradle aliases
-alias gb='./gradlew build'
-alias gt='./gradlew test'
-alias gr='./gradlew run'
-alias gcb='./gradlew clean build'
-
-# Docker aliases
-alias d='docker'
-alias dc='docker-compose'
-alias dps='docker ps'
-alias di='docker images'
-alias dexec='docker exec -it'
-
-# Kubernetes aliases
+alias gb='gradle build'
+alias gt='gradle test'
 alias k='kubectl'
-alias kg='kubectl get'
-alias kd='kubectl describe'
-alias kl='kubectl logs'
+alias d='docker'
 
-# Tomcat aliases
-alias tomcat-start='sudo systemctl start tomcat'
-alias tomcat-stop='sudo systemctl stop tomcat'
-alias tomcat-restart='sudo systemctl restart tomcat'
-alias tomcat-status='sudo systemctl status tomcat'
-
-# Jenkins aliases
-alias jenkins-start='sudo systemctl start jenkins'
-alias jenkins-stop='sudo systemctl stop jenkins'
-alias jenkins-restart='sudo systemctl restart jenkins'
-
-# Docker aliases
-alias docker-start='sudo systemctl start docker'
-alias docker-stop='sudo systemctl stop docker'
-
-# Navigation
-alias proj='cd ~/projects'
-alias spring='cd ~/projects/spring-boot-demo'
-alias gradled='cd ~/projects/gradle-demo'
-
-# Quick commands
-alias java-version='java -version'
-alias mvn-version='mvn -version'
-alias gradle-version='gradle -version'
-alias node-version='node --version'
-alias docker-version='docker --version'
-alias kubectl-version='kubectl version --client'
-
-# Status commands
-alias dev-status='echo "Java: $(java -version 2>&1 | head -n1)"; echo "Maven: $(mvn -version 2>&1 | head -n1)"; echo "Docker: $(docker --version)"'
-EOF
-
-    # Also add helpful functions
-    cat >> /home/lfsuser/.bashrc << 'EOF'
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
-
-# Create new Maven project
 new-maven-project() {
-    mvn archetype:generate -DgroupId=com.example -DartifactId=$1 -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
-    cd $1
-    echo "Maven project $1 created"
+    mvn archetype:generate -DgroupId=com.example -DartifactId="$1" -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+    cd "$1"
 }
-
-# Create new Spring Boot project
 new-spring-project() {
-    spring init --dependencies=web,lombok,devtools --groupId=com.example --artifactId=$1 $1
-    cd $1
-    echo "Spring Boot project $1 created"
+    spring init --dependencies=web,lombok,devtools --groupId=com.example --artifactId="$1" "$1"
+    cd "$1"
 }
-
-# Build and run Java file
-javarun() {
-    javac $1.java && java $1
-}
-
-# Kill Java process by port
-killport() {
-    fuser -k $1/tcp
-}
-
-# Show Java process listing
-jps() {
-    ps aux | grep java
-}
-
-# Find in Maven dependencies
-find-mvn-dep() {
-    mvn dependency:tree | grep -i $1
-}
-
-# Clean Docker
-docker-clean() {
-    docker system prune -af
-}
-
-# Kubernetes port forward
-kpf() {
-    kubectl port-forward pod/$1 $2:$2
+java-run() { javac "$1.java" && java "$1"; }
+dev-status() {
+    echo "Java: $(java -version 2>&1 | head -1)"
+    echo "Maven: $(mvn -version 2>&1 | head -1)"
+    echo "Docker: $(docker --version 2>/dev/null || echo 'not installed')"
 }
 EOF
-
-    chown lfsuser:lfsuser /home/lfsuser/.bashrc
-
-    log_success "Aliases configured"
+    # Also copy to lfsuser home if exists
+    if [ -d "$LFS_USER_HOME" ]; then
+        cp /etc/profile.d/java-dev.sh "$LFS_USER_HOME/.java-dev-aliases.sh" 2>/dev/null || true
+        echo "source ~/.java-dev-aliases.sh" >> "$LFS_USER_HOME/.bashrc"
+        chown lfsuser:lfsuser "$LFS_USER_HOME/.java-dev-aliases.sh" "$LFS_USER_HOME/.bashrc" 2>/dev/null || true
+    fi
 }
 
-# ============================================================================
-# CLEANUP
-# ============================================================================
+# ----------------------------------------------------------------------
+# Cleanup
+# ----------------------------------------------------------------------
 cleanup() {
-    log_info "Cleaning up..."
-
+    log_info "Cleaning up downloaded archives and temporary directories"
     cd /sources
-    rm -rf OpenJDK*.tar.gz apache-maven-*.tar.gz gradle-*.zip apache-tomcat-*.tar.gz
-    rm -rf node-v*.tar.xz docker-*.tgz jenkins.war spring-boot-cli-*.tar.gz
-
-    log_success "Cleanup complete"
+    rm -rf jdk-*.tar.gz apache-maven-*.tar.gz gradle-*.zip apache-tomcat-*.tar.gz \
+           node-v*.tar.xz docker-*.tgz jenkins-*.war spring-boot-cli-*.tar.gz kubectl-*
+    # Remove extracted directories inside /sources if any
+    find /sources -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} + 2>/dev/null || true
+    log_success "Cleanup done"
 }
 
-# ============================================================================
-# MAIN
-# ============================================================================
+# ----------------------------------------------------------------------
+# Main
+# ----------------------------------------------------------------------
 main() {
-    log_info "========================================="
     log_info "Java Development Environment Installation"
-    log_info "========================================="
-    log_warning "This will take 1-2 hours..."
-    echo ""
-
     install_java
     install_maven
     install_gradle
@@ -674,35 +436,9 @@ main() {
     install_kubectl
     install_jenkins
     install_spring_boot_cli
-    configure_java_optimizations
-    create_demo_projects
-    configure_aliases
+    configure_developer_env
     cleanup
-
-    log_success "========================================="
-    log_success "Java Development Environment Complete!"
-    log_success "========================================="
-    echo ""
-    echo "Installed versions:"
-    java -version 2>&1 | head -1
-    mvn -version 2>&1 | head -1
-    gradle -version 2>&1 | head -1
-    node --version
-    docker --version 2>&1
-    kubectl version --client 2>&1 | head -1
-    echo ""
-    echo "Services running:"
-    echo "  Tomcat:  http://localhost:8080"
-    echo "  Jenkins: http://localhost:8081"
-    echo "  Docker:  systemctl start docker"
-    echo ""
-    echo "Commands:"
-    echo "  new-maven-project <name>   - Create Maven project"
-    echo "  new-spring-project <name>  - Create Spring Boot project"
-    echo "  dev-status                 - Show development status"
-    echo ""
-    echo "Demo projects in: ~/projects/"
-    echo "========================================="
+    log_success "All components installed successfully"
 }
 
 main "$@"
