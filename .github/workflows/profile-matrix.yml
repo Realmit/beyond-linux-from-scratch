@@ -33,12 +33,19 @@ jobs:
         run: |
           sudo chown -R lfs:lfs $GITHUB_WORKSPACE
 
+      - name: Prepare lfs build directory
+        run: |
+          sudo mkdir -p /tmp/lfs-build
+          sudo cp -a $GITHUB_WORKSPACE/. /tmp/lfs-build/
+          sudo chown -R lfs:lfs /tmp/lfs-build
+
       - name: Build ${{ matrix.profile }}
         run: |
+          cd /tmp/lfs-build
           sudo -u lfs python3 builder.py --profile ${{ matrix.profile }} --output ./build-${{ matrix.profile }}
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v4
         with:
           name: lfs-${{ matrix.profile }}
-          path: ./build-${{ matrix.profile }}/lfs-installer.iso
+          path: /tmp/lfs-build/build-${{ matrix.profile }}/lfs-installer.iso
