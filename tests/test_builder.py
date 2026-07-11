@@ -74,6 +74,20 @@ class TestLFSBuilder:
                             result = builder.check_prerequisites()
                             assert result is True
 
+    def test_build_cross_compile_logs(self, builder):   # <-- ajoute 'self' et 'builder'
+        """Ensure cross-compilation info is logged during build."""
+        builder.logger = MagicMock()
+        builder.config.set('bootloader.type', 'uboot')
+
+        with patch.object(builder, 'is_cross_compile', return_value=True), \
+                patch.object(builder, 'get_target_architecture', return_value='aarch64'), \
+                patch.object(builder, 'get_build_stages', return_value=[('stage1', 'script.sh')]), \
+                patch.object(builder.executor, 'run_script', return_value=True):
+            result = builder.build()
+            assert result is True
+            builder.logger.info.assert_any_call("Cross-compiling for: aarch64")
+            builder.logger.info.assert_any_call("Bootloader: uboot")
+
     def test_check_prerequisites_missing_commands(self, builder):
         """Test prerequisites with missing commands"""
         with patch('platform.system', return_value='Linux'):
