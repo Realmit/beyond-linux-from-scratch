@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import logging
 import tarfile
 import tempfile
+import pwd
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
@@ -1153,6 +1154,48 @@ class LFSBuilder:
         )
         return logging.getLogger(__name__)
 
+    def detect_host_distro(self) -> str:
+        """Returns 'debian', 'fedora', 'arch', or 'unknown'."""
+        os_release = Path('/etc/os-release')
+        if os_release.exists():
+            content = os_release.read_text().lower()
+            if 'fedora' in content:
+                return 'fedora'
+            if 'debian' in content or 'ubuntu' in content:
+                return 'debian'
+            if 'arch' in content:
+                return 'arch'
+        return 'unknown'
+
+    def ensure_lfs_user(self) -> bool:
+        try:
+            pwd.getpwnam('lfs')
+            bashrc = Path('/home/lfs/.bashrc')
+            if not bashrc.exists():
+                if os.geteuid() == 0:
+                    bashrc.touch()
+                    shutil.chown(bashrc, user='lfs', group='lfs')
+                else:
+                    self.logger.error(
+                        "lfs user exists but /home/lfs/.bashrc is missing. "
+                        "Run: sudo touch /home/lfs/.bashrc && sudo chown lfs:lfs /home/lfs/.bashrc"
+                    )
+                    return False
+            return True
+        except KeyError:
+            if os.geteuid() == 0:
+                subprocess.run(['useradd', '-m', '-s', '/bin/bash', 'lfs'], check=True)
+                Path('/home/lfs/.bashrc').touch()
+                shutil.chown(Path('/home/lfs/.bashrc'), user='lfs', group='lfs')
+                return True
+            else:
+                self.logger.error(
+                    "The 'lfs' user is required but not present.\n"
+                    "Create it manually with: sudo useradd -m -s /bin/bash lfs\n"
+                    "Then run: sudo touch /home/lfs/.bashrc && sudo chown lfs:lfs /home/lfs/.bashrc"
+                )
+                return False
+
     def check_prerequisites(self) -> bool:
         """Check system prerequisites based on platform"""
         self.logger.info(f"Checking prerequisites on {self.system}")
@@ -1167,13 +1210,38 @@ class LFSBuilder:
             required_cmds = ['bash', 'gcc', 'make', 'bison', 'gawk', 'm4', 'wget', 'tar', 'gzip', 'xorriso', 'parted']
             required_space = 50
             self.logger.info("Linux detected - Native build mode")
+            # Detect host distribution
+            host_distro = self.detect_host_distro()
+            self.logger.info(f"Detected host distribution: {host_distro}")
 
-            # Add cross-compilation requirements
+            # Cross-compilation requirements with distro-specific packages
             if self.is_cross_compile():
                 cross_gcc = f"{self.get_target_architecture()}-linux-gnu-gcc"
                 if not shutil.which(cross_gcc):
                     self.logger.warning(f"Cross-compiler not found: {cross_gcc}")
-                    self.logger.info(f"Install with: apt install gcc-{self.get_target_architecture()}-linux-gnu binutils-{self.get_target_architecture()}-linux-gnu")
+                    if host_distro == 'fedora':
+                        self.logger.info(
+                            f"Install with: sudo dnf install gcc-{self.get_target_architecture()}-linux-gnu "
+                            f"binutils-{self.get_target_architecture()}-linux-gnu"
+                        )
+                    elif host_distro == 'debian':
+                        self.logger.info(
+                            f"Install with: sudo apt install gcc-{self.get_target_architecture()}-linux-gnu "
+                            f"binutils-{self.get_target_architecture()}-linux-gnu"
+                        )
+                    elif host_distro == 'arch':
+                        self.logger.info(
+                            f"Install with: sudo pacman -S aarch64-linux-gnu-gcc"
+                        )
+                    else:
+                        self.logger.info(
+                            f"Please install the cross-compiler for {self.get_target_architecture()} manually."
+                        )
+
+            # Check for lfs user (required by host-prepare stage)
+            # Vérification de l'utilisateur lfs via la méthode dédiée
+            if not self.ensure_lfs_user():
+                return False
 
         elif self.system == "Darwin":
             required_cmds = ['bash', 'docker', 'make', 'gawk', 'm4']
@@ -1187,6 +1255,7 @@ class LFSBuilder:
             self.logger.error(f"Unsupported OS: {self.system}")
             return False
 
+        # Check for required commands
         missing = []
         for cmd in required_cmds:
             if not shutil.which(cmd):
@@ -1195,9 +1264,17 @@ class LFSBuilder:
         if missing:
             self.logger.error(f"Missing commands: {', '.join(missing)}")
             if self.system == "Linux":
-                self.logger.info("Install missing packages: sudo apt install build-essential bison flex gawk texinfo wget xorriso parted")
+                if host_distro == 'fedora':
+                    self.logger.info("Install missing packages: sudo dnf install build-essential bison flex gawk texinfo wget xorriso parted")
+                elif host_distro == 'debian':
+                    self.logger.info("Install missing packages: sudo apt install build-essential bison flex gawk texinfo wget xorriso parted")
+                elif host_distro == 'arch':
+                    self.logger.info("Install missing packages: sudo pacman -S base-devel bison flex gawk texinfo wget xorriso parted")
+                else:
+                    self.logger.info("Please install the required build tools manually.")
             return False
 
+        # Check free disk space
         free_space = shutil.disk_usage(self.output_dir).free // (1024**3)
         if free_space < required_space:
             self.logger.warning(f"Low disk space: {free_space}GB (recommended: {required_space}GB)")
@@ -1617,6 +1694,9 @@ Examples:
                         default='linux',
                         help='Type de noyau à utiliser (linux, linux-libre, gnu-hurd, freebsd)')
 
+    parser.add_argument('--host-distro', choices=['debian', 'fedora', 'arch', 'auto'], default='auto',
+                        help='Override host distribution detection')
+
     return parser
 
 def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
@@ -1638,9 +1718,6 @@ def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
     else:
         logger.info("Clean cancelled")
         return False
-
-
-
 
 def main():
     """Main entry point"""

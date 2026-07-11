@@ -21,7 +21,8 @@ def builder():
                 "blfs_version": "13.0",
                 "architecture": "x86_64"
             }, f)
-    return LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+    b = LFSBuilder(profile='minimal', output_dir=output_dir, config_file=config_file)
+    return b
 
 
 @pytest.fixture
@@ -31,7 +32,6 @@ def executor(builder):
 
 @pytest.fixture
 def downloader(builder):
-    # Ensure sources directory exists
     sources_dir = builder.downloader.sources_dir
     sources_dir.mkdir(parents=True, exist_ok=True)
     return builder.downloader
@@ -47,48 +47,127 @@ def stages():
 
 class TestCheckPrerequisites:
 
+    # --- Helper pour les mocks de base Linux (toutes commandes présentes, espace disque OK, pas Docker) ---
+    @staticmethod
+    def _base_linux_patches(builder):
+        return [
+            patch.object(builder, 'detect_host_distro', return_value='fedora'),
+            patch.object(builder, 'ensure_lfs_user', return_value=True),
+            patch('shutil.which', return_value=True),
+            patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)),
+            patch('os.path.exists', return_value=False),   # pas docker
+        ]
+
+    def _context_for(self, patches):
+        import contextlib
+        stack = contextlib.ExitStack()
+        for p in patches:
+            stack.enter_context(p)
+        return stack
+
+    # --- Détection de la distribution (via mock de detect_host_distro) ---
+    @pytest.mark.parametrize("distro", ['fedora', 'debian', 'arch', 'unknown'])
+    def test_host_distro_logging(self, builder, distro):
+        builder.system = 'Linux'
+        builder.logger = MagicMock()
+        patches = self._base_linux_patches(builder)
+        patches.append(patch.object(builder, 'detect_host_distro', return_value=distro))
+        with self._context_for(patches):
+            builder.check_prerequisites()
+            builder.logger.info.assert_any_call(f"Detected host distribution: {distro}")
+
+    # --- Utilisateur lfs manquant ---
+    def test_lfs_user_missing(self, builder):
+        builder.system = 'Linux'
+        builder.logger = MagicMock()
+        patches = self._base_linux_patches(builder)
+        patches.append(patch.object(builder, 'ensure_lfs_user', return_value=False))
+        with self._context_for(patches):
+            assert builder.check_prerequisites() is False
+
+    # --- Utilisateur lfs OK ---
+    def test_lfs_user_ok(self, builder):
+        builder.system = 'Linux'
+        patches = self._base_linux_patches(builder)
+        patches.append(patch.object(builder, 'ensure_lfs_user', return_value=True))
+        with self._context_for(patches):
+            assert builder.check_prerequisites() is True
+
+    # --- Cross-compilation + messages par distribution ---
+    @pytest.mark.parametrize("distro, expected_msg", [
+        ('fedora', "Install with: sudo dnf install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu"),
+        ('debian', "Install with: sudo apt install gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu"),
+        ('arch', "Install with: sudo pacman -S aarch64-linux-gnu-gcc"),
+        ('unknown', "Please install the cross-compiler for aarch64 manually."),
+    ])
+    def test_cross_compile_missing_compiler_with_distro(self, builder, distro, expected_msg):
+        builder.system = 'Linux'
+        builder.logger = MagicMock()
+        patches = self._base_linux_patches(builder)
+        patches.append(patch.object(builder, 'detect_host_distro', return_value=distro))
+        patches.append(patch.object(builder, 'is_cross_compile', return_value=True))
+        patches.append(patch.object(builder, 'get_target_architecture', return_value='aarch64'))
+        patches.append(patch('shutil.which', return_value=None))  # cross-compiler absent
+        with self._context_for(patches):
+            builder.check_prerequisites()
+            builder.logger.warning.assert_called_with("Cross-compiler not found: aarch64-linux-gnu-gcc")
+            builder.logger.info.assert_any_call(expected_msg)
+
+    # --- Commandes manquantes avec aide par distribution ---
+    @pytest.mark.parametrize("distro, missing_cmd, expected_help", [
+        ('fedora', 'gcc', "Install missing packages: sudo dnf install build-essential bison flex gawk texinfo wget xorriso parted"),
+        ('debian', 'make', "Install missing packages: sudo apt install build-essential bison flex gawk texinfo wget xorriso parted"),
+        ('arch', 'bison', "Install missing packages: sudo pacman -S base-devel bison flex gawk texinfo wget xorriso parted"),
+        ('unknown', 'wget', "Please install the required build tools manually."),
+    ])
+    def test_missing_commands_distro_help(self, builder, distro, missing_cmd, expected_help):
+        builder.system = 'Linux'
+        builder.logger = MagicMock()
+
+        def which_side(cmd):
+            return cmd != missing_cmd
+
+        patches = self._base_linux_patches(builder)
+        patches.append(patch.object(builder, 'detect_host_distro', return_value=distro))
+        patches.append(patch('shutil.which', side_effect=which_side))
+        with self._context_for(patches):
+            result = builder.check_prerequisites()
+            assert result is False
+            builder.logger.error.assert_called_with(f"Missing commands: {missing_cmd}")
+            builder.logger.info.assert_any_call(expected_help)
+
+    # --- OS non supporté ---
     def test_unsupported_os(self, builder):
         builder.system = 'Unknown'
         assert builder.check_prerequisites() is False
 
+    # --- Windows ---
     def test_windows_os(self, builder):
         builder.system = 'Windows'
-        with patch('shutil.which', return_value=True):
-            with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
-                assert builder.check_prerequisites() is True
+        with patch('shutil.which', return_value=True), \
+                patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
+            assert builder.check_prerequisites() is True
 
-    def test_missing_commands(self, builder):
-        builder.system = 'Linux'
-        with patch('shutil.which', return_value=None):
-            assert builder.check_prerequisites() is False
+    # --- macOS non Docker ---
+    def test_macos_non_docker(self, builder):
+        builder.system = 'Darwin'
+        with patch('os.path.exists', return_value=False), \
+                patch('shutil.which', return_value=True), \
+                patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
+            assert builder.check_prerequisites() is True
 
+    # --- Espace disque faible ---
     def test_low_disk_space(self, builder, caplog):
         builder.system = 'Linux'
-        with patch('shutil.which', return_value=True):
-            with patch('shutil.disk_usage', return_value=MagicMock(free=10*1024**3)):
-                with caplog.at_level(logging.WARNING):
-                    result = builder.check_prerequisites()
-                assert result is True
-                assert "Low disk space" in caplog.text
+        patches = self._base_linux_patches(builder)
+        patches.append(patch('shutil.disk_usage', return_value=MagicMock(free=10*1024**3)))
+        with self._context_for(patches):
+            with caplog.at_level(logging.WARNING):
+                result = builder.check_prerequisites()
+            assert result is True
+            assert "Low disk space" in caplog.text
 
-    def test_cross_compile_missing_toolchain(self, builder):
-        builder.system = 'Linux'
-        builder.config.set('cross_compile', True)
-        builder.config.set('architecture', 'aarch64')
-        def which_side_effect(cmd):
-            if cmd == 'aarch64-linux-gnu-gcc':
-                return None
-            return '/usr/bin/' + cmd
-        with patch('shutil.which', side_effect=which_side_effect):
-            with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
-                assert builder.check_prerequisites() is True
-
-    def test_macos_non_docker(self, builder):
-        with patch('os.path.exists', return_value=False):
-            with patch('shutil.which', return_value=True):
-                with patch('shutil.disk_usage', return_value=MagicMock(free=100*1024**3)):
-                    assert builder.check_prerequisites() is True
-
+    # --- Autres tests (inchangés) ---
     def test_build_resume_from(self, builder):
         with patch.object(builder.executor, 'resume_from', return_value=True) as mock_resume:
             builder.build(resume_from='host-check')
@@ -134,14 +213,12 @@ class TestCheckPrerequisites:
         assert exc.value.code == 0
 
     def test_download_retry_success_after_failure(self, downloader):
-        # Simulate failure on first attempt, success on second
-        def fake_retrieve(url, dest, *args, **kwargs):  # Accepte tout argument
+        def fake_retrieve(url, dest, *args, **kwargs):
             if not hasattr(fake_retrieve, 'attempt'):
                 fake_retrieve.attempt = 0
             fake_retrieve.attempt += 1
             if fake_retrieve.attempt == 1:
                 raise Exception('Network error')
-            # Ensure parent directory exists
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text('dummy')
             return (str(dest), None)
@@ -150,20 +227,76 @@ class TestCheckPrerequisites:
             assert result is True
 
     def test_find_script_with_scripts_prefix(self, executor, tmp_path):
-        # Change working directory to tmp_path to isolate the test
         original_cwd = os.getcwd()
         os.chdir(tmp_path)
         try:
-            # Create a 'scripts' subdirectory with a test script
             scripts_dir = tmp_path / 'scripts'
             scripts_dir.mkdir()
             (scripts_dir / 'test.sh').touch()
-
-            # The function searches in current directory and 'scripts/'
-            # We want to simulate that the script is only in 'scripts/'
-            # So we make sure it's not directly in tmp_path
             result = executor.find_script('test.sh')
-            # It should find it in 'scripts/test.sh'
             assert result == Path('scripts/test.sh')
         finally:
             os.chdir(original_cwd)
+
+
+# --- Tests unitaires des méthodes detect_host_distro et ensure_lfs_user ---
+
+class TestDetectHostDistro:
+    @pytest.mark.parametrize("content,expected", [
+        ("ID=fedora\n", "fedora"),
+        ("ID=debian\n", "debian"),
+        ("ID=ubuntu\n", "debian"),
+        ("ID=arch\n", "arch"),
+        ("ID=opensuse\n", "unknown"),
+        ("", "unknown"),
+    ])
+    def test_detect_host_distro(self, builder, content, expected):
+        with patch.object(Path, 'exists', return_value=True), \
+                patch.object(Path, 'read_text', return_value=content):
+            assert builder.detect_host_distro() == expected
+
+    def test_os_release_not_found(self, builder):
+        with patch.object(Path, 'exists', return_value=False):
+            assert builder.detect_host_distro() == "unknown"
+
+
+class TestEnsureLFSUser:
+    def test_user_exists_bashrc_ok(self, builder):
+        with patch('pwd.getpwnam', return_value=True), \
+                patch.object(Path, 'exists', return_value=True):
+            assert builder.ensure_lfs_user() is True
+
+    def test_user_exists_no_bashrc_root_creates(self, builder):
+        builder.logger = MagicMock()
+        with patch('pwd.getpwnam', return_value=True), \
+                patch.object(Path, 'exists', return_value=False), \
+                patch('os.geteuid', return_value=0), \
+                patch.object(Path, 'touch'), \
+                patch('shutil.chown') as mock_chown:
+            assert builder.ensure_lfs_user() is True
+            mock_chown.assert_called_once()
+
+    def test_user_exists_no_bashrc_non_root_returns_false(self, builder):
+        builder.logger = MagicMock()
+        with patch('pwd.getpwnam', return_value=True), \
+                patch.object(Path, 'exists', return_value=False), \
+                patch('os.geteuid', return_value=1000):
+            assert builder.ensure_lfs_user() is False
+            builder.logger.error.assert_called_once()
+
+    def test_user_missing_root_creates(self, builder):
+        builder.logger = MagicMock()
+        with patch('pwd.getpwnam', side_effect=KeyError), \
+                patch('os.geteuid', return_value=0), \
+                patch('subprocess.run') as mock_run, \
+                patch.object(Path, 'touch'), \
+                patch('shutil.chown'):
+            assert builder.ensure_lfs_user() is True
+            mock_run.assert_called_once_with(['useradd', '-m', '-s', '/bin/bash', 'lfs'], check=True)
+
+    def test_user_missing_non_root_returns_false(self, builder):
+        builder.logger = MagicMock()
+        with patch('pwd.getpwnam', side_effect=KeyError), \
+                patch('os.geteuid', return_value=1000):
+            assert builder.ensure_lfs_user() is False
+            builder.logger.error.assert_called_once()
