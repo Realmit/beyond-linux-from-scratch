@@ -14,6 +14,7 @@
 - [Features](#features)
 - [Build Profiles](#build-profiles)
 - [Java Development](profiles/java-dev/java-dev-doc.md)
+- [lpm - Linux Package Manager](docs/lpm.md)
 - [System Requirements](#system-requirements)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
