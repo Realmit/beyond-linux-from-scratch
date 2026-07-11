@@ -29,9 +29,13 @@ jobs:
           fi
           sudo -u lfs touch /home/lfs/.bashrc
 
+      - name: Prepare lfs user permissions
+        run: |
+          sudo chown -R lfs:lfs $GITHUB_WORKSPACE
+
       - name: Build ${{ matrix.profile }}
         run: |
-          python3 builder.py --profile ${{ matrix.profile }} --output ./build-${{ matrix.profile }}
+          sudo -u lfs python3 builder.py --profile ${{ matrix.profile }} --output ./build-${{ matrix.profile }}
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v4
