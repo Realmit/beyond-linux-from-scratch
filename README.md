@@ -13,6 +13,7 @@
 - [Overview](#overview)
 - [Features](#features)
 - [Build Profiles](#build-profiles)
+- [Java Development](profiles/java-dev/java-dev-doc.md)
 - [System Requirements](#system-requirements)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
