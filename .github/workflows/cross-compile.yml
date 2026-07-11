@@ -26,6 +26,10 @@ jobs:
           fi
           sudo -u lfs touch /home/lfs/.bashrc
 
+      - name: Grant lfs user passwordless sudo
+        run: |
+          echo "lfs ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/lfs
+
       - name: Prepare lfs build directory
         run: |
           sudo mkdir -p /tmp/lfs-build
