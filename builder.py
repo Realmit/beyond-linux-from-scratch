@@ -1697,6 +1697,11 @@ Examples:
     parser.add_argument('--host-distro', choices=['debian', 'fedora', 'arch', 'auto'], default='auto',
                         help='Override host distribution detection')
 
+    parser.add_argument('--bootloader',
+                        choices=['grub', 'uboot', 'aboot'],
+                        default=None,
+                        help='Override bootloader type (grub, uboot, aboot)')
+
     return parser
 
 def clean_build_directory(output_dir: Path, logger: logging.Logger) -> bool:
@@ -1779,6 +1784,13 @@ def main():
     if args.kernel_type:
         builder.config.set('kernel.type', args.kernel_type)
         builder.logger.info(f"Kernel type overridden to: {args.kernel_type}")
+
+    if args.bootloader:
+        builder.config.set('bootloader.type', args.bootloader)
+        builder.logger.info(f"Bootloader overridden to: {args.bootloader}")
+        # Mettre à jour l'environnement pour les scripts, car la config est déjà exportée via flatten
+        # Il faut recréer l'exécuteur pour que les nouvelles variables d'environnement soient prises en compte
+        builder.executor = ScriptExecutor(builder._get_env(), builder.output_dir, builder.logger)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)

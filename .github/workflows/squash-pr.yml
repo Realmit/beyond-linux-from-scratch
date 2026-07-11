@@ -1,0 +1,32 @@
+name: Squash PR Commits
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  squash:
+    if: |
+      github.event.issue.pull_request && 
+      startsWith(github.event.comment.body, '/squash')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          gh auth status
+
+      - name: Extract PR number
+        id: pr
+        run: |
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          PR_NUMBER=$(echo "$COMMENT_BODY" | grep -oE '[0-9]+' | head -1)
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Squash PR commits
+        run: |
+          chmod +x squash-pr-commits.sh
+          ./squash-pr-commits.sh ${{ steps.pr.outputs.pr_number }} "PR #${{ steps.pr.outputs.pr_number }} (squashed by comment)"

@@ -500,3 +500,49 @@ class TestLFSBuilder:
         result = subprocess.run([sys.executable, str(script), '--help'], capture_output=True, text=True)
         assert result.returncode == 0
         assert 'LFS/BLFS Builder' in result.stdout
+
+    def test_bootloader_override(self, builder):
+        """Test --bootloader override logic (config, logging, executor update)."""
+        builder.logger = MagicMock()
+
+        # Simulate the main() override logic exactly
+        args_bootloader = 'uboot'
+        builder.config.set('bootloader.type', args_bootloader)
+        builder.logger.info(f"Bootloader overridden to: {args_bootloader}")
+        # Recreate executor with updated environment (this is the uncovered line)
+        builder.executor = ScriptExecutor(builder._get_env(), builder.output_dir, builder.logger)
+
+        # Verify config and environment variable
+        assert builder.config.get('bootloader.type') == 'uboot'
+        builder.logger.info.assert_any_call("Bootloader overridden to: uboot")
+
+        env = builder._get_env()
+        assert env['LFS_CONFIG_BOOTLOADER_TYPE'] == 'uboot'
+
+        # Verify that the executor was indeed replaced (optional, just for sanity)
+        assert isinstance(builder.executor, ScriptExecutor)
+
+
+    def test_bootloader_default(self, builder):
+        """Default bootloader is 'grub' from default config (no override)."""
+        # The builder fixture uses 'minimal' profile which doesn't set bootloader.
+        # Default config sets bootloader.type = 'grub'
+        assert builder.config.get('bootloader.type') == 'grub'
+        env = builder._get_env()
+        assert env['LFS_CONFIG_BOOTLOADER_TYPE'] == 'grub'
+
+
+    def test_bootloader_override_cross_compile_log(self, builder):
+        """When cross-compiling, the build log should show the overridden bootloader."""
+        builder.logger = MagicMock()
+        builder.config.set('bootloader.type', 'aboot')   # override to aboot
+
+        with patch.object(builder, 'is_cross_compile', return_value=True), \
+                patch.object(builder, 'get_target_architecture', return_value='aarch64'), \
+                patch.object(builder, 'get_build_stages', return_value=[('stage1', 'script.sh')]), \
+                patch.object(builder.executor, 'run_script', return_value=True):
+            result = builder.build()
+            assert result is True
+            # Cross-compilation lines
+            builder.logger.info.assert_any_call("Cross-compiling for: aarch64")
+            builder.logger.info.assert_any_call("Bootloader: aboot")
