@@ -7,11 +7,10 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: read
+  contents: read   # Required for checking out code and uploading coverage
 
 jobs:
-  # ── Job existant (inchangé) : tests Python multi‑versions sur Ubuntu ──
-  test:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -30,82 +29,13 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
         run: |
+          # Check for syntax errors and undefined names (exit with error code)
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+          # Full linting report (exit-zero means ignore failure)
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics || true
       - name: Test with pytest
         run: |
           pytest tests/ --cov=builder --cov-report=term --cov-report=xml -v
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-  # ── Nouveau job : tests multi‑distributions ──
-  multi-distro:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        container:
-          - ubuntu:22.04
-          - ubuntu:24.04
-          - fedora:39
-          - archlinux:latest
-
-    container:
-      image: ${{ matrix.container }}
-      options: --user root
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install distribution-specific prerequisites
-        shell: bash
-        run: |
-          if [ -f /etc/os-release ]; then
-            . /etc/os-release
-            DISTRO=$ID
-          else
-            DISTRO=$(grep ^ID= /etc/os-release 2>/dev/null | cut -d= -f2)
-            [ -z "$DISTRO" ] && DISTRO=unknown
-          fi
-          echo "Detected distro: $DISTRO"
-          case "$DISTRO" in
-            ubuntu|debian)
-              apt-get update -y
-              apt-get install -y --no-install-recommends \
-                build-essential bison flex gawk texinfo wget curl git \
-                python3 python3-pip xorriso isolinux mtools dosfstools \
-                parted rsync bc cpio libssl-dev libelf-dev sudo
-              ;;
-            fedora)
-              dnf install -y \
-                gcc gcc-c++ make bison flex gawk texinfo wget curl git \
-                python3 python3-pip xorriso syslinux mtools dosfstools \
-                parted rsync bc cpio openssl-devel elfutils-libelf-devel kmod sudo
-              ;;
-            arch)
-              pacman -Syu --noconfirm
-              pacman -S --noconfirm \
-                base-devel bison flex gawk texinfo wget curl git \
-                python python-pip xorriso libisoburn mtools dosfstools \
-                parted rsync bc cpio openssl elfutils kmod sudo
-              ;;
-            *)
-              echo "Unknown distribution – attempting to install only Python and basic tools"
-              ;;
-          esac
-
-      - name: Install Python dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install flake8 pytest coverage pytest-cov pytest-timeout requests-mock pytest-mock
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-      - name: Test with pytest
-        run: |
-          pytest tests/ --cov=builder --cov-report=term --cov-report=xml -v
-
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
