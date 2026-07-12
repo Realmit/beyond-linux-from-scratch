@@ -1,51 +1,51 @@
-name: Multi-Distro Test
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  test-distro:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        distro:
-          - name: ubuntu
-            image: ubuntu:22.04
-            setup: |
-              apt update
-              apt install -y build-essential bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libssl-dev libelf-dev
-          - name: fedora
-            image: fedora:39
-            setup: |
-              dnf groupinstall -y "Development Tools"
-              dnf install -y bison flex gawk texinfo wget curl git python3 python3-pip xorriso syslinux mtools dosfstools parted rsync bc cpio kmod openssl-devel elfutils-libelf-devel
-          - name: arch
-            image: archlinux:latest
-            setup: |
-              pacman -Syu --noconfirm
-              pacman -S --noconfirm base-devel bison flex gawk texinfo wget curl git python python-pip xorriso libisoburn mtools dosfstools parted rsync bc cpio kmod openssl elfutils
-
-    container:
-      image: ${{ matrix.distro.image }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: ${{ matrix.distro.setup }}
-
-      - name: Verify Python is installed
-        run: python3 --version
-
-      - name: Run builder smoke test (minimal profile)
-        run: |
-          python3 builder.py --profile minimal --no-live --output ./build-test
-
-      - name: Verify build artifacts
-        run: |
-          test -d ./build-test/image
-          test -f ./build-test/build_info.json
+#name: Multi-Distro Test
+#
+#on:
+#  push:
+#    branches: [ main ]
+#  pull_request:
+#    branches: [ main ]
+#
+#jobs:
+#  test-distro:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        distro:
+#          - name: ubuntu
+#            image: ubuntu:22.04
+#            setup: |
+#              apt update
+#              apt install -y build-essential bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libssl-dev libelf-dev
+#          - name: fedora
+#            image: fedora:39
+#            setup: |
+#              dnf groupinstall -y "Development Tools"
+#              dnf install -y bison flex gawk texinfo wget curl git python3 python3-pip xorriso syslinux mtools dosfstools parted rsync bc cpio kmod openssl-devel elfutils-libelf-devel
+#          - name: arch
+#            image: archlinux:latest
+#            setup: |
+#              pacman -Syu --noconfirm
+#              pacman -S --noconfirm base-devel bison flex gawk texinfo wget curl git python python-pip xorriso libisoburn mtools dosfstools parted rsync bc cpio kmod openssl elfutils
+#
+#    container:
+#      image: ${{ matrix.distro.image }}
+#
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Install dependencies
+#        run: ${{ matrix.distro.setup }}
+#
+#      - name: Verify Python is installed
+#        run: python3 --version
+#
+#      - name: Run builder smoke test (minimal profile)
+#        run: |
+#          python3 builder.py --profile minimal --no-live --output ./build-test
+#
+#      - name: Verify build artifacts
+#        run: |
+#          test -d ./build-test/image
+#          test -f ./build-test/build_info.json

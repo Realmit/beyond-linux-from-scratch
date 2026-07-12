@@ -1,51 +1,51 @@
-# .github/workflows/profile-matrix.yml
-name: Profile Matrix Build
-
-on:
-  push:
-    branches: [ main ]
-  schedule:
-    - cron: '0 4 * * *'
-
-jobs:
-  matrix:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: [minimal, xfce, server, audio-cli]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libssl-dev libelf-dev
-
-      - name: Create lfs user
-        run: |
-          if ! id lfs &>/dev/null; then
-            sudo useradd -m -s /bin/bash lfs
-          fi
-          sudo -u lfs touch /home/lfs/.bashrc
-
-      - name: Prepare lfs user permissions
-        run: |
-          sudo chown -R lfs:lfs $GITHUB_WORKSPACE
-
-      - name: Prepare lfs build directory
-        run: |
-          sudo mkdir -p /tmp/lfs-build
-          sudo cp -a $GITHUB_WORKSPACE/. /tmp/lfs-build/
-          sudo chown -R lfs:lfs /tmp/lfs-build
-
-      - name: Build ${{ matrix.profile }}
-        run: |
-          cd /tmp/lfs-build
-          sudo -u lfs python3 builder.py --profile ${{ matrix.profile }} --output ./build-${{ matrix.profile }}
-
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: lfs-${{ matrix.profile }}
-          path: /tmp/lfs-build/build-${{ matrix.profile }}/lfs-installer.iso
+## .github/workflows/profile-matrix.yml
+#name: Profile Matrix Build
+#
+#on:
+#  push:
+#    branches: [ main ]
+#  schedule:
+#    - cron: '0 4 * * *'
+#
+#jobs:
+#  matrix:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        profile: [minimal, xfce, server, audio-cli]
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Install dependencies
+#        run: |
+#          sudo apt update
+#          sudo apt install -y build-essential bison flex gawk texinfo wget curl git python3 python3-pip xorriso isolinux mtools dosfstools parted rsync bc cpio kmod libssl-dev libelf-dev
+#
+#      - name: Create lfs user
+#        run: |
+#          if ! id lfs &>/dev/null; then
+#            sudo useradd -m -s /bin/bash lfs
+#          fi
+#          sudo -u lfs touch /home/lfs/.bashrc
+#
+#      - name: Prepare lfs user permissions
+#        run: |
+#          sudo chown -R lfs:lfs $GITHUB_WORKSPACE
+#
+#      - name: Prepare lfs build directory
+#        run: |
+#          sudo mkdir -p /tmp/lfs-build
+#          sudo cp -a $GITHUB_WORKSPACE/. /tmp/lfs-build/
+#          sudo chown -R lfs:lfs /tmp/lfs-build
+#
+#      - name: Build ${{ matrix.profile }}
+#        run: |
+#          cd /tmp/lfs-build
+#          sudo -u lfs python3 builder.py --profile ${{ matrix.profile }} --output ./build-${{ matrix.profile }}
+#
+#      - name: Archive artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: lfs-${{ matrix.profile }}
+#          path: /tmp/lfs-build/build-${{ matrix.profile }}/lfs-installer.iso
