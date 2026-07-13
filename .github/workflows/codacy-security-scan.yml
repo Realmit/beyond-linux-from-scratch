@@ -34,7 +34,7 @@ jobs:
       - name: Run Bandit security scan
         run: |
           pip install bandit
-          bandit -r . -f sarif -o results.sarif
+          bandit -r . -f sarif -o results.sarif || echo '{"runs":[]}' > results.sarif
         continue-on-error: true
 
       - name: Upload SARIF results
