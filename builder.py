@@ -1125,7 +1125,7 @@ class LFSBuilder:
 
         # Add cross-compilation variables if enabled
         if self.is_cross_compile():
-            env['CROSS_COMPILE'] = '1'
+            env['CROSS_COMPILE'] = self.get_cross_prefix()
             env['CROSS_PREFIX'] = self.get_cross_prefix()
             env['QEMU_USER'] = self.get_qemu_user()
             env['SYSROOT'] = self.get_sysroot()

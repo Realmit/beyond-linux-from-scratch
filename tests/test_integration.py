@@ -151,7 +151,7 @@ class TestIntegration:
 
         env = builder._get_env()
 
-        assert env['CROSS_COMPILE'] == '1'
+        assert env['CROSS_COMPILE'] == '/usr/bin/aarch64-linux-gnu-'
         assert env['ARCH'] == 'aarch64'
         assert 'CROSS_PREFIX' in env
         assert env['CROSS_PREFIX'] == '/usr/bin/aarch64-linux-gnu-'

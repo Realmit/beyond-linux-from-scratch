@@ -467,7 +467,7 @@ class TestGetEnvironmentVariables:
         env = builder._get_env()
 
         assert 'CROSS_COMPILE' in env
-        assert env['CROSS_COMPILE'] == '1'
+        assert env['CROSS_COMPILE'] == '/usr/bin/aarch64-linux-gnu-'
         assert 'ARCH' in env
         assert env['ARCH'] == 'aarch64'
 

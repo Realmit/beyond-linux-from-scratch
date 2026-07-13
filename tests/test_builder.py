@@ -270,7 +270,7 @@ class TestLFSBuilder:
             with patch.object(builder, 'get_target_architecture', return_value='aarch64'):
                 env = builder._get_env()
 
-                assert env['CROSS_COMPILE'] == '1'
+                assert env['CROSS_COMPILE'] == '/usr/bin/aarch64-linux-gnu-'
                 assert env['ARCH'] == 'aarch64'
                 assert 'CROSS_PREFIX' in env
                 assert 'QEMU_USER' in env
