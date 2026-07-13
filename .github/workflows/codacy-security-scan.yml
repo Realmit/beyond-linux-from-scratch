@@ -45,6 +45,7 @@ jobs:
           format: sarif
           gh-code-scanning-compat: true
           max-allowed-issues: 2147483647
+          tool: bandit,pylint,pylintpython3,prospector,shellcheck,remark-lint,csslint
 
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v4
