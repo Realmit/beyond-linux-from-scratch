@@ -121,6 +121,15 @@ jobs:
             --no-live \
             --output /tmp/lfs-build
 
+      - name: Verify kernel presence
+        run: |
+          if ! ls /tmp/lfs-build/image/boot/vmlinuz* >/dev/null 2>&1; then
+            echo "Kernel not found in /boot – build failed!"
+            ls -la /tmp/lfs-build/image/boot || true
+            exit 1
+          fi
+          echo "Kernel found: $(ls /tmp/lfs-build/image/boot/vmlinuz*)"
+
       - name: Compress rootfs (exclude virtual filesystems)
         id: compress
         if: success() || failure()

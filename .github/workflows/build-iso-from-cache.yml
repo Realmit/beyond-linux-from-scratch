@@ -53,6 +53,16 @@ jobs:
           sudo tar -xJf rootfs.tar.xz -C image/
           sudo chown -R lfs:lfs image/ || true
           ls -lh image/
+          
+      - name: Validate cache content
+        run: |
+          if ! ls /tmp/lfs-build/image/boot/vmlinuz* >/dev/null 2>&1; then
+            echo "Cache does not contain a kernel – cannot build ISO."
+            echo "Contents of /tmp/lfs-build/image/boot:"
+            ls -la /tmp/lfs-build/image/boot || true
+            exit 1
+          fi
+          echo "Cache appears valid"
 
       - name: Copy repository to /tmp/lfs-builder
         run: |
