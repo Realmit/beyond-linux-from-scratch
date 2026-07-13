@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: '0 5 * * 1'   # weekly on Monday
 
+permissions:
+  contents: read
+
 jobs:
   benchmark:
     runs-on: ubuntu-latest

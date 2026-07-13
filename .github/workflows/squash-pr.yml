@@ -4,6 +4,9 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: write            # needed to push the squashed commit
+
 jobs:
   squash:
     if: |
@@ -19,14 +22,12 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
           gh auth status
 
-      - name: Extract PR number
-        id: pr
-        run: |
-          COMMENT_BODY="${{ github.event.comment.body }}"
-          PR_NUMBER=$(echo "$COMMENT_BODY" | grep -oE '[0-9]+' | head -1)
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-
+      # ──────────────────────────────────────────────
+      # Safe: use the issue number directly from the event payload
+      # (no injection possible from comment.body)
+      # ──────────────────────────────────────────────
       - name: Squash PR commits
         run: |
           chmod +x squash-pr-commits.sh
-          ./squash-pr-commits.sh ${{ steps.pr.outputs.pr_number }} "PR #${{ steps.pr.outputs.pr_number }} (squashed by comment)"
+          ./squash-pr-commits.sh ${{ github.event.issue.number }} \
+            "PR #${{ github.event.issue.number }} (squashed by comment)"
