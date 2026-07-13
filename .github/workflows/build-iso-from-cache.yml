@@ -40,7 +40,7 @@ jobs:
           RELEASE_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest"
           ASSET_URL=$(curl -s "$RELEASE_URL" | jq -r '.assets[] | select(.name=="rootfs.tar.xz") | .browser_download_url')
           if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
-            echo "❌ No rootfs.tar.xz found"
+            echo "No rootfs.tar.xz found"
             exit 1
           fi
           echo "cache_url=$ASSET_URL" >> $GITHUB_OUTPUT
@@ -59,9 +59,7 @@ jobs:
           sudo mkdir -p /tmp/lfs-builder
           sudo cp -a . /tmp/lfs-builder/
           sudo chmod +x /tmp/lfs-builder/final/*.sh
-          # Pas besoin de chown, on va tout exécuter en root via sudo
 
-      # ⬇️ CORRECTION FINALE : on exécute les scripts en root, sans -u lfs ⬇️
       - name: Run final stages (as root)
         id: build_iso
         run: |
@@ -73,12 +71,21 @@ jobs:
           sudo LFS="$LFS_PATH" ./final/14-create-installer.sh
           sudo LFS="$LFS_PATH" ./final/15-create-live-system.sh
 
+      - name: Generate dynamic release tag and name
+        id: release_info
+        run: |
+          # Extract builder version from source code
+          BUILDER_VERSION=$(python3 -c "from builder import __version__; print(__version__)")
+          TAG="v${BUILDER_VERSION}-iso-${{ matrix.profile }}-${{ matrix.init }}-$(date +%Y%m%d-%H%M%S)"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "name=LFS ${{ matrix.profile }} ${{ matrix.init }} ISO v${BUILDER_VERSION} $(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
       - name: Upload ISO to release
         if: success() && steps.build_iso.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v4.3.0-iso
-          name: LFS Xfce ISO
+          tag_name: ${{ steps.release_info.outputs.tag }}
+          name: ${{ steps.release_info.outputs.name }}
           files: /tmp/lfs-build/lfs-installer.iso
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -87,8 +94,8 @@ jobs:
         if: always()
         run: |
           if [ -f /tmp/lfs-build/lfs-installer.iso ]; then
-            echo "✅ ISO built successfully"
+            echo "ISO built successfully"
           else
-            echo "❌ ISO not found"
+            echo "ISO not found"
             exit 1
           fi
