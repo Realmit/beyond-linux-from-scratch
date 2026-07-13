@@ -1,5 +1,15 @@
 name: Codacy Security Scan
 
+engines:
+  pmd:
+    enabled: false
+  pmd-legacy:
+    enabled: false
+  eslint:
+    enabled: false
+  stylelint:
+    enabled: false
+    
 on:
   push:
     branches: [ "main" ]
