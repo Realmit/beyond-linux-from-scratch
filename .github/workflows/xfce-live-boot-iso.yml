@@ -80,7 +80,7 @@ jobs:
       - name: Check compilation
         run: |
           python3 -m py_compile builder.py
-          echo "✅ builder.py compiled successfully"
+          echo "builder.py compiled successfully"
 
       - name: Patch host-check.sh
         run: |
@@ -110,19 +110,38 @@ jobs:
 
       - name: Build profile (as lfs user) – WITH LIVE ISO
         id: build
-        continue-on-error: true
+        # No continue-on-error – we want the job to fail if the build fails
         run: |
           cd /tmp/lfs-builder
           sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
             --output /tmp/lfs-build
-          # --no-live est retiré → l'ISO sera généré
+
+      - name: Verify ISO creation
+        id: check_iso
+        if: success()
+        run: |
+          ISO_PATH="/tmp/lfs-build/lfs-installer.iso"
+          if [ -f "$ISO_PATH" ]; then
+            ISO_SIZE=$(stat -c%s "$ISO_PATH" 2>/dev/null || stat -f%z "$ISO_PATH" 2>/dev/null)
+            if [ "$ISO_SIZE" -gt 1048576 ]; then   # > 1 MB
+              echo "✅ Valid ISO found: $(ls -lh $ISO_PATH)"
+              echo "iso_exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "❌ ISO file is too small (${ISO_SIZE} bytes), build may have failed."
+              echo "iso_exists=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          else
+            echo "❌ ISO not found"
+            echo "iso_exists=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
 
       - name: Compress rootfs (exclude virtual filesystems)
         id: compress
-        if: success() || failure()
-        continue-on-error: true
+        if: success()   # only if build and ISO check succeeded
         run: |
           set -e
           cd /tmp/lfs-build/image
@@ -136,24 +155,11 @@ jobs:
           sudo chown $USER:$USER /tmp/rootfs.tar.xz
           ls -lh /tmp/rootfs.tar.xz
 
-      - name: Verify ISO creation
-        id: check_iso
-        if: success() || failure()
-        run: |
-          ISO_PATH="/tmp/lfs-build/lfs-installer.iso"
-          if [ -f "$ISO_PATH" ]; then
-            echo "✅ ISO found: $(ls -lh $ISO_PATH)"
-            echo "iso_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "⚠️ ISO not found – maybe live system was disabled in profile"
-            echo "iso_exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Create Release and Upload Artifacts
-        if: success() && steps.compress.outcome == 'success'
+        if: success() && steps.check_iso.outputs.iso_exists == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}   # utilise le tag déclencheur
+          tag_name: ${{ github.ref_name }}
           name: "LFS Builder ${{ github.ref_name }}"
           body: |
             Live ISO et cache rootfs pour LFS/BLFS 13.0
