@@ -103,16 +103,26 @@ class URLValidator:
         return False, ""
 
     def is_git_url(self, url: str) -> bool:
-        """Check if this is a Git URL"""
-        # Check scheme or obvious git indicators
-        if (url.startswith('git://') or
-                url.startswith('git@') or
-                url.endswith('.git')):
+        """Check if this is a Git URL – parses the URL properly."""
+        # Parse the URL to get scheme and path
+        parsed = urllib.parse.urlparse(url)
+        scheme = parsed.scheme.lower()
+        path = parsed.path.lower()
+
+        # git:// scheme
+        if scheme == 'git':
             return True
 
-        # Parse domain and check against known Git hosting services
+        # SSH style git@... (no scheme, starts with git@)
+        if not scheme and url.startswith('git@'):
+            return True
+
+        # Check if the path ends with .git (but only if there's no query/fragment trick)
+        if path.endswith('.git'):
+            return True
+
+        # Known Git hosting domains (exact match, not substring)
         domain = self._get_domain(url)
-        # Known Git hosting domains (excluding release archives)
         git_domains = {
             'git.savannah.gnu.org',
             'git.kernel.org',
@@ -123,11 +133,10 @@ class URLValidator:
         if domain in git_domains:
             # For GitHub, if the path contains '/archive/' it's a release tarball, not a Git URL
             if domain == 'github.com':
-                parsed = urllib.parse.urlparse(url)
-                path = parsed.path.lower()
                 if '/archive/' in path:
                     return False
             return True
+
         return False
 
     def is_slow_url(self, url: str) -> bool:
