@@ -147,12 +147,18 @@ jobs:
           sudo chown $USER:$USER /tmp/rootfs.tar.xz
           ls -lh /tmp/rootfs.tar.xz
 
+      - name: Get builder version
+        id: version
+        run: |
+          VER=$(python3 -c "from builder import __version__; print(__version__)")
+          echo "value=$VER" >> $GITHUB_OUTPUT
+
       - name: Create Release and Upload Rootfs
         if: success() && steps.compress.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v4.3.0-cache
-          name: Way Beyond LFS Xfce SYSVINIT Cache v4.3.0
+          tag_name: v${{ steps.version.outputs.value }}-cache
+          name: Way Beyond LFS Xfce SYSVINIT Cache v${{ steps.version.outputs.value }}
           body: |
             Cache pour LFS/BLFS 13.0
             Profil : ${{ matrix.profile }}
