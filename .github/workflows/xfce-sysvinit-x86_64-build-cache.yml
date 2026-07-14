@@ -115,6 +115,8 @@ jobs:
         continue-on-error: true
         run: |
           cd /tmp/lfs-builder
+          export LFS_DOWNLOAD_RETRIES=2            
+          export LFS_DOWNLOAD_TIMEOUT=5            
           sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --init ${{ matrix.init }} \
