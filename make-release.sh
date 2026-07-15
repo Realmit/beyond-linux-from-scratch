@@ -11,7 +11,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# ---------- Help ----------
+# ---------- Detect OS for sed compatibility ----------
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    SED_INLINE="sed -i ''"
+else
+    SED_INLINE="sed -i"
+fi
+
+# ---------- Functions ----------
 show_help() {
     cat << EOF
 Usage: $0 [OPTIONS]
@@ -41,6 +48,16 @@ EOF
     exit 0
 }
 
+bump_version() {
+    local new_version="$1"
+    if [ -z "$new_version" ]; then
+        echo -e "${RED}Error: specify new version (e.g., 0.4.4)${NC}" >&2
+        exit 1
+    fi
+    $SED_INLINE "s/^__version__ = \"[0-9.]*\"/__version__ = \"$new_version\"/" builder.py
+    echo -e "${GREEN}Version set to $new_version in builder.py${NC}"
+}
+
 # ---------- Parse arguments ----------
 CREATE_TAG=true
 CREATE_TAR=true
@@ -62,11 +79,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ---------- Checks ----------
-# Go to the script's directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Verify it's a Git repository
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
     echo -e "${RED}Error: this directory is not a Git repository.${NC}"
     exit 1
@@ -75,18 +90,7 @@ fi
 # ---------- Bump version if requested ----------
 if [ -n "$BUMP_VERSION" ]; then
     echo -e "${BLUE}Bumping version to ${BUMP_VERSION}...${NC}"
-    # The function must be defined before this point – we define it just after argument parsing
-    bump_version() {
-        local new_version="$1"
-        if [ -z "$new_version" ]; then
-            echo -e "${RED}Error: specify new version (e.g., 0.4.4)${NC}" >&2
-            exit 1
-        fi
-        sed -i "s/^__version__ = \"[0-9.]*\"/__version__ = \"$new_version\"/" builder.py
-        echo -e "${GREEN}Version set to $new_version in builder.py${NC}"
-    }
     bump_version "$BUMP_VERSION"
-    # We need to commit the bump so the repo is clean – offer to commit automatically
     if ! git diff --quiet builder.py; then
         echo -e "${YELLOW}builder.py has been modified. Committing the version bump...${NC}"
         git add builder.py
@@ -95,7 +99,7 @@ if [ -n "$BUMP_VERSION" ]; then
     fi
 fi
 
-# Check for uncommitted changes (again, in case there were other changes before)
+# Check for uncommitted changes
 if ! git diff --quiet || ! git diff --cached --quiet; then
     echo -e "${YELLOW}Warning: there are uncommitted changes.${NC}"
     read -p "Do you want to commit them now? (y/N) " -n 1 -r
