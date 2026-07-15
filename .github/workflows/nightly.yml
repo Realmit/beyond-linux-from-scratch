@@ -67,10 +67,11 @@ jobs:
       - name: Verify kernel presence
         run: |
           if ! ls /tmp/lfs-build/build-${{ matrix.profile }}/boot/vmlinuz* >/dev/null 2>&1; then
-            echo "Kernel not found in /boot – build may be incomplete!"
+            echo "Kernel not found in /boot – build failed!"
             ls -la /tmp/lfs-build/build-${{ matrix.profile }}/boot || true
-            # Ne pas échouer, le build peut quand même avoir produit une ISO sans noyau (très rare)
+            exit 1
           fi
+          echo "Kernel found: $(ls /tmp/lfs-build/build-${{ matrix.profile }}/boot/vmlinuz*)"
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
