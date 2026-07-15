@@ -1,7 +1,7 @@
 #!/bin/bash
 # host/00-setup-qemu.sh
 # Setup QEMU user emulation for cross-compilation (ARM64, ARM, RISC‑V, etc.)
-# Only runs if CROSS_COMPILE=1 is set in environment.
+# Only runs if CROSS_COMPILE is set in environment.
 # Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
@@ -13,16 +13,17 @@ log_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
 # ----------------------------------------------------------------------------
 # 0. Skip if cross-compilation is not enabled
 # ----------------------------------------------------------------------------
-if [ "${CROSS_COMPILE}" != "1" ]; then
-    log_info "Cross-compilation not enabled (CROSS_COMPILE != 1). Skipping QEMU setup."
+if [ -z "${CROSS_COMPILE}" ]; then
+    log_info "Cross-compilation not enabled (CROSS_COMPILE is empty). Skipping QEMU setup."
     exit 0
 fi
 
 # ----------------------------------------------------------------------------
-# 1. Détecter l'architecture cible (depuis l'environnement ou la configuration)
+# 1. Déterminer l'architecture cible et le binaire QEMU
 # ----------------------------------------------------------------------------
-TARGET_ARCH="${ARCH:-${CROSS_COMPILE_ARCH:-aarch64}}"
-QEMU_BIN="qemu-${TARGET_ARCH}-static"
+# Le builder exporte ARCH (ex: aarch64) et QEMU_USER (ex: qemu-aarch64-static)
+TARGET_ARCH="${ARCH:-aarch64}"
+QEMU_BIN="${QEMU_USER:-qemu-${TARGET_ARCH}-static}"
 
 log_info "Target architecture: $TARGET_ARCH"
 log_info "QEMU binary: $QEMU_BIN"
@@ -32,12 +33,10 @@ log_info "QEMU binary: $QEMU_BIN"
 # ----------------------------------------------------------------------------
 if [ -f /.dockerenv ]; then
     log_info "Docker container detected – installing qemu-user-static"
-    # Ensure apt lists directory exists and is writable with sudo
     sudo mkdir -p /var/lib/apt/lists/partial 2>/dev/null || true
     sudo apt-get update -qq
     sudo apt-get install -y -qq qemu-user-static binfmt-support
 else
-    # Sur l'hôte, vérifier que le paquet est présent
     if ! command -v "$QEMU_BIN" >/dev/null 2>&1; then
         log_error "$QEMU_BIN not found on host. Please install qemu-user-static."
         log_info "On Debian/Ubuntu: sudo apt install qemu-user-static"

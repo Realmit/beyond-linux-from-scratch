@@ -1,4 +1,5 @@
 #!/bin/bash
+# 15-security-hardening.sh
 # Security hardening - Docker compatible minimal
 # Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e

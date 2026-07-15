@@ -1,5 +1,6 @@
 #!/bin/bash
-# Desktop environment (XFCE) – avec copie des binaires head/cut et dynamic source path
+# 09-build-desktop.sh
+# Desktop environment installation – adapts to DESKTOP_TYPE from builder
 # Author : Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
 
@@ -39,18 +40,25 @@ run_privileged() {
     fi
 }
 
-log_info "========================================="
-log_info "Setting up desktop environment (XFCE)"
-log_info "========================================="
+# -----------------------------------------------------------------------------
+# Détection du type de bureau depuis les variables exportées par le builder
+# -----------------------------------------------------------------------------
+DESKTOP_TYPE="${LFS_CONFIG_DESKTOP_TYPE:-xfce}"   # fallback xfce
+log_info "Desktop type requested: $DESKTOP_TYPE"
 
+# -----------------------------------------------------------------------------
+# Mode Docker : squelette générique quel que soit le bureau
+# -----------------------------------------------------------------------------
 if [ "$IN_DOCKER" = true ]; then
     log_info "Docker mode – creating minimal desktop skeleton inside $LFS"
     run_privileged mkdir -pv "$LFS"/etc/X11/xorg.conf.d
-    run_privileged mkdir -pv "$LFS"/etc/xdg/xfce4/xfconf/xfce-perchannel-xml
     run_privileged mkdir -pv "$LFS"/etc/xdg/autostart
-    run_privileged mkdir -pv "$LFS"/usr/share/xfce4
     run_privileged mkdir -pv "$LFS"/usr/share/applications
-    run_privileged tee "$LFS/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml" << 'SESSION'
+    case "$DESKTOP_TYPE" in
+        xfce)
+            run_privileged mkdir -pv "$LFS"/etc/xdg/xfce4/xfconf/xfce-perchannel-xml
+            run_privileged mkdir -pv "$LFS"/usr/share/xfce4
+            run_privileged tee "$LFS/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml" << 'SESSION'
 <?xml version="1.0" encoding="UTF-8"?>
 <channel name="xfce4-session" version="1.0">
   <property name="general" type="empty">
@@ -59,12 +67,28 @@ if [ "$IN_DOCKER" = true ]; then
   </property>
 </channel>
 SESSION
+            ;;
+        gnome|kde|lxqt|*)
+            log_warning "Docker mode for $DESKTOP_TYPE not yet specialized, creating basic skeleton"
+            run_privileged mkdir -pv "$LFS"/usr/share/desktop-directories
+            ;;
+    esac
     log_success "Desktop skeleton created (Docker mode)"
     exit 0
 fi
 
-log_info "Native mode – installing XFCE desktop from sources"
+# -----------------------------------------------------------------------------
+# Mode natif : installation réelle
+# -----------------------------------------------------------------------------
+log_info "Native mode – installing $DESKTOP_TYPE desktop from sources"
 
+# Si ce n'est pas XFCE, on ne sait pas installer pour l'instant
+if [ "$DESKTOP_TYPE" != "xfce" ]; then
+    log_error "Native installation for $DESKTOP_TYPE is not yet supported (only XFCE)."
+    exit 1
+fi
+
+# … (le reste de l'installation XFCE, inchangé) …
 log_info "Copying head and cut into chroot"
 for tool in head cut; do
     src=$(which "$tool" 2>/dev/null || echo "/usr/bin/$tool")
@@ -90,7 +114,6 @@ run_privileged mount -t proc proc $LFS/proc 2>/dev/null || true
 run_privileged mount -t sysfs sysfs $LFS/sys 2>/dev/null || true
 run_privileged mount -t tmpfs tmpfs $LFS/run 2>/dev/null || true
 
-# --- DYNAMIC SOURCE PATH ---
 SOURCES_HOST="$(dirname "$LFS")/sources"
 if [ -d "$SOURCES_HOST" ] && [ "$(ls -A "$SOURCES_HOST" 2>/dev/null)" ]; then
     log_info "Copying sources from $SOURCES_HOST to $LFS/sources"
