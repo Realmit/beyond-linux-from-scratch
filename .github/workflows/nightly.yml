@@ -40,6 +40,10 @@ jobs:
         env:
           LFS: /tmp/lfs-build/image
 
+      - name: Ensure lfs has passwordless sudo
+        run: |
+          echo "lfs ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/lfs
+
       - name: Copy repository to /tmp/lfs-builder
         run: |
           sudo mkdir -p /tmp/lfs-builder
