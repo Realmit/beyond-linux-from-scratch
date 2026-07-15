@@ -1,4 +1,5 @@
 #!/bin/bash
+# final/15-create-live-system.sh
 # Create a live system with squashfs and hybrid ISO (BIOS+UEFI)
 # Author: Jean-Francois Landreville, landrevillejf@protonmail.com, 2026.
 set -e
@@ -8,9 +9,15 @@ OUTPUT_DIR="$(dirname "$LFS")"
 SQUASHFS="${OUTPUT_DIR}/live.squashfs"
 ISO_OUT="${OUTPUT_DIR}/lfs-installer.iso"
 
-echo "[INFO] Creating live system (squashfs + ISO)..."
+# Paramètres du builder
+COMPRESSION="${LFS_CONFIG_LIVE_SYSTEM_SQUASHFS_COMPRESSION:-xz}"
+PERSISTENCE_SUPPORT="${LFS_CONFIG_LIVE_SYSTEM_PERSISTENCE_SUPPORT:-true}"
+DEFAULT_BOOT="${LFS_CONFIG_LIVE_SYSTEM_DEFAULT_BOOT:-live}"
 
-# Check required tools
+echo "[INFO] Creating live system (squashfs + ISO)..."
+echo "[INFO] Compression: $COMPRESSION, Persistence: $PERSISTENCE_SUPPORT, Default boot: $DEFAULT_BOOT"
+
+# Vérifier les outils nécessaires
 for tool in mksquashfs xorriso; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "[ERROR] $tool not found. Please install it."
@@ -18,7 +25,7 @@ for tool in mksquashfs xorriso; do
     fi
 done
 
-# Find kernel and initramfs
+# Trouver noyau et initramfs
 KERNEL=$(ls -1 "$LFS/boot/vmlinuz-"* 2>/dev/null | head -1)
 if [ -z "$KERNEL" ]; then
     echo "[ERROR] Kernel not found in $LFS/boot"
@@ -33,25 +40,22 @@ fi
 echo "[INFO] Kernel: $KERNEL"
 echo "[INFO] Initramfs: $INITRAMFS"
 
-# Create squashfs (excluding virtual filesystems)
-echo "[INFO] Creating squashfs..."
+# Créer le squashfs
+echo "[INFO] Creating squashfs (compression: $COMPRESSION)..."
 mksquashfs "$LFS" "$SQUASHFS" \
-    -comp xz -Xbcj x86 -b 1M \
+    -comp "$COMPRESSION" -Xbcj x86 -b 1M \
     -wildcards -e "proc/*" "sys/*" "dev/*" "run/*" "tmp/*" "sources/*"
 
-# Prepare ISO content
+# Préparer l'arborescence ISO
 ISO_DIR="${OUTPUT_DIR}/iso-content"
 rm -rf "$ISO_DIR"
 mkdir -pv "$ISO_DIR"/{isolinux,boot/grub,EFI/BOOT}
 
-# Copy kernel and initramfs
 cp -v "$KERNEL" "$ISO_DIR/isolinux/vmlinuz"
 cp -v "$INITRAMFS" "$ISO_DIR/isolinux/initrd.img"
-
-# Copy squashfs
 cp -v "$SQUASHFS" "$ISO_DIR/live.squashfs"
 
-# Copy isolinux binary
+# Isolinux
 ISOLINUX_BIN="/usr/lib/ISOLINUX/isolinux.bin"
 [ -f "$ISOLINUX_BIN" ] || ISOLINUX_BIN="/usr/lib/syslinux/isolinux.bin"
 if [ ! -f "$ISOLINUX_BIN" ]; then
@@ -60,14 +64,14 @@ if [ ! -f "$ISOLINUX_BIN" ]; then
 fi
 cp -v "$ISOLINUX_BIN" "$ISO_DIR/isolinux/"
 
-# Copy isolinux modules (optional)
+# Modules isolinux (optionnel)
 if [ -d "/usr/lib/syslinux/modules/bios" ]; then
     cp -v /usr/lib/syslinux/modules/bios/*.c32 "$ISO_DIR/isolinux/" 2>/dev/null || true
 fi
 
-# ISOLINUX configuration
-cat > "$ISO_DIR/isolinux/isolinux.cfg" << 'EOF'
-default live
+# Configuration isolinux
+cat > "$ISO_DIR/isolinux/isolinux.cfg" << EOF
+default ${DEFAULT_BOOT}
 label live
   kernel vmlinuz
   append initrd=initrd.img root=/dev/sr0 ro quiet
@@ -76,7 +80,7 @@ label live-verbose
   append initrd=initrd.img root=/dev/sr0 ro
 EOF
 
-# EFI support – only if the EFI bootloader exists
+# EFI
 EFI_FILE="$LFS/boot/efi/EFI/BOOT/BOOTX64.EFI"
 if [ -f "$EFI_FILE" ]; then
     echo "[INFO] Found EFI bootloader, including UEFI support"
@@ -87,7 +91,7 @@ else
     EFI_OPTION=""
 fi
 
-# Generate ISO with xorriso (using -iso-level 4 for large files)
+# Construction de l'ISO
 echo "[INFO] Building ISO..."
 xorriso -as mkisofs \
     -iso-level 4 \
@@ -100,7 +104,7 @@ xorriso -as mkisofs \
     $EFI_OPTION \
     -o "$ISO_OUT" "$ISO_DIR"
 
-# Clean up
+# Nettoyage
 rm -rf "$ISO_DIR" "$SQUASHFS"
 
 echo "[SUCCESS] Live ISO created at $ISO_OUT"
