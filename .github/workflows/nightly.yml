@@ -23,30 +23,50 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential bison flex gawk texinfo wget git python3 python3-pip \
             xorriso isolinux mtools dosfstools parted rsync bc cpio libssl-dev libelf-dev ca-certificates
+          command -v makeinfo || { echo "makeinfo not found"; exit 1; }
 
-      - name: Create lfs user
+      - name: Patch host-check.sh (remove texinfo/makeinfo checks)
         run: |
-          if ! id "lfs" &>/dev/null; then
-            sudo useradd -m -s /bin/bash lfs
-          fi
-          sudo -u lfs touch /home/lfs/.bashrc
+          sed -i '/texinfo/d' host/01-check-host.sh
+          sed -i '/makeinfo/d' host/01-check-host.sh
 
-      - name: Grant lfs user passwordless sudo
+      - name: Patch toolchain to switch to lfs user
         run: |
-          echo "lfs ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/lfs
+          sed -i '1a if [ "$(whoami)" = "root" ] && id "lfs" &>/dev/null; then\n    echo "Switching to lfs user..."\n    exec sudo -E -u lfs "$0" "$@"\nfi' host/04-build-toolchain.sh
 
-      - name: Prepare lfs build directory
+      - name: Prepare host system (as root)
         run: |
-          sudo mkdir -p /tmp/lfs-build
-          sudo cp -a $GITHUB_WORKSPACE/. /tmp/lfs-build/
+          sudo -E host/02-prepare-host.sh
+        env:
+          LFS: /tmp/lfs-build/image
+
+      - name: Copy repository to /tmp/lfs-builder
+        run: |
+          sudo mkdir -p /tmp/lfs-builder
+          sudo cp -a . /tmp/lfs-builder/
+          sudo chown -R lfs:lfs /tmp/lfs-builder
+          sudo chmod -R a+rX /tmp/lfs-builder
+
+      - name: Reassign ownership of output directory to lfs
+        run: |
           sudo chown -R lfs:lfs /tmp/lfs-build
 
       - name: Build ${{ matrix.profile }} (as lfs user)
+        id: build
         run: |
-          cd /tmp/lfs-build
+          cd /tmp/lfs-builder
           sudo -u lfs python3 builder.py \
             --profile ${{ matrix.profile }} \
             --output ./build-${{ matrix.profile }}
+
+      - name: Verify kernel presence
+        run: |
+          if ! ls /tmp/lfs-build/image/boot/vmlinuz* >/dev/null 2>&1; then
+            echo "Kernel not found in /boot – build failed!"
+            ls -la /tmp/lfs-build/image/boot || true
+            exit 1
+          fi
+          echo "Kernel found: $(ls /tmp/lfs-build/image/boot/vmlinuz*)"
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
