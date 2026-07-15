@@ -10,6 +10,7 @@ permissions:
 jobs:
   build-profiles:
     strategy:
+      fail-fast: false
       matrix:
         profile: [minimal, xfce, server, secure]
     runs-on: ubuntu-latest
@@ -29,6 +30,10 @@ jobs:
             sudo useradd -m -s /bin/bash lfs
           fi
           sudo -u lfs touch /home/lfs/.bashrc
+
+      - name: Grant lfs user passwordless sudo
+        run: |
+          echo "lfs ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/lfs
 
       - name: Prepare lfs build directory
         run: |
